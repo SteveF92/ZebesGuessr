@@ -19,9 +19,9 @@ export interface Difficulty {
 }
 
 export const DIFFICULTIES: Difficulty[] = [
-  { id: "recruit", label: "Recruit", min: 1, max: 3, hint: "FAMILIAR GROUND" },
-  { id: "hunter", label: "Bounty Hunter", min: 2, max: 4, hint: "OFF THE BEATEN PATH" },
-  { id: "chozo", label: "Chozo Warrior", min: 3, max: 5, hint: "DEEP ARCHIVE" },
+  { id: "recruit", label: "Tallon Overworld", min: 1, max: 3, hint: "FAMILIAR GROUND" },
+  { id: "hunter", label: "Brinstar", min: 2, max: 4, hint: "OFF THE BEATEN PATH" },
+  { id: "chozo", label: "Sanctuary Fortress", min: 3, max: 5, hint: "DEEP ARCHIVE" },
 ];
 
 export const DEFAULT_DIFFICULTY = "hunter";
