@@ -52,13 +52,15 @@ only adds walls on exterior sides — never between two occupied cells, and neve
 touches shaft/diag cells — so the map perimeter always reads closed while shared
 interior edges stay open. Rerun and it is idempotent.
 
-### Elevators and dashed transit lines are hand-placed
+### Transit connectors are hand-placed
 The pipeline erases elevator/exit channels (above) and Maridia's dashed transit
-lines, and never re-detects them. Both are curated by hand in the app's icon
-editor (Elevator / Dotted line tools) and stored in `overlays.<game>.json`
-(`{ areaId: { elevators, lines } }`), which `loadGameData` applies as an override
-just like `glyphs.<game>.json`. `extract_ingame_maps.py` emits empty `elevators`
-/ `lines` arrays and never writes the overlays file (it is skipped by name).
+lines, and never re-detects them. Both are curated by hand as unified
+**connectors** in the app's icon editor (Connector tool — one axis-aligned
+segment, either orientation, with twin rails + dashed core) and stored in
+`overlays.<game>.json` (`{ areaId: { connectors } }`), which `loadGameData`
+applies as an override just like `glyphs.<game>.json`. `extract_ingame_maps.py`
+emits an empty `connectors` array and never writes the overlays file (it is
+skipped by name).
 
 ### Residual difficulties / assumptions
 - The 24px / 0.5-enclosure thresholds are empirical, though the observed gap

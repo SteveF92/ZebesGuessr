@@ -45,14 +45,14 @@ Conversion: `map (x,y) = tile (x+dx, y+dy)` with `dx`/`dy` on `area.map`. `Guess
 
 Asset URLs must be prefixed with `import.meta.env.BASE_URL` — Vite `base` is `/ZebesGuessr/` for GitHub Pages (deploys automatically on push to main via `.github/workflows/deploy.yml`).
 
-## Hand-curated map overlays (glyphs, elevators, dotted lines)
+## Hand-curated map overlays (glyphs, connectors)
 
 Two files hold data the pipeline can't reliably extract, both edited via the in-app editor (**icons** toggle in the round header) and applied by `loadGameData` as overrides on top of extraction:
 
 - `public/data/glyphs.<game>.json` — Save/Map/Ship/Boss landmark icons.
-- `public/data/overlays.<game>.json` — vertical elevator shafts (with a destination-area label) and horizontal dashed transit lines, keyed `{ areaId: { elevators, lines } }`.
+- `public/data/overlays.<game>.json` — transit **connectors** (elevator shafts and dashed tube runs, unified), keyed `{ areaId: { connectors } }`. Each connector is axis-aligned between two whole map cells (`{ x0, y0, x1, y1 }` — `x0===x1` vertical, `y0===y1` horizontal), rendered with twin cyan rails + a dashed pink core, with an optional `label` on any side (`labelPos: "above" | "below" | "left" | "right"`). `loadGameData` also folds any legacy pre-merge `elevators`/`lines` fields into `connectors`.
 
-The editor's tools stamp glyphs, place elevators (two clicks: top then bottom; name via the toolbar field), and place dotted lines (two clicks: left then right); **Erase** removes any of them. **Save to file** POSTs both to `/__save-map`, a dev-only Vite middleware (`glyphSaver` in `vite.config.ts`) that writes the JSON directly for committing. `extract_ingame_maps.py` deliberately never touches either file (both are skipped by name) — don't regenerate or overwrite them from pipeline code. Elevators and lines are overlay-only: they are not in `area.cells`, so they never become guess targets.
+The editor's tools stamp glyphs and place connectors (two clicks: the drag's dominant axis picks horizontal vs vertical; name via the toolbar field, cycle the label side with the **Label** button); **Erase** removes any of them. **Save to file** POSTs both to `/__save-map`, a dev-only Vite middleware (`glyphSaver` in `vite.config.ts`) that writes the JSON directly for committing. `extract_ingame_maps.py` deliberately never touches either file (both are skipped by name) — don't regenerate or overwrite them from pipeline code. Connectors are overlay-only: they are not in `area.cells`, so they never become guess targets.
 
 ## Map extraction heuristics
 

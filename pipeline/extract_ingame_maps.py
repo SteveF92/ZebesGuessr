@@ -396,13 +396,13 @@ def fallback_map(area):
         cells.append({"x": x, "y": y, "k": "room", "w": walls})
     return {"cols": area["cols"], "rows": area["rows"], "dx": 0, "dy": 0,
             "cells": cells, "glyphs": [], "bands": [],
-            "elevators": [], "lines": [], "source": "fallback"}
+            "connectors": [], "source": "fallback"}
 
 
 def main() -> None:
     for data_file in (ROOT / "public" / "data").glob("*.json"):
         if data_file.name.startswith(("glyphs.", "overlays.")):
-            continue  # hand-placed icons / elevators / lines; not touched by extraction
+            continue  # hand-placed icons / connectors; not touched by extraction
         data = json.loads(data_file.read_text())
         game_id = data["game"]
         for area in data["areas"]:
@@ -428,8 +428,7 @@ def main() -> None:
                     for (x, y), v in sorted(cells.items())],
                 "glyphs": [],
                 "bands": bands,
-                "elevators": [],
-                "lines": [],
+                "connectors": [],
                 "source": "ingame",
             }
             print(f"  {area['id']}: {cols}x{rows} map, {len(cells)} cells, "

@@ -1,4 +1,4 @@
-import type { GameData, MapGlyph, Elevator, DottedLine, RoundTarget, Cell } from "./types";
+import type { GameData, MapGlyph, Connector, RoundTarget, Cell } from "./types";
 
 export const GAMES = [
   { id: "super-metroid", title: "Super Metroid", available: true },
@@ -9,11 +9,33 @@ export const GAMES = [
 /** hand-placed landmark icons, keyed by areaId; overrides pipeline extraction */
 export type GlyphOverrides = Record<string, MapGlyph[]>;
 
-/** hand-placed elevator shafts + dashed transit lines, keyed by areaId */
-export type OverlayOverrides = Record<
-  string,
-  { elevators?: Elevator[]; lines?: DottedLine[] }
->;
+/**
+ * Hand-placed transit connectors, keyed by areaId. `connectors` is the current
+ * shape; `elevators`/`lines` are the pre-merge legacy fields, still read and
+ * normalised so older data files keep working.
+ */
+export type OverlayOverrides = Record<string, LegacyOverlayLayer>;
+
+type LegacyElevator = { x: number; y0: number; y1: number; label?: string; labelPos?: Connector["labelPos"] };
+type LegacyLine = { y: number; x0: number; x1: number };
+type LegacyOverlayLayer = {
+  connectors?: Connector[];
+  elevators?: LegacyElevator[];
+  lines?: LegacyLine[];
+};
+
+/** fold any legacy elevators/lines into the connector list (in place). */
+function normalizeConnectors(layer: LegacyOverlayLayer | undefined): Connector[] | null {
+  if (!layer) return null;
+  if (layer.connectors) return layer.connectors;
+  if (!layer.elevators && !layer.lines) return null;
+  return [
+    ...(layer.elevators ?? []).map((e) => ({
+      x0: e.x, y0: e.y0, x1: e.x, y1: e.y1, label: e.label, labelPos: e.labelPos,
+    })),
+    ...(layer.lines ?? []).map((l) => ({ x0: l.x0, y0: l.y, x1: l.x1, y1: l.y })),
+  ];
+}
 
 export function glyphOverridesUrl(gameId: string): string {
   return `${import.meta.env.BASE_URL}data/glyphs.${gameId}.json`;
@@ -28,11 +50,10 @@ export async function loadGameData(gameId: string): Promise<GameData> {
   if (!res.ok) throw new Error(`No data for ${gameId}. Run the pipeline first (see pipeline/README).`);
   const data: GameData = await res.json();
 
-  // Elevators/lines are hand-placed; ensure the arrays exist even for data
-  // baked before these fields were added.
+  // Connectors are hand-placed; ensure the array exists (and fold in any
+  // legacy elevators/lines from data baked before the merge).
   for (const area of data.areas) {
-    area.map.elevators ??= [];
-    area.map.lines ??= [];
+    area.map.connectors = normalizeConnectors(area.map as LegacyOverlayLayer) ?? [];
   }
 
   // Icons are curated by hand in glyphs.<game>.json and win over extraction.
@@ -48,18 +69,15 @@ export async function loadGameData(gameId: string): Promise<GameData> {
     /* no override file yet — keep extracted glyphs */
   }
 
-  // Elevators + dashed transit lines are likewise hand-curated and win over
-  // extraction (which erases them). A present area entry fully replaces that
-  // area's layers.
+  // Connectors are likewise hand-curated and win over extraction (which erases
+  // them). A present area entry fully replaces that area's connectors.
   try {
     const ores = await fetch(overlayOverridesUrl(gameId));
     if (ores.ok) {
       const overrides: OverlayOverrides = await ores.json();
       for (const area of data.areas) {
-        const o = overrides[area.id];
-        if (!o) continue;
-        if (o.elevators) area.map.elevators = o.elevators;
-        if (o.lines) area.map.lines = o.lines;
+        const connectors = normalizeConnectors(overrides[area.id]);
+        if (connectors) area.map.connectors = connectors;
       }
     }
   } catch {

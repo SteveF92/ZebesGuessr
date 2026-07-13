@@ -24,34 +24,27 @@ export interface MapGlyph {
 }
 
 /**
- * A vertical elevator shaft (twin cyan rails + dashes on the pause map). Hand
- * placed in the icon editor; the pipeline erases these as annotations. Spans
- * whole MAP cells; `label` names the destination area, drawn beside the shaft.
+ * A transit connector on the pause map (twin cyan rails + a dashed pink core):
+ * elevator shafts and dashed tube runs alike. Hand placed in the icon editor;
+ * the pipeline erases these as annotations. Axis-aligned between two whole MAP
+ * cells — `x0===x1` is vertical, `y0===y1` is horizontal. `label` names the
+ * destination area, drawn beside the connector on the chosen side. Overlay
+ * only, never a guess target.
  */
-export interface Elevator {
-  /** map-cell column (shaft is one cell wide) */
-  x: number;
-  /** top map-cell row (inclusive) */
-  y0: number;
-  /** bottom map-cell row (inclusive) */
-  y1: number;
-  /** destination area name, shown next to the shaft */
-  label?: string;
-  /** where the label sits relative to the shaft (default "below") */
-  labelPos?: "above" | "below";
-}
-
-/**
- * A horizontal dashed transit line (e.g. Maridia's tube runs). Hand placed;
- * decoration only. Spans whole MAP cells along row `y`.
- */
-export interface DottedLine {
-  /** map-cell row */
-  y: number;
-  /** left map-cell column (inclusive) */
+export interface Connector {
+  /** first endpoint map-cell column */
   x0: number;
-  /** right map-cell column (inclusive) */
+  /** first endpoint map-cell row */
+  y0: number;
+  /** second endpoint map-cell column (inclusive) */
   x1: number;
+  /** second endpoint map-cell row (inclusive) */
+  y1: number;
+  /** destination area name, shown beside the connector */
+  label?: string;
+  /** which side of the connector the label sits on (default: "below" for
+   *  vertical, "right" for horizontal) */
+  labelPos?: "above" | "below" | "left" | "right";
 }
 
 /**
@@ -76,10 +69,9 @@ export interface AreaMap {
   cells: MapCell[];
   glyphs: MapGlyph[];
   bands: DiagBand[];
-  /** hand-placed vertical elevator shafts (overlay only, not guessable) */
-  elevators: Elevator[];
-  /** hand-placed horizontal dashed transit lines (overlay only) */
-  lines: DottedLine[];
+  /** hand-placed transit connectors: elevators + dashed tube runs, either
+   *  orientation (overlay only, not guessable) */
+  connectors: Connector[];
   source: "ingame" | "fallback";
 }
 

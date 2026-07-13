@@ -1,171 +1,208 @@
 {
   "crateria": {
-    "elevators": [
+    "connectors": [
       {
-        "x": 2,
+        "x0": 2,
         "y0": 11,
+        "x1": 2,
         "y1": 12,
         "label": "BRINSTAR"
       },
       {
-        "x": 19,
+        "x0": 19,
         "y0": 20,
+        "x1": 19,
         "y1": 21,
         "label": "BRINSTAR"
       },
       {
-        "x": 48,
+        "x0": 48,
         "y0": 13,
+        "x1": 48,
         "y1": 14,
         "label": "MARIDIA"
       },
       {
-        "x": 30,
+        "x0": 30,
         "y0": 10,
+        "x1": 30,
         "y1": 11,
         "label": "BRINSTAR"
       },
       {
-        "x": 13,
-        "y0": 12,
-        "y1": 13,
-        "label": "TOURIAN"
-      }
-    ],
-    "lines": [
-      {
-        "y": 7,
         "x0": 42,
-        "x1": 44
+        "y0": 7,
+        "x1": 44,
+        "y1": 7,
+        "label": "WRECKED SHIP",
+        "labelPos": "below"
       },
       {
-        "y": 19,
         "x0": 13,
-        "x1": 13
+        "y0": 19,
+        "x1": 13,
+        "y1": 19,
+        "label": "TOURIAN",
+        "labelPos": "left"
+      },
+      {
+        "x0": 13,
+        "y0": 12,
+        "x1": 13,
+        "y1": 13,
+        "label": "TOURIAN"
       }
     ]
   },
   "brinstar": {
-    "elevators": [
+    "connectors": [
       {
-        "x": 6,
+        "x0": 6,
         "y0": 2,
+        "x1": 6,
         "y1": 3,
         "label": " CRATERIA",
         "labelPos": "above"
       },
       {
-        "x": 38,
+        "x0": 38,
         "y0": 21,
+        "x1": 38,
         "y1": 22,
         "label": "NORFAIR"
       },
       {
-        "x": 34,
+        "x0": 34,
         "y0": 6,
+        "x1": 34,
         "y1": 7,
         "label": "CRATERIA",
         "labelPos": "above"
       },
       {
-        "x": 23,
+        "x0": 23,
         "y0": 10,
+        "x1": 23,
         "y1": 11,
         "label": "CRATERIA",
         "labelPos": "above"
-      }
-    ],
-    "lines": [
+      },
       {
-        "y": 20,
         "x0": 35,
-        "x1": 37
+        "y0": 20,
+        "x1": 37,
+        "y1": 20,
+        "label": "MARIDIA",
+        "labelPos": "below"
       }
     ]
   },
   "norfair": {
-    "elevators": [
+    "connectors": [
       {
-        "x": 11,
+        "x0": 11,
         "y0": 3,
+        "x1": 11,
         "y1": 3,
         "label": "BRINSTAR",
         "labelPos": "above"
       },
       {
-        "x": 22,
+        "x0": 22,
         "y0": 13,
+        "x1": 22,
         "y1": 14,
         "label": ""
       }
-    ],
-    "lines": []
+    ]
   },
   "wrecked-ship": {
-    "elevators": [],
-    "lines": [
+    "connectors": [
       {
-        "y": 8,
-        "x0": 10,
-        "x1": 11
+        "x0": 22,
+        "y0": 8,
+        "x1": 22,
+        "y1": 8,
+        "label": "CRATERIA",
+        "labelPos": "right"
       },
       {
-        "y": 8,
-        "x0": 22,
-        "x1": 23
+        "x0": 11,
+        "y0": 8,
+        "x1": 11,
+        "y1": 8,
+        "label": "CRATERIA",
+        "labelPos": "left"
+      },
+      {
+        "x0": 11,
+        "y0": 4,
+        "x1": 11,
+        "y1": 4,
+        "label": "CRATERIA",
+        "labelPos": "left"
       }
     ]
   },
   "maridia": {
-    "elevators": [
+    "connectors": [
       {
-        "x": 30,
+        "x0": 30,
         "y0": 2,
+        "x1": 30,
         "y1": 3,
         "label": "CRATERIA",
         "labelPos": "above"
       },
       {
-        "x": 18,
+        "x0": 18,
         "y0": 7,
+        "x1": 18,
         "y1": 9,
         "label": ""
       },
       {
-        "x": 18,
+        "x0": 18,
         "y0": 14,
+        "x1": 18,
         "y1": 16,
         "label": ""
-      }
-    ],
-    "lines": [
-      {
-        "y": 20,
-        "x0": 5,
-        "x1": 5
       },
       {
-        "y": 20,
+        "x0": 5,
+        "y0": 20,
+        "x1": 5,
+        "y1": 20,
+        "labelPos": "left",
+        "label": "BRINSTAR"
+      },
+      {
         "x0": 9,
-        "x1": 9
+        "y0": 20,
+        "x1": 9,
+        "y1": 20,
+        "label": "BRINSTAR",
+        "labelPos": "right"
       }
     ]
   },
   "tourian": {
-    "elevators": [
+    "connectors": [
       {
-        "x": 19,
+        "x0": 19,
         "y0": 5,
+        "x1": 19,
         "y1": 6,
         "label": "CRATERIA",
         "labelPos": "above"
-      }
-    ],
-    "lines": [
+      },
       {
-        "y": 13,
         "x0": 20,
-        "x1": 20
+        "y0": 13,
+        "x1": 20,
+        "y1": 13,
+        "label": "CRATERIA",
+        "labelPos": "right"
       }
     ]
   }

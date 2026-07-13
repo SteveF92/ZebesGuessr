@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type {
-  AreaData, Cell, DiagBand, DottedLine, Elevator, GameData, MapCell, MapGlyph, RoundResult,
+  AreaData, Cell, Connector, DiagBand, GameData, MapCell, MapGlyph, RoundResult,
 } from "../types";
 
 interface Props {
@@ -17,19 +17,56 @@ interface Props {
 }
 
 type GlyphType = MapGlyph["t"];
-type Tool = GlyphType | "elevator" | "line" | "erase";
+type Tool = GlyphType | "connector" | "erase";
 const TOOLS: { id: Tool; label: string }[] = [
   { id: "save", label: "Save (S)" },
   { id: "map", label: "Map (M)" },
   { id: "ship", label: "Ship" },
   { id: "boss", label: "Boss" },
   { id: "item", label: "Item" },
-  { id: "elevator", label: "Elevator" },
-  { id: "line", label: "Dotted line" },
+  { id: "connector", label: "Connector" },
   { id: "erase", label: "Erase" },
 ];
 
-type Overlays = { elevators: Elevator[]; lines: DottedLine[] };
+type Overlays = { connectors: Connector[] };
+
+/** label-position cycle order for the editor toggle */
+type LabelPos = NonNullable<Connector["labelPos"]>;
+const LABEL_CYCLE: LabelPos[] = ["above", "right", "below", "left"];
+const LABEL_ARROW: Record<LabelPos, string> = {
+  above: "above ↑", below: "below ↓", left: "left ←", right: "right →",
+};
+
+/** geometry helpers: connectors are axis-aligned between two whole map cells */
+function connBounds(c: Connector) {
+  return {
+    minX: Math.min(c.x0, c.x1), maxX: Math.max(c.x0, c.x1),
+    minY: Math.min(c.y0, c.y1), maxY: Math.max(c.y0, c.y1),
+  };
+}
+/** true when the connector runs left-right (wider than it is tall). For a
+ *  single cell (neither axis dominates) the label side breaks the tie, so a
+ *  1-cell connector labelled left/right renders as a horizontal stub. */
+function connHorizontal(c: Connector) {
+  const b = connBounds(c);
+  const dx = b.maxX - b.minX, dy = b.maxY - b.minY;
+  if (dx !== dy) return dx > dy;
+  return c.labelPos === "left" || c.labelPos === "right";
+}
+function connContains(c: Connector, cell: Cell) {
+  const b = connBounds(c);
+  return cell.x >= b.minX && cell.x <= b.maxX && cell.y >= b.minY && cell.y <= b.maxY;
+}
+function defaultLabelPos(c: Connector): LabelPos {
+  return connHorizontal(c) ? "right" : "below";
+}
+/** build a connector from two clicks, locking to the dominant axis */
+function connectorFromDrag(a: Cell, c: Cell): Connector {
+  if (Math.abs(c.x - a.x) >= Math.abs(c.y - a.y)) {
+    return { x0: Math.min(a.x, c.x), y0: a.y, x1: Math.max(a.x, c.x), y1: a.y, label: "" };
+  }
+  return { x0: a.x, y0: Math.min(a.y, c.y), x1: a.x, y1: Math.max(a.y, c.y), label: "" };
+}
 
 /** css px per map cell */
 const S = 16;
@@ -76,21 +113,16 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, result
   const [saveMsg, setSaveMsg] = useState("");
   const glyphs = edits[area.id] ?? area.map.glyphs;
 
-  // editable copy of every area's elevators + dashed lines (like `edits`)
+  // editable copy of every area's connectors (like `edits`)
   const [overlayEdits, setOverlayEdits] = useState<Record<string, Overlays>>(() => {
     const m: Record<string, Overlays> = {};
-    for (const a of data.areas) {
-      m[a.id] = {
-        elevators: a.map.elevators.map((e) => ({ ...e })),
-        lines: a.map.lines.map((l) => ({ ...l })),
-      };
-    }
+    for (const a of data.areas) m[a.id] = { connectors: a.map.connectors.map((c) => ({ ...c })) };
     return m;
   });
-  // two-click placement anchor (map coords) and the selected elevator (for naming)
+  // two-click placement anchor (map coords) and the selected connector (for naming)
   const [anchor, setAnchor] = useState<Cell | null>(null);
-  const [selEl, setSelEl] = useState<number | null>(null);
-  const overlays = overlayEdits[area.id] ?? { elevators: area.map.elevators, lines: area.map.lines };
+  const [selConn, setSelConn] = useState<number | null>(null);
+  const overlays = overlayEdits[area.id] ?? { connectors: area.map.connectors };
 
   const occupied = useMemo(() => {
     const m = new Map<string, MapCell>();
@@ -140,8 +172,7 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, result
     // stair passages go first so room cells drawn after cover the band ends
     for (const b of area.map.bands ?? []) drawBand(ctx, b);
     for (const c of area.map.cells) drawCell(ctx, c);
-    for (const e of overlays.elevators) drawElevator(ctx, e, false);
-    for (const l of overlays.lines) drawDottedLine(ctx, l, false);
+    for (const c of overlays.connectors) drawConnector(ctx, c, false);
     if (editing) drawOverlayEditing(ctx);
     for (const g of glyphs) drawGlyph(ctx, g);
 
@@ -273,79 +304,80 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, result
     ctx.fillText(g.t === "save" ? "S" : "M", cx, cy + 1);
   }
 
-  /** A vertical elevator shaft: twin cyan rails with a dashed pink core, plus
-   *  the destination-area label beside it. Spans whole cells y0..y1. */
-  function drawElevator(ctx: CanvasRenderingContext2D, e: Elevator, preview: boolean) {
-    const cx = e.x * S + S / 2;
-    const top = e.y0 * S, bot = (e.y1 + 1) * S;
+  /** A transit connector: twin cyan rails with a dashed pink core, in either
+   *  orientation, plus the destination-area label on the chosen side. */
+  function drawConnector(ctx: CanvasRenderingContext2D, c: Connector, preview: boolean) {
+    const b = connBounds(c);
     ctx.save();
     if (preview) ctx.globalAlpha = 0.5;
-    ctx.fillStyle = COL.wall; // twin rails, 4px apart
-    ctx.fillRect(cx - 4, top, 2, bot - top);
-    ctx.fillRect(cx + 2, top, 2, bot - top);
+    ctx.fillStyle = COL.wall; // twin rails, 4px apart, straddling the core
     ctx.strokeStyle = COL.room; // dashed core
     ctx.lineWidth = 2;
     ctx.setLineDash([4, 4]);
-    ctx.beginPath();
-    ctx.moveTo(cx, top);
-    ctx.lineTo(cx, bot);
-    ctx.stroke();
-    ctx.setLineDash([]);
-    if (e.label) {
-      ctx.fillStyle = COL.wall;
-      ctx.font = `bold ${S - 6}px monospace`;
-      ctx.textAlign = "center";
-      if ((e.labelPos ?? "below") === "above") {
-        ctx.textBaseline = "bottom";
-        ctx.fillText(e.label, cx, top - 2);
-      } else {
-        ctx.textBaseline = "top";
-        ctx.fillText(e.label, cx, bot + 2);
-      }
+    if (connHorizontal(c)) {
+      const cy = b.minY * S + S / 2;
+      const left = b.minX * S, right = (b.maxX + 1) * S;
+      ctx.fillRect(left, cy - 4, right - left, 2);
+      ctx.fillRect(left, cy + 2, right - left, 2);
+      ctx.beginPath();
+      ctx.moveTo(left, cy);
+      ctx.lineTo(right, cy);
+      ctx.stroke();
+    } else {
+      const cx = b.minX * S + S / 2;
+      const top = b.minY * S, bot = (b.maxY + 1) * S;
+      ctx.fillRect(cx - 4, top, 2, bot - top);
+      ctx.fillRect(cx + 2, top, 2, bot - top);
+      ctx.beginPath();
+      ctx.moveTo(cx, top);
+      ctx.lineTo(cx, bot);
+      ctx.stroke();
     }
-    ctx.restore();
-  }
-
-  /** A horizontal dashed transit line across row y, x0..x1. */
-  function drawDottedLine(ctx: CanvasRenderingContext2D, l: DottedLine, preview: boolean) {
-    const y = l.y * S + S / 2;
-    ctx.save();
-    if (preview) ctx.globalAlpha = 0.5;
-    ctx.strokeStyle = COL.room;
-    ctx.lineWidth = 2;
-    ctx.setLineDash([4, 4]);
-    ctx.beginPath();
-    ctx.moveTo(l.x0 * S, y);
-    ctx.lineTo((l.x1 + 1) * S, y);
-    ctx.stroke();
     ctx.setLineDash([]);
+    if (c.label) drawConnectorLabel(ctx, c, b);
     ctx.restore();
   }
 
-  /** editor-only overlays: selected-shaft highlight + placement preview */
+  /** the destination label, positioned on any of the connector's four sides */
+  function drawConnectorLabel(
+    ctx: CanvasRenderingContext2D, c: Connector, b: ReturnType<typeof connBounds>
+  ) {
+    const midX = ((b.minX + b.maxX + 1) / 2) * S;
+    const midY = ((b.minY + b.maxY + 1) / 2) * S;
+    ctx.fillStyle = COL.wall;
+    ctx.font = `bold ${S - 6}px monospace`;
+    switch (c.labelPos ?? defaultLabelPos(c)) {
+      case "above":
+        ctx.textAlign = "center"; ctx.textBaseline = "bottom";
+        ctx.fillText(c.label!, midX, b.minY * S - 2); break;
+      case "below":
+        ctx.textAlign = "center"; ctx.textBaseline = "top";
+        ctx.fillText(c.label!, midX, (b.maxY + 1) * S + 2); break;
+      case "left":
+        ctx.textAlign = "right"; ctx.textBaseline = "middle";
+        ctx.fillText(c.label!, b.minX * S - 2, midY); break;
+      case "right":
+        ctx.textAlign = "left"; ctx.textBaseline = "middle";
+        ctx.fillText(c.label!, (b.maxX + 1) * S + 2, midY); break;
+    }
+  }
+
+  /** editor-only overlays: selected-connector highlight + placement preview */
   function drawOverlayEditing(ctx: CanvasRenderingContext2D) {
-    if (tool === "elevator" && selEl !== null) {
-      const e = overlays.elevators[selEl];
-      if (e) {
+    if (tool === "connector" && selConn !== null) {
+      const c = overlays.connectors[selConn];
+      if (c) {
+        const b = connBounds(c);
         ctx.strokeStyle = COL.selected;
         ctx.lineWidth = 1.5;
-        ctx.strokeRect(e.x * S + 0.5, e.y0 * S + 0.5, S - 1, (e.y1 - e.y0 + 1) * S - 1);
+        ctx.strokeRect(
+          b.minX * S + 0.5, b.minY * S + 0.5,
+          (b.maxX - b.minX + 1) * S - 1, (b.maxY - b.minY + 1) * S - 1
+        );
       }
     }
-    if (anchor && hover) {
-      if (tool === "elevator") {
-        drawElevator(
-          ctx,
-          { x: anchor.x, y0: Math.min(anchor.y, hover.y), y1: Math.max(anchor.y, hover.y) },
-          true
-        );
-      } else if (tool === "line") {
-        drawDottedLine(
-          ctx,
-          { y: anchor.y, x0: Math.min(anchor.x, hover.x), x1: Math.max(anchor.x, hover.x) },
-          true
-        );
-      }
+    if (tool === "connector" && anchor && hover) {
+      drawConnector(ctx, connectorFromDrag(anchor, hover), true);
     }
   }
 
@@ -362,7 +394,7 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, result
   function updateOverlays(fn: (o: Overlays) => Overlays) {
     setOverlayEdits((prev) => ({
       ...prev,
-      [area.id]: fn(prev[area.id] ?? { elevators: [], lines: [] }),
+      [area.id]: fn(prev[area.id] ?? { connectors: [] }),
     }));
   }
 
@@ -377,7 +409,7 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, result
     });
   }
 
-  /** erase whatever overlay sits at map cell c (glyph, elevator span, or line) */
+  /** erase whatever overlay sits at map cell c (glyph or connector span) */
   function eraseAt(c: Cell) {
     setEdits((prev) => ({
       ...prev,
@@ -385,42 +417,28 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, result
         (g) => Math.floor(g.x) !== c.x || Math.floor(g.y) !== c.y
       ),
     }));
-    updateOverlays((o) => ({
-      elevators: o.elevators.filter((e) => !(e.x === c.x && c.y >= e.y0 && c.y <= e.y1)),
-      lines: o.lines.filter((l) => !(l.y === c.y && c.x >= l.x0 && c.x <= l.x1)),
-    }));
-    setSelEl(null);
+    updateOverlays((o) => ({ connectors: o.connectors.filter((k) => !connContains(k, c)) }));
+    setSelConn(null);
   }
 
-  /** two-click vertical shaft: click empty to anchor/commit, click a shaft to select */
-  function placeShaft(c: Cell) {
+  /** two-click connector: click empty to anchor/commit (orientation follows the
+   *  dominant drag axis), click an existing connector to select it for naming */
+  function placeConnector(c: Cell) {
     if (anchor === null) {
-      const idx = overlays.elevators.findIndex(
-        (e) => e.x === c.x && c.y >= e.y0 && c.y <= e.y1
-      );
-      if (idx >= 0) return setSelEl(idx); // select existing shaft to rename it
-      setSelEl(null);
+      const idx = overlays.connectors.findIndex((k) => connContains(k, c));
+      if (idx >= 0) return setSelConn(idx); // select existing connector to rename it
+      setSelConn(null);
       setAnchor(c);
       return;
     }
-    const y0 = Math.min(anchor.y, c.y), y1 = Math.max(anchor.y, c.y);
-    updateOverlays((o) => ({ ...o, elevators: [...o.elevators, { x: anchor.x, y0, y1, label: "" }] }));
-    setSelEl(overlays.elevators.length); // index of the shaft just added
-    setAnchor(null);
-  }
-
-  /** two-click horizontal dashed line locked to the anchor's row */
-  function placeLine(c: Cell) {
-    if (anchor === null) return setAnchor(c);
-    const x0 = Math.min(anchor.x, c.x), x1 = Math.max(anchor.x, c.x);
-    updateOverlays((o) => ({ ...o, lines: [...o.lines, { y: anchor.y, x0, x1 }] }));
+    updateOverlays((o) => ({ connectors: [...o.connectors, connectorFromDrag(anchor, c)] }));
+    setSelConn(overlays.connectors.length); // index of the connector just added
     setAnchor(null);
   }
 
   function handleEditClick(c: Cell) {
     setSaveMsg("");
-    if (tool === "elevator") return placeShaft(c);
-    if (tool === "line") return placeLine(c);
+    if (tool === "connector") return placeConnector(c);
     if (tool === "erase") return eraseAt(c);
     stampGlyph(c, tool); // tool narrows to GlyphType here
   }
@@ -435,7 +453,7 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, result
     }
     const overlaysOut: Record<string, Overlays> = {};
     for (const [id, o] of Object.entries(overlayEdits)) {
-      if (o.elevators.length || o.lines.length) overlaysOut[id] = o;
+      if (o.connectors.length) overlaysOut[id] = o;
     }
     try {
       const res = await fetch("/__save-map", {
@@ -468,40 +486,39 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, result
             <button
               key={t.id}
               className={`btn tiny ${tool === t.id ? "active" : ""}`}
-              onClick={() => { setTool(t.id); setAnchor(null); setSelEl(null); }}
+              onClick={() => { setTool(t.id); setAnchor(null); setSelConn(null); }}
             >
               {t.label}
             </button>
           ))}
-          {tool === "elevator" && selEl !== null && overlays.elevators[selEl] && (
+          {tool === "connector" && selConn !== null && overlays.connectors[selConn] && (
             <>
               <input
                 className="edit-name"
                 placeholder="destination area"
-                value={overlays.elevators[selEl].label ?? ""}
+                value={overlays.connectors[selConn].label ?? ""}
                 onChange={(ev) => {
                   const label = ev.target.value;
                   updateOverlays((o) => ({
-                    ...o,
-                    elevators: o.elevators.map((e, i) => (i === selEl ? { ...e, label } : e)),
+                    connectors: o.connectors.map((c, i) => (i === selConn ? { ...c, label } : c)),
                   }));
                 }}
               />
               <button
                 className="btn tiny"
-                title="Move label above/below the shaft"
+                title="Cycle the label around the connector's four sides"
                 onClick={() => {
                   updateOverlays((o) => ({
-                    ...o,
-                    elevators: o.elevators.map((e, i) =>
-                      i === selEl
-                        ? { ...e, labelPos: (e.labelPos ?? "below") === "below" ? "above" : "below" }
-                        : e
-                    ),
+                    connectors: o.connectors.map((c, i) => {
+                      if (i !== selConn) return c;
+                      const cur = c.labelPos ?? defaultLabelPos(c);
+                      const next = LABEL_CYCLE[(LABEL_CYCLE.indexOf(cur) + 1) % LABEL_CYCLE.length];
+                      return { ...c, labelPos: next };
+                    }),
                   }));
                 }}
               >
-                Label: {(overlays.elevators[selEl].labelPos ?? "below") === "below" ? "below ↓" : "above ↑"}
+                Label: {LABEL_ARROW[overlays.connectors[selConn].labelPos ?? defaultLabelPos(overlays.connectors[selConn])]}
               </button>
             </>
           )}

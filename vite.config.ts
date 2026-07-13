@@ -5,7 +5,7 @@ import { resolve } from "node:path";
 
 // Dev-only endpoint for the in-app icon editor: POST the curated map data and
 // it is written straight into public/data/*.<game>.json, ready to commit —
-// glyphs into glyphs.<game>.json and elevators/lines into overlays.<game>.json.
+// glyphs into glyphs.<game>.json and connectors into overlays.<game>.json.
 // Not part of the production build.
 function glyphSaver(): Plugin {
   return {

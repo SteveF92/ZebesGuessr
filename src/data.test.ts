@@ -16,7 +16,7 @@ function makeData(areas: Record<string, Cell[]>): GameData {
       rows: 10,
       mapImage: "",
       cells,
-      map: { cols: 10, rows: 10, dx: 0, dy: 0, cells: [], glyphs: [], bands: [], elevators: [], lines: [], source: "fallback" },
+      map: { cols: 10, rows: 10, dx: 0, dy: 0, cells: [], glyphs: [], bands: [], connectors: [], source: "fallback" },
     })),
   };
 }

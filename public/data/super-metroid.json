@@ -2190,8 +2190,7 @@
             ]
           }
         ],
-        "elevators": [],
-        "lines": [],
+        "connectors": [],
         "source": "ingame"
       }
     },
@@ -4586,8 +4585,7 @@
         ],
         "glyphs": [],
         "bands": [],
-        "elevators": [],
-        "lines": [],
+        "connectors": [],
         "source": "ingame"
       }
     },
@@ -8100,8 +8098,7 @@
             ]
           }
         ],
-        "elevators": [],
-        "lines": [],
+        "connectors": [],
         "source": "ingame"
       }
     },
@@ -8802,8 +8799,7 @@
         ],
         "glyphs": [],
         "bands": [],
-        "elevators": [],
-        "lines": [],
+        "connectors": [],
         "source": "ingame"
       }
     },
@@ -11420,8 +11416,7 @@
         ],
         "glyphs": [],
         "bands": [],
-        "elevators": [],
-        "lines": [],
+        "connectors": [],
         "source": "ingame"
       }
     },
@@ -12202,8 +12197,7 @@
         ],
         "glyphs": [],
         "bands": [],
-        "elevators": [],
-        "lines": [],
+        "connectors": [],
         "source": "ingame"
       }
     }
