@@ -65,6 +65,30 @@ def components(m: np.ndarray):
     return out
 
 
+def diagonal_dir(pink: np.ndarray, x0: int, y0: int):
+    """Classify a wall-less cell whose pink forms a ~45deg streak.
+
+    In-game diagonal corridors are drawn as a sub-cell pink band, not aligned
+    to the 8px grid. Within such a cell the pink pixels correlate along a
+    diagonal; a full room or a straight shaft has ~zero correlation. Returns
+    "/" (NE-SW), "\\" (NW-SE), or None. Image y points down, so a negative
+    x/y correlation is the "/" direction.
+    """
+    block = pink[y0:y0 + CELL, x0:x0 + CELL]
+    ys, xs = np.nonzero(block)
+    if len(xs) < 3:
+        return None
+    xs = xs - xs.mean()
+    ys = ys - ys.mean()
+    denom = float(np.sqrt((xs * xs).sum() * (ys * ys).sum()))
+    if denom == 0:
+        return None
+    corr = float((xs * ys).sum()) / denom
+    if abs(corr) < 0.2:
+        return None
+    return "/" if corr < 0 else "\\"
+
+
 def side_has_wall(cyan: np.ndarray, x0: int, y0: int, side: int, h: int, w: int) -> bool:
     """Check the two pixel rows/cols straddling a cell boundary."""
     def row(y):
@@ -108,7 +132,15 @@ def extract_area(img_path: Path):
             for side in (N, E, S, W):
                 if side_has_wall(cyan, x0, y0, side, h, w):
                     walls |= side
-            cells[(x, y)] = {"kind": kind, "walls": walls}
+            cell = {"kind": kind, "walls": walls}
+            # a wall-less cell whose pink runs on a diagonal is a stair passage;
+            # solid rooms and straight shafts have ~zero pink correlation
+            if walls == 0:
+                d = diagonal_dir(pink, x0, y0)
+                if d is not None:
+                    cell["kind"] = "diag"
+                    cell["dir"] = d
+            cells[(x, y)] = cell
 
     glyphs = []
     # map stations: green 'M' components
@@ -132,6 +164,39 @@ def extract_area(img_path: Path):
             glyphs.append({"x": round((np.mean(xs) - ox) / CELL, 2),
                            "y": round((np.mean(ys) - oy) / CELL, 2), "t": "save"})
     return cols, rows, cells, glyphs
+
+
+def drop_label_text(cells: dict) -> int:
+    """Remove connected components that carry no cyan walls.
+
+    Area-transition captions (BRINSTAR, MARIDIA, WRECKED SHIP) are drawn in the
+    same pink as rooms, so the grid picks them up as tiny room clusters. Real
+    rooms and shafts are always outlined in cyan; label glyphs never are. So any
+    8-connected component whose cells all report walls==0 is caption text, not
+    map geometry. Returns the number of cells removed.
+    """
+    occ = set(cells)
+    seen: set = set()
+    removed = 0
+    for start in list(cells):
+        if start in seen:
+            continue
+        comp, stack = [], [start]
+        seen.add(start)
+        while stack:
+            x, y = stack.pop()
+            comp.append((x, y))
+            for dx in (-1, 0, 1):
+                for dy in (-1, 0, 1):
+                    n = (x + dx, y + dy)
+                    if n in occ and n not in seen:
+                        seen.add(n)
+                        stack.append(n)
+        if all(cells[c]["walls"] == 0 for c in comp):
+            for c in comp:
+                del cells[c]
+            removed += len(comp)
+    return removed
 
 
 def align(map_cells, mcols, mrows, tile_cells, tcols, trows):
@@ -179,6 +244,7 @@ def main() -> None:
                 print(f"  {area['id']}: no in-game image, using fallback grid")
                 continue
             cols, rows, cells, glyphs = extract_area(img)
+            dropped_labels = drop_label_text(cells)
             # the orange/yellow icon is Samus' ship only on the landing-site
             # map; elsewhere it is a boss marker (Kraid, Phantoon, ...)
             for g in glyphs:
@@ -192,14 +258,16 @@ def main() -> None:
             area["cells"] = playable
             area["map"] = {
                 "cols": cols, "rows": rows, "dx": dx, "dy": dy,
-                "cells": [{"x": x, "y": y, "k": v["kind"], "w": v["walls"]}
-                          for (x, y), v in sorted(cells.items())],
+                "cells": [
+                    {"x": x, "y": y, "k": v["kind"], "w": v["walls"],
+                     **({"d": v["dir"]} if "dir" in v else {})}
+                    for (x, y), v in sorted(cells.items())],
                 "glyphs": glyphs,
                 "source": "ingame",
             }
             print(f"  {area['id']}: {cols}x{rows} map, {len(cells)} cells, "
                   f"{len(glyphs)} glyphs, offset ({dx},{dy}), {matches} aligned, "
-                  f"{dropped} targets dropped")
+                  f"{dropped} targets dropped, {dropped_labels} label cells removed")
         data_file.write_text(json.dumps(data))
         print(f"patched {data_file.relative_to(ROOT)}")
 

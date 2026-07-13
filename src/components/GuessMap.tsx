@@ -10,7 +10,19 @@ interface Props {
   onHoverCell?: (areaId: string, cell: Cell | null) => void;
   /** when set, the round is over: draw target/guess markers, ignore clicks */
   result: RoundResult | null;
+  /** dev icon-placement mode: clicks stamp/erase landmark glyphs */
+  editing?: boolean;
 }
+
+type GlyphType = MapGlyph["t"];
+type Tool = GlyphType | "erase";
+const TOOLS: { id: Tool; label: string }[] = [
+  { id: "save", label: "Save (S)" },
+  { id: "map", label: "Map (M)" },
+  { id: "ship", label: "Ship" },
+  { id: "boss", label: "Boss" },
+  { id: "erase", label: "Erase" },
+];
 
 /** css px per map cell */
 const S = 16;
@@ -36,11 +48,21 @@ const N = 1, E = 2, SO = 4, W = 8;
  * in-game pause map are drawn on canvas (rooms, shafts, station glyphs,
  * Samus' ship) — no environment art, knowledge only.
  */
-export default function GuessMap({ data, selected, onSelect, onHoverCell, result }: Props) {
+export default function GuessMap({ data, selected, onSelect, onHoverCell, result, editing }: Props) {
   const [areaId, setAreaId] = useState(data.areas[0].id);
   const area = data.areas.find((a) => a.id === areaId)!;
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [hover, setHover] = useState<Cell | null>(null);
+
+  // editable copy of every area's glyphs; edits win over the loaded data
+  const [edits, setEdits] = useState<Record<string, MapGlyph[]>>(() => {
+    const m: Record<string, MapGlyph[]> = {};
+    for (const a of data.areas) m[a.id] = a.map.glyphs.map((g) => ({ ...g }));
+    return m;
+  });
+  const [tool, setTool] = useState<Tool>("save");
+  const [saveMsg, setSaveMsg] = useState("");
+  const glyphs = edits[area.id] ?? area.map.glyphs;
 
   const occupied = useMemo(() => {
     const m = new Map<string, MapCell>();
@@ -75,7 +97,7 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, result
     }
 
     for (const c of area.map.cells) drawCell(ctx, c);
-    for (const g of area.map.glyphs) drawGlyph(ctx, g);
+    for (const g of glyphs) drawGlyph(ctx, g);
 
     const box = (tile: Cell, color: string, lw: number) => {
       ctx.strokeStyle = color;
@@ -104,6 +126,23 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, result
 
   function drawCell(ctx: CanvasRenderingContext2D, c: MapCell) {
     const x = c.x * S, y = c.y * S;
+    if (c.k === "diag") {
+      // corner-to-corner band; neighbouring diag cells share a corner, so the
+      // stair passage reads as one continuous line instead of broken dashes
+      ctx.strokeStyle = COL.room;
+      ctx.lineWidth = 5;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      if (c.d === "\\") {
+        ctx.moveTo(x, y);
+        ctx.lineTo(x + S, y + S);
+      } else {
+        ctx.moveTo(x, y + S);
+        ctx.lineTo(x + S, y);
+      }
+      ctx.stroke();
+      return;
+    }
     if (c.k === "vshaft") {
       ctx.fillStyle = COL.room;
       ctx.fillRect(x + S / 2 - 2, y, 4, S);
@@ -169,6 +208,38 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, result
     return { x, y };
   }
 
+  /** stamp or erase a landmark glyph at map cell c (centred in the cell) */
+  function editAt(c: Cell) {
+    setSaveMsg("");
+    setEdits((prev) => {
+      const list = (prev[area.id] ?? []).filter(
+        (g) => Math.floor(g.x) !== c.x || Math.floor(g.y) !== c.y
+      );
+      if (tool !== "erase") list.push({ x: c.x + 0.5, y: c.y + 0.5, t: tool });
+      return { ...prev, [area.id]: list };
+    });
+  }
+
+  async function saveGlyphs() {
+    setSaveMsg("saving…");
+    const rounded: Record<string, MapGlyph[]> = {};
+    for (const [id, list] of Object.entries(edits)) {
+      rounded[id] = list.map((g) => ({
+        x: Math.round(g.x * 100) / 100, y: Math.round(g.y * 100) / 100, t: g.t,
+      }));
+    }
+    try {
+      const res = await fetch("/__save-glyphs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ game: data.game, glyphs: rounded }),
+      });
+      setSaveMsg(res.ok ? "saved ✓ (commit glyphs.*.json)" : `error: ${await res.text()}`);
+    } catch (e) {
+      setSaveMsg(`error: ${e instanceof Error ? e.message : e}`);
+    }
+  }
+
   return (
     <div className="guess-map">
       <div className="area-tabs">
@@ -182,12 +253,31 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, result
           </button>
         ))}
       </div>
+      {editing && (
+        <div className="icon-editor">
+          {TOOLS.map((t) => (
+            <button
+              key={t.id}
+              className={`btn tiny ${tool === t.id ? "active" : ""}`}
+              onClick={() => setTool(t.id)}
+            >
+              {t.label}
+            </button>
+          ))}
+          <button className="btn tiny save" onClick={saveGlyphs}>Save to file</button>
+          {saveMsg && <span className="edit-msg">{saveMsg}</span>}
+        </div>
+      )}
       <div className="map-scroll">
         <canvas
           ref={canvasRef}
-          className="map-canvas"
+          className={`map-canvas${editing ? " editing" : ""}`}
           onMouseMove={(e) => {
             const c = cellFromEvent(e);
+            if (editing) {
+              setHover(c);
+              return;
+            }
             const occ = c !== null && occupied.has(`${c.x},${c.y}`);
             onHoverCell?.(
               area.id,
@@ -201,9 +291,14 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, result
             onHoverCell?.(area.id, null);
           }}
           onClick={(e) => {
-            if (result) return;
             const c = cellFromEvent(e);
-            if (!c || !occupied.has(`${c.x},${c.y}`)) return;
+            if (!c) return;
+            if (editing) {
+              editAt(c);
+              return;
+            }
+            if (result) return;
+            if (!occupied.has(`${c.x},${c.y}`)) return;
             // convert map -> tile coordinates for scoring
             onSelect(area.id, { x: c.x - area.map.dx, y: c.y - area.map.dy });
           }}

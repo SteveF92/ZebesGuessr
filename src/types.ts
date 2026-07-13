@@ -3,7 +3,7 @@ export interface Cell {
   y: number;
 }
 
-export type MapCellKind = "room" | "vshaft" | "hshaft";
+export type MapCellKind = "room" | "vshaft" | "hshaft" | "diag";
 
 export interface MapCell {
   x: number;
@@ -12,6 +12,8 @@ export interface MapCell {
   k: MapCellKind;
   /** wall bitmask: N=1 E=2 S=4 W=8 */
   w: number;
+  /** diagonal direction for k==="diag": "/" (NE-SW) or "\\" (NW-SE) */
+  d?: "/" | "\\";
 }
 
 export interface MapGlyph {

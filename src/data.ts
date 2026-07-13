@@ -1,4 +1,4 @@
-import type { Cell, GameData, RoundTarget } from "./types";
+import type { GameData, MapGlyph, RoundTarget, Cell } from "./types";
 
 export const GAMES = [
   { id: "super-metroid", title: "Super Metroid", available: true },
@@ -6,10 +6,31 @@ export const GAMES = [
   { id: "metroid-zero-mission", title: "Metroid: Zero Mission", available: false },
 ];
 
+/** hand-placed landmark icons, keyed by areaId; overrides pipeline extraction */
+export type GlyphOverrides = Record<string, MapGlyph[]>;
+
+export function glyphOverridesUrl(gameId: string): string {
+  return `${import.meta.env.BASE_URL}data/glyphs.${gameId}.json`;
+}
+
 export async function loadGameData(gameId: string): Promise<GameData> {
   const res = await fetch(`${import.meta.env.BASE_URL}data/${gameId}.json`);
   if (!res.ok) throw new Error(`No data for ${gameId}. Run the pipeline first (see pipeline/README).`);
-  return res.json();
+  const data: GameData = await res.json();
+
+  // Icons are curated by hand in glyphs.<game>.json and win over extraction.
+  try {
+    const gres = await fetch(glyphOverridesUrl(gameId));
+    if (gres.ok) {
+      const overrides: GlyphOverrides = await gres.json();
+      for (const area of data.areas) {
+        if (overrides[area.id]) area.map.glyphs = overrides[area.id];
+      }
+    }
+  } catch {
+    /* no override file yet — keep extracted glyphs */
+  }
+  return data;
 }
 
 export function tileUrl(data: GameData, t: RoundTarget): string {

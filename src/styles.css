@@ -129,6 +129,31 @@ body {
   flex: 1;
 }
 .map-canvas { image-rendering: pixelated; display: block; cursor: crosshair; }
+.map-canvas.editing { cursor: cell; }
+
+/* icon editor toolbar */
+.icon-editor {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid var(--gold);
+  border-radius: 6px;
+  background: rgba(255, 210, 77, 0.06);
+}
+.btn.tiny {
+  padding: 0.2rem 0.55rem;
+  font-size: 0.78rem;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  color: var(--text);
+  border-radius: 5px;
+  cursor: pointer;
+}
+.btn.tiny.active { border-color: var(--gold); color: var(--gold); }
+.btn.tiny.save { margin-left: auto; border-color: var(--accent); color: var(--accent); }
+.edit-msg { font-size: 0.78rem; opacity: 0.85; }
 
 .credits { margin-top: 2rem; font-size: 0.8rem; opacity: 0.55; max-width: 560px; }
 .credits a { color: var(--accent); }

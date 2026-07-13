@@ -3,5 +3,6 @@ dist/
 Images/raw/
 pipeline/debug/
 *.log
+*.tsbuildinfo
 .DS_Store
 Thumbs.db

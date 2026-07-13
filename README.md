@@ -41,8 +41,20 @@ python pipeline/slice_maps.py      # slices tiles, builds public/data/*.json
 `pipeline/debug/` gets grid-overlay images for checking cell alignment; tune
 per-area `offsetX`/`offsetY` in `pipeline/maps.config.json` if the grid is off.
 
+`extract_ingame_maps.py` also drops caption text mis-read as rooms (any
+wall-less connected blob — `BRINSTAR`/`MARIDIA`/… labels) and tags sub-cell
+diagonal corridors (`k: "diag"`) so stair passages render as one line.
+
 Community/speedrun room names can be added in `pipeline/room_names/<game>.json`
 as `{"<areaId>:<x>,<y>": "Room Name"}`.
+
+### Landmark icons
+
+Save/Map/Ship/Boss icons live in `public/data/glyphs.<game>.json`
+(`{"<areaId>": [{"x", "y", "t"}]}`) and override whatever the pipeline
+extracts. Edit them by hand, or in the running app: click **icons** in the
+round header, pick a tool, click cells to stamp or erase, then **Save to
+file** (dev server only) and commit the JSON.
 
 ## Credits
 

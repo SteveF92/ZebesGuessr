@@ -23,6 +23,7 @@ export default function App() {
     () => localStorage.getItem("zg-difficulty") ?? "hunter"
   );
   const [debug, setDebug] = useState(false);
+  const [editIcons, setEditIcons] = useState(false);
   const [hoverTile, setHoverTile] = useState<{ areaId: string; cell: Cell } | null>(null);
 
   const difficulty = getDifficulty(difficultyId);
@@ -176,6 +177,13 @@ export default function App() {
         >
           debug
         </button>
+        <button
+          className={`btn toggle ${editIcons ? "active" : ""}`}
+          onClick={() => setEditIcons((e) => !e)}
+          title="Place/erase landmark icons, then Save to file"
+        >
+          icons
+        </button>
       </header>
       <div className="panes">
         <section className="pane left">
@@ -239,6 +247,7 @@ export default function App() {
             onSelect={(areaId, cell) => setSelected({ areaId, cell })}
             onHoverCell={(areaId, cell) => setHoverTile(cell ? { areaId, cell } : null)}
             result={result}
+            editing={editIcons}
           />
         </section>
       </div>
