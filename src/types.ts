@@ -37,6 +37,8 @@ export interface Elevator {
   y1: number;
   /** destination area name, shown next to the shaft */
   label?: string;
+  /** where the label sits relative to the shaft (default "below") */
+  labelPos?: "above" | "below";
 }
 
 /**
