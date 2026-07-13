@@ -58,6 +58,8 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, result
   const [areaId, setAreaId] = useState(data.areas[0].id);
   const area = data.areas.find((a) => a.id === areaId)!;
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const shipImageRef = useRef<HTMLImageElement | null>(null);
+  const [shipLoaded, setShipLoaded] = useState(false);
   const [hover, setHover] = useState<Cell | null>(null);
 
   // editable copy of every area's glyphs; edits win over the loaded data
@@ -96,6 +98,14 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, result
   useEffect(() => {
     if (result) setAreaId(result.target.areaId);
   }, [result]);
+
+  // Load ship image
+  useEffect(() => {
+    const img = new Image();
+    img.onload = () => setShipLoaded(true);
+    img.src = `${import.meta.env.BASE_URL}assets/ship.png`;
+    shipImageRef.current = img;
+  }, []);
 
   useEffect(draw); // repaint on every state change; canvas is small
 
@@ -215,13 +225,22 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, result
       return;
     }
     if (g.t === "ship") {
-      ctx.fillStyle = COL.ship;
-      ctx.beginPath();
-      ctx.moveTo(cx, cy - S / 2);
-      ctx.lineTo(cx + S * 0.7, cy + S / 2);
-      ctx.lineTo(cx - S * 0.7, cy + S / 2);
-      ctx.closePath();
-      ctx.fill();
+      const img = shipImageRef.current;
+      if (img && shipLoaded) {
+        // Scale ship to fit nicely in about 2.5 cells width
+        const shipWidth = S * 2.5;
+        const shipHeight = (img.height / img.width) * shipWidth;
+        ctx.drawImage(img, cx - shipWidth / 2, cy - shipHeight / 2, shipWidth, shipHeight);
+      } else {
+        // Fallback triangle if image not loaded
+        ctx.fillStyle = COL.ship;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy - S / 2);
+        ctx.lineTo(cx + S * 0.7, cy + S / 2);
+        ctx.lineTo(cx - S * 0.7, cy + S / 2);
+        ctx.closePath();
+        ctx.fill();
+      }
       return;
     }
     ctx.fillStyle = g.t === "save" ? COL.wall : COL.map;
@@ -252,9 +271,14 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, result
     if (e.label) {
       ctx.fillStyle = COL.wall;
       ctx.font = `bold ${S - 6}px monospace`;
-      ctx.textAlign = "left";
-      ctx.textBaseline = "middle";
-      ctx.fillText(e.label, e.x * S + S + 2, top + S / 2);
+      ctx.textAlign = "center";
+      if ((e.labelPos ?? "below") === "above") {
+        ctx.textBaseline = "bottom";
+        ctx.fillText(e.label, cx, top - 2);
+      } else {
+        ctx.textBaseline = "top";
+        ctx.fillText(e.label, cx, bot + 2);
+      }
     }
     ctx.restore();
   }
@@ -427,18 +451,36 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, result
             </button>
           ))}
           {tool === "elevator" && selEl !== null && overlays.elevators[selEl] && (
-            <input
-              className="edit-name"
-              placeholder="destination area"
-              value={overlays.elevators[selEl].label ?? ""}
-              onChange={(ev) => {
-                const label = ev.target.value;
-                updateOverlays((o) => ({
-                  ...o,
-                  elevators: o.elevators.map((e, i) => (i === selEl ? { ...e, label } : e)),
-                }));
-              }}
-            />
+            <>
+              <input
+                className="edit-name"
+                placeholder="destination area"
+                value={overlays.elevators[selEl].label ?? ""}
+                onChange={(ev) => {
+                  const label = ev.target.value;
+                  updateOverlays((o) => ({
+                    ...o,
+                    elevators: o.elevators.map((e, i) => (i === selEl ? { ...e, label } : e)),
+                  }));
+                }}
+              />
+              <button
+                className="btn tiny"
+                title="Move label above/below the shaft"
+                onClick={() => {
+                  updateOverlays((o) => ({
+                    ...o,
+                    elevators: o.elevators.map((e, i) =>
+                      i === selEl
+                        ? { ...e, labelPos: (e.labelPos ?? "below") === "below" ? "above" : "below" }
+                        : e
+                    ),
+                  }));
+                }}
+              >
+                Label: {(overlays.elevators[selEl].labelPos ?? "below") === "below" ? "below ↓" : "above ↑"}
+              </button>
+            </>
           )}
           <button className="btn tiny save" onClick={saveMap}>Save to file</button>
           {saveMsg && <span className="edit-msg">{saveMsg}</span>}
