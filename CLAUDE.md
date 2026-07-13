@@ -45,14 +45,15 @@ Conversion: `map (x,y) = tile (x+dx, y+dy)` with `dx`/`dy` on `area.map`. `Guess
 
 Asset URLs must be prefixed with `import.meta.env.BASE_URL` — Vite `base` is `/ZebesGuessr/` for GitHub Pages (deploys automatically on push to main via `.github/workflows/deploy.yml`).
 
-## Hand-curated map overlays (glyphs, connectors)
+## Hand-curated map overlays (glyphs, connectors, room names)
 
-Two files hold data the pipeline can't reliably extract, both edited via the in-app editor (**icons** toggle in the round header) and applied by `loadGameData` as overrides on top of extraction:
+Three files hold data the pipeline can't reliably extract, all edited via the in-app editor (**icons** toggle in the round header) and applied by `loadGameData` as overrides on top of extraction:
 
 - `public/data/glyphs.<game>.json` — Save/Map/Ship/Boss landmark icons.
 - `public/data/overlays.<game>.json` — transit **connectors** (elevator shafts and dashed tube runs, unified), keyed `{ areaId: { connectors } }`. Each connector is axis-aligned between two whole map cells (`{ x0, y0, x1, y1 }` — `x0===x1` vertical, `y0===y1` horizontal), rendered with twin cyan rails + a dashed pink core, with an optional `label` on any side (`labelPos: "above" | "below" | "left" | "right"`). `loadGameData` also folds any legacy pre-merge `elevators`/`lines` fields into `connectors`.
+- `public/data/roomNames.<game>.json` — flat `{ "areaId:tileX,tileY": name }` (tile coords), shown at reveal/summary via `roomName()`. `loadGameData` merges it over the baked `GameData.roomNames` key by key. Note the two coordinate systems: the **Name** tool takes clicks in map coords and converts to tile coords (`-dx/-dy`) before keying, so its cells line up with guess targets and glyph/connector cells do **not** (those stay in map coords).
 
-The editor's tools stamp glyphs and place connectors (two clicks: the drag's dominant axis picks horizontal vs vertical; name via the toolbar field, cycle the label side with the **Label** button); **Erase** removes any of them. **Save to file** POSTs both to `/__save-map`, a dev-only Vite middleware (`glyphSaver` in `vite.config.ts`) that writes the JSON directly for committing. `extract_ingame_maps.py` deliberately never touches either file (both are skipped by name) — don't regenerate or overwrite them from pipeline code. Connectors are overlay-only: they are not in `area.cells`, so they never become guess targets.
+The editor's tools stamp glyphs, place connectors (two clicks: the drag's dominant axis picks horizontal vs vertical; name via the toolbar field, cycle the label side with the **Label** button), and paint room names (**Name** tool: type a name, click one corner then the opposite corner to fill every playable cell in the rectangle; click a named cell with an empty field to load its name; named cells are tinted in edit mode, and the **debug** panel shows the hovered cell's current name). **Erase** removes any of them. **Save to file** POSTs all three to `/__save-map`, a dev-only Vite middleware (`glyphSaver` in `vite.config.ts`) that writes the JSON directly for committing. The pipeline never overwrites these files (`extract_ingame_maps.py` skips glyphs/overlays by name; `slice_maps.py`'s `load_room_names` reads `roomNames.<game>.json` rather than writing it). Connectors and room names are overlay-only — not in `area.cells`, so they never become guess targets.
 
 ## Map extraction heuristics
 

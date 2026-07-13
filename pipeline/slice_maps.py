@@ -117,9 +117,18 @@ def process_game(game_id: str, game: dict) -> None:
 
 
 def load_room_names(game_id: str) -> dict:
-    """Optional community/speedrun room names, curated by hand."""
-    f = ROOT / "pipeline" / "room_names" / f"{game_id}.json"
-    return json.loads(f.read_text()) if f.exists() else {}
+    """Optional community/speedrun room names, curated by hand.
+
+    These are authored in the app's icon editor ("Name" tool) and saved to
+    public/data/roomNames.<game>.json, so read that first and never overwrite
+    it (same convention as glyphs/overlays). Fall back to the legacy
+    pipeline/room_names/<game>.json for older data.
+    """
+    override = ROOT / "public" / "data" / f"roomNames.{game_id}.json"
+    if override.exists():
+        return json.loads(override.read_text())
+    legacy = ROOT / "pipeline" / "room_names" / f"{game_id}.json"
+    return json.loads(legacy.read_text()) if legacy.exists() else {}
 
 
 if __name__ == "__main__":

@@ -46,8 +46,11 @@ per-area `offsetX`/`offsetY` in `pipeline/maps.config.json` if the grid is off.
 wall-less connected blob — `BRINSTAR`/`MARIDIA`/… labels) and tags sub-cell
 diagonal corridors (`k: "diag"`) so stair passages render as one line.
 
-Community/speedrun room names can be added in `pipeline/room_names/<game>.json`
-as `{"<areaId>:<x>,<y>": "Room Name"}`.
+Community/speedrun room names live in `public/data/roomNames.<game>.json` as
+`{"<areaId>:<x>,<y>": "Room Name"}`. Author them in-app with the **Name** tool
+(under the **icons** editor): type a name and drag a rectangle over a room to
+fill every cell, then **Save to file**. `loadGameData` merges the file over the
+baked data, so no pipeline rerun is needed.
 
 ### Landmark icons
 

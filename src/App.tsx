@@ -24,7 +24,7 @@ export default function App() {
   );
   const [debug, setDebug] = useState(false);
   const [editIcons, setEditIcons] = useState(false);
-  const [hoverTile, setHoverTile] = useState<{ areaId: string; cell: Cell } | null>(null);
+  const [hoverTile, setHoverTile] = useState<{ areaId: string; cell: Cell; name?: string } | null>(null);
 
   const difficulty = getDifficulty(difficultyId);
 
@@ -227,6 +227,7 @@ export default function App() {
                   />
                   <p className="debug-coords">
                     {areaName(data, hoverTile.areaId)} ({hoverTile.cell.x},{hoverTile.cell.y})
+                    {hoverTile.name ? <> — <strong>{hoverTile.name}</strong></> : " — (unnamed)"}
                   </p>
                 </>
               ) : hoverTile ? (
@@ -245,7 +246,7 @@ export default function App() {
             data={data}
             selected={selected}
             onSelect={(areaId, cell) => setSelected({ areaId, cell })}
-            onHoverCell={(areaId, cell) => setHoverTile(cell ? { areaId, cell } : null)}
+            onHoverCell={(areaId, cell, name) => setHoverTile(cell ? { areaId, cell, name } : null)}
             result={result}
             editing={editIcons}
           />

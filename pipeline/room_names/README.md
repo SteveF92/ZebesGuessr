@@ -1,7 +1,13 @@
-# Community room names
+# Community room names (legacy location)
 
-Optional. Create `<game-id>.json` here (e.g. `super-metroid.json`) mapping
-grid cells to speedrun/community room names:
+Room names now live in **`public/data/roomNames.<game>.json`** and are authored
+in-app with the **Name** tool in the icon editor (type a name, drag a rectangle
+over a room, **Save to file**). `slice_maps.py`'s `load_room_names` reads that
+public file first and only falls back to a `<game-id>.json` placed *here* if the
+public file is absent — so you normally don't need this directory.
+
+Format either way is `<areaId>:<x>,<y>` → name, x/y being cell coordinates from
+`public/data/<game-id>.json`:
 
 ```json
 {
@@ -10,10 +16,5 @@ grid cells to speedrun/community room names:
 }
 ```
 
-Keys are `<areaId>:<x>,<y>` where x/y are cell coordinates from
-`public/data/<game-id>.json` (run the pipeline, then use the debug grid
-images in `pipeline/debug/` to find coordinates). A cell inside a multi-cell
-room can share the room's name — fill in the cells players are likely to hit.
-
-Good sources: wiki.supermetroid.run room list, deertier.com, speedrun.com
-category discussions.
+A cell inside a multi-cell room shares the room's name — fill the cells players
+are likely to hit. Good sources: wiki.supermetroid.run room list, speedrun.com.

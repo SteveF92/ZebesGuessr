@@ -45,6 +45,10 @@ export function overlayOverridesUrl(gameId: string): string {
   return `${import.meta.env.BASE_URL}data/overlays.${gameId}.json`;
 }
 
+export function roomNamesUrl(gameId: string): string {
+  return `${import.meta.env.BASE_URL}data/roomNames.${gameId}.json`;
+}
+
 export async function loadGameData(gameId: string): Promise<GameData> {
   const res = await fetch(`${import.meta.env.BASE_URL}data/${gameId}.json`);
   if (!res.ok) throw new Error(`No data for ${gameId}. Run the pipeline first (see pipeline/README).`);
@@ -82,6 +86,18 @@ export async function loadGameData(gameId: string): Promise<GameData> {
     }
   } catch {
     /* no overlay file yet — keep defaults */
+  }
+
+  // Room names are hand-curated in the icon editor (the "Name" tool) and saved
+  // to roomNames.<game>.json; they win over any baked entries, key by key.
+  try {
+    const rres = await fetch(roomNamesUrl(gameId));
+    if (rres.ok) {
+      const overrides: Record<string, string> = await rres.json();
+      data.roomNames = { ...data.roomNames, ...overrides };
+    }
+  } catch {
+    /* no room-name file yet — keep whatever was baked in */
   }
   return data;
 }

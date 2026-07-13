@@ -2,14 +2,16 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type {
   AreaData, Cell, Connector, DiagBand, GameData, MapCell, MapGlyph, RoundResult,
 } from "../types";
+import { cellKey } from "../data";
 
 interface Props {
   data: GameData;
   /** selection in TILE coordinates */
   selected: { areaId: string; cell: Cell } | null;
   onSelect: (areaId: string, cell: Cell) => void;
-  /** reports the hovered cell in TILE coordinates (debug preview) */
-  onHoverCell?: (areaId: string, cell: Cell | null) => void;
+  /** reports the hovered cell in TILE coordinates (debug preview), plus its
+   *  current room name (reflects live editor edits) if any */
+  onHoverCell?: (areaId: string, cell: Cell | null, roomName?: string) => void;
   /** when set, the round is over: draw target/guess markers, ignore clicks */
   result: RoundResult | null;
   /** dev icon-placement mode: clicks stamp/erase landmark glyphs */
@@ -17,7 +19,7 @@ interface Props {
 }
 
 type GlyphType = MapGlyph["t"];
-type Tool = GlyphType | "connector" | "erase";
+type Tool = GlyphType | "connector" | "roomname" | "erase";
 const TOOLS: { id: Tool; label: string }[] = [
   { id: "save", label: "Save (S)" },
   { id: "map", label: "Map (M)" },
@@ -26,6 +28,7 @@ const TOOLS: { id: Tool; label: string }[] = [
   { id: "boss", label: "Boss" },
   { id: "item", label: "Item" },
   { id: "connector", label: "Connector" },
+  { id: "roomname", label: "Name" },
   { id: "erase", label: "Erase" },
 ];
 
@@ -125,6 +128,14 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, result
   const [selConn, setSelConn] = useState<number | null>(null);
   const overlays = overlayEdits[area.id] ?? { connectors: area.map.connectors };
 
+  // editable room-name map: flat "areaId:tileX,tileY" -> name, seeded from data.
+  // The Name tool paints this name across a rectangle of playable cells.
+  const [roomEdits, setRoomEdits] = useState<Record<string, string>>(
+    () => ({ ...(data.roomNames ?? {}) })
+  );
+  const [roomInput, setRoomInput] = useState("");
+  const [roomAnchor, setRoomAnchor] = useState<Cell | null>(null);
+
   const occupied = useMemo(() => {
     const m = new Map<string, MapCell>();
     for (const c of area.map.cells) m.set(`${c.x},${c.y}`, c);
@@ -176,6 +187,7 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, result
     for (const c of overlays.connectors) drawConnector(ctx, c, false);
     if (editing) drawOverlayEditing(ctx);
     for (const g of glyphs) drawGlyph(ctx, g);
+    if (editing) drawRoomTint(ctx);
 
     const box = (tile: Cell, color: string, lw: number) => {
       ctx.strokeStyle = color;
@@ -383,6 +395,33 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, result
     if (tool === "connector" && anchor && hover) {
       drawConnector(ctx, connectorFromDrag(anchor, hover), true);
     }
+    // Name tool: rubber-band the fill rectangle from the anchor to the hover.
+    if (tool === "roomname" && roomAnchor && hover) {
+      const minX = Math.min(roomAnchor.x, hover.x), maxX = Math.max(roomAnchor.x, hover.x);
+      const minY = Math.min(roomAnchor.y, hover.y), maxY = Math.max(roomAnchor.y, hover.y);
+      ctx.strokeStyle = COL.selected;
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(
+        minX * S + 0.5, minY * S + 0.5,
+        (maxX - minX + 1) * S - 1, (maxY - minY + 1) * S - 1
+      );
+    }
+  }
+
+  /** Edit-mode overlay: tint named cells so the curator can see coverage at a
+   *  glance. The actual name is read off the debug panel on hover (labels drawn
+   *  on the small map are too cramped to read). Not drawn during play. */
+  function drawRoomTint(ctx: CanvasRenderingContext2D) {
+    const { dx, dy } = area.map;
+    const prefix = `${area.id}:`;
+    ctx.save();
+    ctx.fillStyle = "rgba(255, 210, 77, 0.28)"; // soft yellow tint over named cells
+    for (const [key, name] of Object.entries(roomEdits)) {
+      if (!name || !key.startsWith(prefix)) continue;
+      const [tx, ty] = key.slice(prefix.length).split(",").map(Number);
+      ctx.fillRect((tx + dx) * S, (ty + dy) * S, S, S);
+    }
+    ctx.restore();
   }
 
   /** returns MAP coordinates */
@@ -413,7 +452,12 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, result
     });
   }
 
-  /** erase whatever overlay sits at map cell c (glyph or connector span) */
+  /** the "areaId:tileX,tileY" key for a map-coord cell (map -> tile: -dx/-dy) */
+  function roomKeyAt(c: Cell): string {
+    return cellKey(area.id, { x: c.x - area.map.dx, y: c.y - area.map.dy });
+  }
+
+  /** erase whatever overlay sits at map cell c (glyph, connector span, or name) */
   function eraseAt(c: Cell) {
     setEdits((prev) => ({
       ...prev,
@@ -422,7 +466,44 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, result
       ),
     }));
     updateOverlays((o) => ({ connectors: o.connectors.filter((k) => !connContains(k, c)) }));
+    setRoomEdits((prev) => {
+      const key = roomKeyAt(c);
+      if (!(key in prev)) return prev;
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
     setSelConn(null);
+  }
+
+  /** two-click room name: first click anchors (and loads an existing name into
+   *  the input when the field is empty); second click paints the input's text
+   *  across every playable cell in the rectangle. Empty input clears them. */
+  function placeRoom(c: Cell) {
+    if (roomAnchor === null) {
+      if (roomInput === "") {
+        const existing = roomEdits[roomKeyAt(c)];
+        if (existing) setRoomInput(existing);
+      }
+      setRoomAnchor(c);
+      return;
+    }
+    const name = roomInput.trim();
+    const minX = Math.min(roomAnchor.x, c.x), maxX = Math.max(roomAnchor.x, c.x);
+    const minY = Math.min(roomAnchor.y, c.y), maxY = Math.max(roomAnchor.y, c.y);
+    setRoomEdits((prev) => {
+      const next = { ...prev };
+      for (let y = minY; y <= maxY; y++) {
+        for (let x = minX; x <= maxX; x++) {
+          if (!occupied.has(`${x},${y}`)) continue;
+          const key = roomKeyAt({ x, y });
+          if (name) next[key] = name;
+          else delete next[key];
+        }
+      }
+      return next;
+    });
+    setRoomAnchor(null);
   }
 
   /** two-click connector: click empty to anchor/commit (orientation follows the
@@ -443,6 +524,7 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, result
   function handleEditClick(c: Cell) {
     setSaveMsg("");
     if (tool === "connector") return placeConnector(c);
+    if (tool === "roomname") return placeRoom(c);
     if (tool === "erase") return eraseAt(c);
     stampGlyph(c, tool); // tool narrows to GlyphType here
   }
@@ -459,13 +541,20 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, result
     for (const [id, o] of Object.entries(overlayEdits)) {
       if (o.connectors.length) overlaysOut[id] = o;
     }
+    // drop empty names; sort keys so the file diffs cleanly between edits
+    const roomNamesOut: Record<string, string> = {};
+    for (const key of Object.keys(roomEdits).sort()) {
+      if (roomEdits[key]) roomNamesOut[key] = roomEdits[key];
+    }
     try {
       const res = await fetch("/__save-map", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ game: data.game, glyphs: glyphsOut, overlays: overlaysOut }),
+        body: JSON.stringify({
+          game: data.game, glyphs: glyphsOut, overlays: overlaysOut, roomNames: roomNamesOut,
+        }),
       });
-      setSaveMsg(res.ok ? "saved ✓ (commit glyphs/overlays.*.json)" : `error: ${await res.text()}`);
+      setSaveMsg(res.ok ? "saved ✓ (commit glyphs/overlays/roomNames.*.json)" : `error: ${await res.text()}`);
     } catch (e) {
       setSaveMsg(`error: ${e instanceof Error ? e.message : e}`);
     }
@@ -490,11 +579,28 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, result
             <button
               key={t.id}
               className={`btn tiny ${tool === t.id ? "active" : ""}`}
-              onClick={() => { setTool(t.id); setAnchor(null); setSelConn(null); }}
+              onClick={() => { setTool(t.id); setAnchor(null); setSelConn(null); setRoomAnchor(null); }}
             >
               {t.label}
             </button>
           ))}
+          {tool === "roomname" && (
+            <>
+              <input
+                className="edit-name"
+                placeholder="room name"
+                value={roomInput}
+                onChange={(ev) => setRoomInput(ev.target.value)}
+              />
+              <span className="edit-msg">
+                {roomAnchor
+                  ? "click opposite corner to fill"
+                  : roomInput
+                    ? "click a room’s corner"
+                    : "type a name, or click a room to load it"}
+              </span>
+            </>
+          )}
           {tool === "connector" && selConn !== null && overlays.connectors[selConn] && (
             <>
               <input
@@ -539,7 +645,8 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, result
             const occ = c !== null && occupied.has(`${c.x},${c.y}`);
             onHoverCell?.(
               area.id,
-              occ ? { x: c!.x - area.map.dx, y: c!.y - area.map.dy } : null
+              occ ? { x: c!.x - area.map.dx, y: c!.y - area.map.dy } : null,
+              occ ? roomEdits[roomKeyAt(c!)] : undefined
             );
             if (editing) {
               setHover(c);
