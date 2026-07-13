@@ -6,6 +6,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ZebesGuessr — GeoGuessr for 2D Metroid. Players see a cropped screen from the game and click where it is on a recreation of the in-game pause map. React + Vite + TypeScript frontend, Python pipeline that bakes map data into `public/`. A strictly non-commercial fan project: no logins, no tracking, no backend; best scores live in localStorage. Game imagery is © Nintendo — the MIT license covers code only.
 
+## Workflow preferences
+
+Unless the user asks for it, don't spend time browser-testing or manually verifying a tweak you're highly confident in (small, low-risk changes to styling, copy, config, etc.). This is a simple app and the user can verify changes themselves faster than you can. Still verify with typecheck/build/tests where those are cheap and relevant, and still test anything you're genuinely unsure about.
+
 ## Commands
 
 ```
