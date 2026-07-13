@@ -5,14 +5,14 @@ Reads Images/raw/<game>/ingame/<area>.webp and, for each area:
   1. auto-detects the 8px cell grid phase (edge-energy voting),
   2. classifies each cell: room / vertical|horizontal shaft,
   3. reads cyan wall segments per cell side (NESW bitmask),
-  4. extracts station glyphs (save S, map M, Samus' ship) as connected
-     components with fractional cell-coordinate centroids,
-  5. auto-aligns the map grid to the sliced tile grid (mask cross-correlation),
-  6. patches public/data/<game>.json with a per-area "map" object and
+  4. auto-aligns the map grid to the sliced tile grid (mask cross-correlation),
+  5. patches public/data/<game>.json with a per-area "map" object and
      filters playable target cells to those visible on the in-game map.
 
 Areas without an in-game image get a fallback map synthesized from the tile
-grid so the game stays playable.
+grid so the game stays playable. Landmark icons (station glyphs) are no
+longer auto-detected — they are hand-placed via the in-app icon editor and
+stored in glyphs.<game>.json, which this script never touches.
 """
 import json
 from collections import deque
@@ -265,29 +265,10 @@ def extract_area(img_path: Path):
                     cell["dir"] = d
             cells[(x, y)] = cell
 
-    glyphs = []
-    # map stations: green 'M' components
-    for comp in components(green):
-        ys = [p[0] for p in comp]; xs = [p[1] for p in comp]
-        if len(comp) >= 5:
-            glyphs.append({"x": round((np.mean(xs) - ox) / CELL, 2),
-                           "y": round((np.mean(ys) - oy) / CELL, 2), "t": "map"})
-    # ship: orange/red/yellow components merged into one glyph
-    ship_px = list(zip(*np.nonzero(ship)))
-    yellow = mask(im, (248, 248, 104))
-    if len(ship_px) >= 6 and yellow.sum() >= 4:
-        ys = [p[0] for p in ship_px]; xs = [p[1] for p in ship_px]
-        glyphs.append({"x": round((np.mean(xs) - ox) / CELL, 2),
-                       "y": round((np.mean(ys) - oy) / CELL, 2), "t": "ship"})
-    # save stations: small chunky cyan components (letter 'S'), not 1px wall lines
-    for comp in components(cyan):
-        ys = [p[0] for p in comp]; xs = [p[1] for p in comp]
-        bh, bw = max(ys) - min(ys) + 1, max(xs) - min(xs) + 1
-        if 12 <= len(comp) <= 30 and 4 <= bw <= 8 and 4 <= bh <= 8:
-            glyphs.append({"x": round((np.mean(xs) - ox) / CELL, 2),
-                           "y": round((np.mean(ys) - oy) / CELL, 2), "t": "save"})
+    # station glyphs (save/map/ship/boss) are hand-placed via the icon editor,
+    # not auto-detected here — see glyphs.<game>.json
     bands = extract_diag_bands(cells, pink, ox, oy)
-    return cols, rows, cells, glyphs, bands, erased
+    return cols, rows, cells, bands, erased
 
 
 def drop_label_text(cells: dict) -> int:
@@ -369,13 +350,8 @@ def main() -> None:
                 area["map"] = fallback_map(area)
                 print(f"  {area['id']}: no in-game image, using fallback grid")
                 continue
-            cols, rows, cells, glyphs, bands, erased = extract_area(img)
+            cols, rows, cells, bands, erased = extract_area(img)
             dropped_labels = drop_label_text(cells)
-            # the orange/yellow icon is Samus' ship only on the landing-site
-            # map; elsewhere it is a boss marker (Kraid, Phantoon, ...)
-            for g in glyphs:
-                if g["t"] == "ship" and area["id"] != "crateria":
-                    g["t"] = "boss"
             dx, dy, matches = align(cells, cols, rows, area["cells"],
                                     area["cols"], area["rows"])
             occ = set(cells)
@@ -388,12 +364,12 @@ def main() -> None:
                     {"x": x, "y": y, "k": v["kind"], "w": v["walls"],
                      **({"d": v["dir"]} if "dir" in v else {})}
                     for (x, y), v in sorted(cells.items())],
-                "glyphs": glyphs,
+                "glyphs": [],
                 "bands": bands,
                 "source": "ingame",
             }
             print(f"  {area['id']}: {cols}x{rows} map, {len(cells)} cells, "
-                  f"{len(glyphs)} glyphs, {len(bands)} bands, offset ({dx},{dy}), "
+                  f"{len(bands)} bands, offset ({dx},{dy}), "
                   f"{matches} aligned, {dropped} targets dropped, "
                   f"{erased} annotation px erased, {dropped_labels} label cells removed")
         data_file.write_text(json.dumps(data))
