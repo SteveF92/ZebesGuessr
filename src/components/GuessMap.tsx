@@ -147,6 +147,21 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, result
     if (result) setAreaId(result.target.areaId);
   }, [result]);
 
+  // Reveal "lock-on": a shrinking ring pulse around the target, 0 → 1 over 650ms.
+  const [revealPulse, setRevealPulse] = useState(0);
+  useEffect(() => {
+    if (!result) { setRevealPulse(0); return; }
+    let raf = 0;
+    const start = performance.now();
+    const step = (t: number) => {
+      const p = Math.min(1, (t - start) / 650);
+      setRevealPulse(p);
+      if (p < 1) raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [result]);
+
   // Load ship and boss images
   useEffect(() => {
     const img = new Image();
@@ -201,6 +216,17 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, result
     } else {
       if (result.guess.areaId === area.id) box(result.guess.cell, COL.guess, 2.5);
       if (result.target.areaId === area.id) box(result.target.cell, COL.target, 2.5);
+      if (result.target.areaId === area.id && revealPulse < 1) {
+        const cx = (result.target.cell.x + dx + 0.5) * S;
+        const cy = (result.target.cell.y + dy + 0.5) * S;
+        ctx.strokeStyle = COL.target;
+        ctx.globalAlpha = 1 - revealPulse;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(cx, cy, S * (0.6 + revealPulse * 1.6), 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+      }
       if (result.guess.areaId === area.id && result.target.areaId === area.id) {
         ctx.strokeStyle = "rgba(255,255,255,0.6)";
         ctx.lineWidth = 1.5;

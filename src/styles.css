@@ -78,7 +78,8 @@ a:hover { color: var(--cyan); text-decoration: underline; }
   animation: zgScan 7s linear infinite;
 }
 @media (prefers-reduced-motion: reduce) {
-  .stars, .fx-flicker, .fx-scanbar, .logo, .tile-scanline { animation: none !important; }
+  .stars, .fx-flicker, .fx-scanbar, .logo, .tile-scanline,
+  .pip.current, .newbest, .init .cursor { animation: none !important; }
 }
 
 /* the phase content sits above the backdrop */
