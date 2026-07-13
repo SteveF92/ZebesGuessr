@@ -191,6 +191,7 @@ export default function App() {
           <p className="rank-flavor">{rankFlavor(total)}</p>
         </div>
         {total >= best && total > 0 && <div className="newbest">★ NEW PERSONAL BEST ★</div>}
+        <p className="sign-off">SEE YOU NEXT MISSION</p>
 
         <ol className="round-list">
           {results.map((r, i) => {

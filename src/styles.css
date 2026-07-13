@@ -357,6 +357,17 @@ a:hover { color: var(--cyan); text-decoration: underline; }
 .bar-track { margin-top: 8px; height: 5px; border-radius: 3px; background: rgba(160,248,248,.1); overflow: hidden; }
 .bar-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--accent), var(--cyan)); box-shadow: 0 0 10px rgba(77,255,136,.4); transition: width .6s ease; }
 .summary-actions { display: flex; gap: 12px; margin-top: 18px; }
+.sign-off {
+  font-family: var(--font-mono); font-weight: 700;
+  font-size: clamp(18px, 3.2vw, 30px); letter-spacing: .32em;
+  color: var(--gold); text-shadow: 0 0 26px rgba(255,210,77,.5);
+  margin: 30px 0 4px; text-indent: .32em;
+  animation: signOffPulse 2.4s ease-in-out infinite;
+}
+@keyframes signOffPulse {
+  0%, 100% { opacity: .82; text-shadow: 0 0 22px rgba(255,210,77,.4); }
+  50% { opacity: 1; text-shadow: 0 0 34px rgba(255,210,77,.65); }
+}
 
 @media (max-width: 800px) {
   .panes { flex-direction: column; }
