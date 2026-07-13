@@ -137,6 +137,9 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, result
   );
   const [roomInput, setRoomInput] = useState("");
   const [roomAnchor, setRoomAnchor] = useState<Cell | null>(null);
+  // rectangle staged by the second click, awaiting Enter in the auto-focused name box
+  const [roomPending, setRoomPending] = useState<{ minX: number; maxX: number; minY: number; maxY: number } | null>(null);
+  const roomInputRef = useRef<HTMLInputElement>(null);
 
   const occupied = useMemo(() => {
     const m = new Map<string, MapCell>();
@@ -454,6 +457,18 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, result
         (maxX - minX + 1) * S - 1, (maxY - minY + 1) * S - 1
       );
     }
+    // Name tool: the rectangle staged after the second click, awaiting Enter.
+    if (tool === "roomname" && roomPending) {
+      const { minX, maxX, minY, maxY } = roomPending;
+      ctx.strokeStyle = COL.selected;
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([3, 2]);
+      ctx.strokeRect(
+        minX * S + 0.5, minY * S + 0.5,
+        (maxX - minX + 1) * S - 1, (maxY - minY + 1) * S - 1
+      );
+      ctx.setLineDash([]);
+    }
   }
 
   /** Edit-mode overlay: tint named cells so the curator can see coverage at a
@@ -524,9 +539,11 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, result
     setSelConn(null);
   }
 
-  /** two-click room name: first click anchors (and loads an existing name into
-   *  the input when the field is empty); second click paints the input's text
-   *  across every playable cell in the rectangle. Empty input clears them. */
+  /** two-click room name: first click anchors, second click stages the fill
+   *  rectangle and auto-focuses the name box. Enter (in the input) commits the
+   *  typed name across every playable cell in the rectangle; empty commits
+   *  clear them. Click a lone named cell twice with an empty field to preload
+   *  its existing name for editing. */
   function placeRoom(c: Cell) {
     if (roomAnchor === null) {
       if (roomInput === "") {
@@ -536,9 +553,17 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, result
       setRoomAnchor(c);
       return;
     }
-    const name = roomInput.trim();
     const minX = Math.min(roomAnchor.x, c.x), maxX = Math.max(roomAnchor.x, c.x);
     const minY = Math.min(roomAnchor.y, c.y), maxY = Math.max(roomAnchor.y, c.y);
+    setRoomPending({ minX, maxX, minY, maxY });
+    setRoomAnchor(null);
+  }
+
+  /** commit the staged rectangle's cells to `roomInput`'s text (Enter in the name box) */
+  function commitRoomPending() {
+    if (!roomPending) return;
+    const { minX, maxX, minY, maxY } = roomPending;
+    const name = roomInput.trim();
     setRoomEdits((prev) => {
       const next = { ...prev };
       for (let y = minY; y <= maxY; y++) {
@@ -551,8 +576,14 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, result
       }
       return next;
     });
-    setRoomAnchor(null);
+    setRoomPending(null);
+    setRoomInput("");
   }
+
+  // auto-focus the name box the instant a rectangle is staged
+  useEffect(() => {
+    if (roomPending) roomInputRef.current?.focus();
+  }, [roomPending]);
 
   /** two-click connector: click empty to anchor/commit (orientation follows the
    *  dominant drag axis), click an existing connector to select it for naming */
@@ -627,7 +658,7 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, result
             <button
               key={t.id}
               className={`btn tiny ${tool === t.id ? "active" : ""}`}
-              onClick={() => { setTool(t.id); setAnchor(null); setSelConn(null); setRoomAnchor(null); }}
+              onClick={() => { setTool(t.id); setAnchor(null); setSelConn(null); setRoomAnchor(null); setRoomPending(null); }}
             >
               {t.label}
             </button>
@@ -635,17 +666,22 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, result
           {tool === "roomname" && (
             <>
               <input
+                ref={roomInputRef}
                 className="edit-name"
                 placeholder="room name"
                 value={roomInput}
                 onChange={(ev) => setRoomInput(ev.target.value)}
+                onKeyDown={(ev) => {
+                  if (ev.key === "Enter") commitRoomPending();
+                  else if (ev.key === "Escape") setRoomPending(null);
+                }}
               />
               <span className="edit-msg">
-                {roomAnchor
-                  ? "click opposite corner to fill"
-                  : roomInput
-                    ? "click a room’s corner"
-                    : "type a name, or click a room to load it"}
+                {roomPending
+                  ? "type a name, Enter to fill"
+                  : roomAnchor
+                    ? "click opposite corner"
+                    : "click a room's start corner"}
               </span>
             </>
           )}
