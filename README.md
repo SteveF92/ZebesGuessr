@@ -1,7 +1,8 @@
 # ZebesGuessr
 
 GeoGuessr, but for 2D Metroid. You're shown a mystery screen from the game;
-click where it is on the map. Zoom out for context — but it'll cost you points.
+click where it is on the map. Pick your difficulty — from Recruit (the full
+screen, fewer points) to Chozo Warrior (a tight crop, bonus points).
 
 A strictly **non-commercial fan project**. No logins, no tracking, no ads.
 Best scores live in your browser's localStorage.
@@ -18,7 +19,7 @@ are planned.
   tight the crop is and the score multiplier (tune `DIFFICULTIES` in
   `src/scoring.ts`).
 - A debug toggle in the round header previews the real screen for any
-  hovered map cell â useful when tuning map data.
+  hovered map cell — useful when tuning map data.
 - Score falls off with distance from the true cell. Wrong area = 0.
 
 ## Development
