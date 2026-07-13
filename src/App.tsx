@@ -256,6 +256,13 @@ export default function App() {
           >
             icons
           </button>
+          <button
+            className="btn toggle"
+            onClick={() => loadGameData(data.game).then(setData)}
+            title="Re-fetch data/<game>.json without losing round state (for tweaking map data by hand)"
+          >
+            reload
+          </button>
         </div>
       </header>
 
