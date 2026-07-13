@@ -3,16 +3,47 @@ export interface Cell {
   y: number;
 }
 
+export type MapCellKind = "room" | "vshaft" | "hshaft";
+
+export interface MapCell {
+  x: number;
+  y: number;
+  /** kind */
+  k: MapCellKind;
+  /** wall bitmask: N=1 E=2 S=4 W=8 */
+  w: number;
+}
+
+export interface MapGlyph {
+  /** fractional MAP cell coordinates of the glyph centre */
+  x: number;
+  y: number;
+  t: "save" | "map" | "ship";
+}
+
+export interface AreaMap {
+  cols: number;
+  rows: number;
+  /** tile grid -> map grid offset: map (x,y) = tile (x+dx, y+dy) */
+  dx: number;
+  dy: number;
+  cells: MapCell[];
+  glyphs: MapGlyph[];
+  source: "ingame" | "fallback";
+}
+
 export interface AreaData {
   id: string;
   name: string;
   /** grid dimensions in map cells */
   cols: number;
   rows: number;
-  /** downscaled guess-map image, relative to BASE_URL */
+  /** downscaled guess-map image, relative to BASE_URL (legacy, unused) */
   mapImage: string;
   /** playable (non-empty) cells */
   cells: Cell[];
+  /** in-game pause-map recreation data */
+  map: AreaMap;
 }
 
 export interface GameData {

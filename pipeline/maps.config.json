@@ -8,159 +8,55 @@
         "id": "crateria",
         "name": "Crateria",
         "url": "https://www.snesmaps.com/maps/SuperMetroid/SuperMetroidMapCrateria.png",
+        "ingameUrl": "https://vgmaps.de/files/snes/maps/super-metroid-crateria-in-game-map-snes-map.webp",
         "offsetX": 0,
         "offsetY": 0,
-        "excludeCells": [
-          [
-            0,
-            0
-          ],
-          [
-            1,
-            0
-          ],
-          [
-            0,
-            1
-          ],
-          [
-            1,
-            1
-          ],
-          [
-            33,
-            0
-          ]
-        ]
+        "excludeCells": [[0, 0], [1, 0], [0, 1], [1, 1], [33, 0]]
       },
       {
         "id": "brinstar",
         "name": "Brinstar",
         "url": "https://www.snesmaps.com/maps/SuperMetroid/SuperMetroidMapBrinstar.png",
+        "ingameUrl": "https://vgmaps.de/files/snes/maps/super-metroid-brinstar-in-game-map-snes-map.webp",
         "offsetX": 0,
         "offsetY": 0,
-        "excludeCells": [
-          [
-            0,
-            0
-          ],
-          [
-            1,
-            0
-          ],
-          [
-            0,
-            1
-          ],
-          [
-            1,
-            1
-          ],
-          [
-            4,
-            0
-          ]
-        ]
+        "excludeCells": [[0, 0], [1, 0], [0, 1], [1, 1], [4, 0]]
       },
       {
         "id": "norfair",
         "name": "Norfair",
         "url": "https://www.snesmaps.com/maps/SuperMetroid/SuperMetroidMapNorfair.png",
+        "ingameUrl": "https://vgmaps.de/files/snes/maps/super-metroid-norfair-in-game-map-snes-map.webp",
         "offsetX": 0,
         "offsetY": 48,
-        "excludeCells": [
-          [
-            0,
-            0
-          ],
-          [
-            1,
-            0
-          ],
-          [
-            2,
-            0
-          ],
-          [
-            3,
-            0
-          ]
-        ]
+        "excludeCells": [[0, 0], [1, 0], [2, 0], [3, 0]]
       },
       {
         "id": "wrecked-ship",
         "name": "Wrecked Ship",
         "url": "https://www.snesmaps.com/maps/SuperMetroid/SuperMetroidMapWreckedShip.png",
+        "ingameUrl": "https://vgmaps.de/files/snes/maps/super-metroid-wrecked-ship-in-game-map-snes-map.webp",
         "offsetX": 128,
         "offsetY": 0,
-        "excludeCells": [
-          [
-            0,
-            0
-          ],
-          [
-            1,
-            0
-          ],
-          [
-            0,
-            1
-          ],
-          [
-            1,
-            1
-          ]
-        ]
+        "excludeCells": [[0, 0], [1, 0], [0, 1], [1, 1]]
       },
       {
         "id": "maridia",
         "name": "Maridia",
         "url": "https://www.snesmaps.com/maps/SuperMetroid/SuperMetroidMapMaridia.png",
+        "ingameUrl": "https://vgmaps.de/files/snes/maps/super-metroid-maridia-in-game-map-snes-map.webp",
         "offsetX": 112,
         "offsetY": 48,
-        "excludeCells": [
-          [
-            0,
-            0
-          ],
-          [
-            1,
-            0
-          ],
-          [
-            0,
-            1
-          ],
-          [
-            1,
-            1
-          ]
-        ]
+        "excludeCells": [[0, 0], [1, 0], [0, 1], [1, 1]]
       },
       {
         "id": "tourian",
         "name": "Tourian",
         "url": "https://www.snesmaps.com/maps/SuperMetroid/SuperMetroidMapTourian.png",
+        "ingameUrl": "https://vgmaps.de/files/snes/maps/super-metroid-tourian-in-game-map-snes-map.webp",
         "offsetX": 0,
         "offsetY": 48,
-        "excludeCells": [
-          [
-            0,
-            0
-          ],
-          [
-            1,
-            0
-          ],
-          [
-            0,
-            1
-          ],
-          [
-            1,
-            1
-          ]
-        ]
+        "excludeCells": [[0, 0], [1, 0], [0, 1], [1, 1]]
       }
     ]
   }

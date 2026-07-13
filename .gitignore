@@ -3,4 +3,5 @@ dist/
 Images/raw/
 pipeline/debug/
 *.log
-.DS_
+.DS_Store
+Thumbs.db
