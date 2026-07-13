@@ -1,0 +1,6 @@
+node_modules/
+dist/
+Images/raw/
+pipeline/debug/
+*.log
+.DS_
