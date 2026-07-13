@@ -1,9 +1,9 @@
-# Map extraction notes: phantom rooms & diagonal corridors
+# Map extraction notes: phantom rooms, station-icon rooms & diagonal corridors
 
 The guess map is rebuilt from the in-game pause-map recreations by
 `pipeline/extract_ingame_maps.py`, which quantizes each source image onto an
-8px cell grid. Two classes of artifact come out of that quantization. Both are
-handled at the **pixel level, before quantization** (an earlier cell-level
+8px cell grid. Three classes of artifact come out of that quantization. All
+are handled at the **pixel level, before quantization** (an earlier cell-level
 approach missed several cases); the rules below hold for Super Metroid today
 and are worth re-validating for another game or a re-sourced map.
 
@@ -56,6 +56,32 @@ a cheap backstop; after the pixel-level pass it removes nothing.
   markers. The real pause map draws them as dashed lines, not rooms — if we
   ever want them visually, they'd need a dedicated decoration layer.
 
+## Room cells with a baked-in station icon
+
+### What it was
+The source recreations bake the game's own station icons into the map
+pixels: a green map-station letter, a cyan save-station letter, an
+orange/red/yellow ship or boss glyph. A room cell carrying the green "M"
+letter measures only ~23px of pink+cyan — just under the 26px room-vs-shaft
+cutoff — because the icon displaces pink fill without adding to either
+count, so the classifier read it as a thin `vshaft`/`hshaft` sliver instead
+of a full room. Every area's map station has exactly this cell. It went
+unnoticed because a hand-placed glyph icon was drawn on top of it in the app,
+covering the sliver; it became visible once those hand-placed icons were
+cleared for re-placement.
+
+### How it's handled
+The room-vs-shaft threshold in `extract_area` counts green pixels as fill
+alongside pink and cyan (ship/boss glyphs were already exempted via a
+separate `ship[full].sum() < 3` check). Save-station cyan letters were never
+an issue — cyan already counts toward the sum, so they bias *toward* "room",
+not away from it.
+
+### Residual difficulties / assumptions
+- This assumes every green pixel in the source is a map-station icon, never
+  real map geometry. True for Super Metroid (green is used for nothing
+  else); would need re-checking for another game.
+
 ## Diagonal corridors (stair passages)
 
 ### What they were
@@ -70,9 +96,15 @@ Per 8-connected chain of `diag`-tagged cells (the per-cell tag still comes
 from the pink x/y correlation heuristic, `|corr| ≥ 0.2`):
 
 - **Band fit** (`extract_diag_bands`): PCA over the chain's source pink
-  pixels gives a centerline + width; endpoints are padded 0.3 cells so the
-  band tucks under the rooms at each end. Stored per area as
-  `map.bands = [{x1,y1,x2,y2,w}]` in fractional map-cell coordinates.
+  pixels gives an axis + width, from which a generously overshot rotated
+  rectangle is built. A rectangle alone overshoots: the source band's ends
+  are mitred flush into the corridor it joins, not cut perpendicular to the
+  band's own axis, so a constant-width rectangle's corners poke out past the
+  real pink into empty space (visible as a stray triangular spike). The
+  rectangle is clipped (`clip_polygon`, Sutherland-Hodgman) to the axis-
+  aligned bounding box of the chain's actual pink pixels, which trims exactly
+  those corners and leaves a polygon hugging the true shape. Stored per area
+  as `map.bands = [{poly: [[x,y], ...]}]` in fractional map-cell coordinates.
 - **Real vs display-only cells**: chain cells with
   `pink ≥ DIAG_SOLID_PX (24)` stay in `map.cells` as clickable `diag` tiles
   (Crateria 4, Norfair 3 — one per staircase step, like the real game's map
@@ -80,16 +112,19 @@ from the pink x/y correlation heuristic, `|corr| ≥ 0.2`):
   whose sub-24px pink lies entirely within the band's perpendicular extent
   (the correlation heuristic misses some corner spills, e.g. Norfair's
   `(8,9)`, which otherwise render as floating shaft stubs).
-- **Renderer** (`GuessMap.drawBand`): each band is one pink stroke of width
-  `w` cells with a 2px cyan line along each long edge, drawn *before* the
-  cells so room fills cover the padded ends. `diag` cells draw nothing
-  themselves; they exist for hover/click/targets.
+- **Renderer** (`GuessMap.drawBand`): each band is one filled pink polygon
+  with a 2px cyan outline, drawn *before* the cells so room fills cover the
+  mitred ends. `diag` cells draw nothing themselves; they exist for
+  hover/click/targets.
 
 ### Residual difficulties / assumptions
 - A band is fitted per chain of `≥ 2` diag cells; a lone mis-tagged cell gets
   no band and draws nothing. None exist today.
 - The fit assumes one *straight* band per chain. A genuinely bent stair
   passage would need the chain split before fitting.
+- The clip box comes from the chain's pink pixels only — if the correlation
+  heuristic under-tags a cell that holds real band pixels, those pixels are
+  invisible to the fit and the clip box shrinks to exclude them.
 - Playable targets on sliver cells are dropped by the alignment filter (they
   are not selectable map tiles, matching the real game's one-tile-per-step
   map data).
@@ -100,6 +135,7 @@ from the pink x/y correlation heuristic, `|corr| ≥ 0.2`):
 python pipeline/extract_ingame_maps.py   # needs Images/raw/<game>/ingame/*.webp
 ```
 
-Landmark icons in `public/data/glyphs.<game>.json` are **not** touched by this
-step (the file is skipped explicitly) and always override whatever glyphs
-extraction produces.
+Landmark icons (station glyphs) are not auto-detected by this script at all —
+they're hand-placed in the app's icon editor and stored in
+`public/data/glyphs.<game>.json`, which this script skips explicitly and
+never writes to.

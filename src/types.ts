@@ -24,17 +24,16 @@ export interface MapGlyph {
 }
 
 /**
- * A diagonal stair passage: one straight pink band with cyan edges, fitted to
- * the source pixels (the in-game map draws these sub-cell and not at 45°).
- * Coordinates are fractional MAP cells (centerline endpoints), w is the band
- * width in cells. Drawn under the room cells so the junctions merge.
+ * A diagonal stair passage: a pink band with cyan edges, fitted to the source
+ * pixels (the in-game map draws these sub-cell and not at 45°) and clipped to
+ * their true bounding box so the ends mitre flush into the corridors it
+ * joins instead of a rotated rectangle's corners poking past them.
+ * Coordinates are fractional MAP cells. Drawn under the room cells so the
+ * junctions merge.
  */
 export interface DiagBand {
-  x1: number;
-  y1: number;
-  x2: number;
-  y2: number;
-  w: number;
+  /** polygon vertices, in order */
+  poly: [number, number][];
 }
 
 export interface AreaMap {

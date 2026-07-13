@@ -127,31 +127,25 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, result
   }
 
   /**
-   * A stair passage: straight pink band with a cyan line along each long
-   * edge, like the in-game map (which draws these sub-cell, not at 45°).
-   * Clickable diag cells sit under it and draw nothing themselves.
+   * A stair passage: a pink polygon with a cyan outline, like the in-game
+   * map (which draws these sub-cell, not at 45°). The polygon is pre-clipped
+   * to the source band's true pixel footprint (see extract_diag_bands), so
+   * it mitres flush into the corridors it joins instead of a rotated
+   * rectangle's corners poking past them. Clickable diag cells sit under it
+   * and draw nothing themselves.
    */
   function drawBand(ctx: CanvasRenderingContext2D, b: DiagBand) {
-    const x1 = b.x1 * S, y1 = b.y1 * S, x2 = b.x2 * S, y2 = b.y2 * S;
-    const len = Math.hypot(x2 - x1, y2 - y1);
-    // unit perpendicular, for offsetting the cyan edge lines
-    const px = -(y2 - y1) / len, py = (x2 - x1) / len;
-    ctx.lineCap = "butt";
-    ctx.strokeStyle = COL.room;
-    ctx.lineWidth = b.w * S;
+    if (b.poly.length < 3) return;
     ctx.beginPath();
-    ctx.moveTo(x1, y1);
-    ctx.lineTo(x2, y2);
-    ctx.stroke();
+    ctx.moveTo(b.poly[0][0] * S, b.poly[0][1] * S);
+    for (const [px, py] of b.poly.slice(1)) ctx.lineTo(px * S, py * S);
+    ctx.closePath();
+    ctx.fillStyle = COL.room;
+    ctx.fill();
     ctx.strokeStyle = COL.wall;
     ctx.lineWidth = 2;
-    for (const side of [-1, 1]) {
-      const o = side * (b.w * S) / 2;
-      ctx.beginPath();
-      ctx.moveTo(x1 + px * o, y1 + py * o);
-      ctx.lineTo(x2 + px * o, y2 + py * o);
-      ctx.stroke();
-    }
+    ctx.lineJoin = "round";
+    ctx.stroke();
   }
 
   function drawCell(ctx: CanvasRenderingContext2D, c: MapCell) {

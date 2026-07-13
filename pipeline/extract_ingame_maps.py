@@ -135,16 +135,44 @@ def diagonal_dir(pink: np.ndarray, x0: int, y0: int):
     return "/" if corr < 0 else "\\"
 
 
+def clip_polygon(poly, lo, hi):
+    """Sutherland-Hodgman clip of a convex polygon against an axis-aligned box."""
+    def clip_edge(pts, axis, keep_ge, bound):
+        out = []
+        for i in range(len(pts)):
+            cur, prev = pts[i], pts[i - 1]
+            cur_in = cur[axis] >= bound if keep_ge else cur[axis] <= bound
+            prev_in = prev[axis] >= bound if keep_ge else prev[axis] <= bound
+            if cur_in != prev_in:
+                t = (bound - prev[axis]) / (cur[axis] - prev[axis])
+                out.append((prev[0] + t * (cur[0] - prev[0]),
+                            prev[1] + t * (cur[1] - prev[1])))
+            if cur_in:
+                out.append(cur)
+        return out
+    poly = clip_edge(poly, 0, True, lo[0])
+    poly = clip_edge(poly, 0, False, hi[0])
+    poly = clip_edge(poly, 1, True, lo[1])
+    poly = clip_edge(poly, 1, False, hi[1])
+    return poly
+
+
 def extract_diag_bands(cells: dict, pink: np.ndarray, ox: int, oy: int):
     """Fit one straight band through each chain of diag cells.
 
     The source draws a stair passage as a smooth sub-cell pink band (not 45°:
-    Crateria's moat descent runs ~30°). Per-cell rendering can't reproduce
-    that, so emit the band itself: centerline endpoints + width, in fractional
-    cell coordinates. Cells with a solid amount of pink stay in the cell dict
-    as real (clickable) map tiles; corner slivers exist only so the drawn band
-    reads as continuous, and are removed here — the band polygon covers them.
-    Returns a list of band dicts; mutates `cells`.
+    Crateria's moat descent runs ~27°). Per-cell rendering can't reproduce
+    that, so emit the band itself as a polygon, in fractional cell
+    coordinates. A rotated rectangle fit to the pixels (PCA axis + width)
+    overshoots at both ends: the source band's ends are mitred flush into the
+    corridor it joins, not cut perpendicular to the band's own axis, so a
+    constant-width rectangle's corners poke out past the real pink into empty
+    space. Clipping that rectangle to the axis-aligned bounding box of the
+    chain's actual pink pixels trims exactly those corners off and leaves a
+    polygon that hugs the true shape. Cells with a solid amount of pink stay
+    in the cell dict as real (clickable) map tiles; corner slivers exist only
+    so the drawn band reads as continuous, and are removed here — the band
+    polygon covers them. Returns a list of band dicts; mutates `cells`.
     """
     diag = {c for c, v in cells.items() if v["kind"] == "diag"}
     bands = []
@@ -178,21 +206,24 @@ def extract_diag_bands(cells: dict, pink: np.ndarray, ox: int, oy: int):
         evals, evecs = np.linalg.eigh(cov)
         d = evecs[:, np.argmax(evals)]  # principal direction
         t = (pts - ctr) @ d
-        p = (pts - ctr) @ np.array([-d[1], d[0]])
-        pad = 0.3  # tuck the band ends under the rooms drawn on top
+        perp0 = np.array([-d[1], d[0]])
+        p = (pts - ctr) @ perp0
+        half_w = (p.max() - p.min()) / 2 + 0.5 / CELL
+        # overshoot generously before clipping so the box below (not this
+        # padding) is what determines the final, precisely-fit shape
+        pad = 1.0
         a = ctr + d * (t.min() - pad)
         b = ctr + d * (t.max() + pad)
-        bands.append({
-            "x1": round(float(a[0]), 3), "y1": round(float(a[1]), 3),
-            "x2": round(float(b[0]), 3), "y2": round(float(b[1]), 3),
-            "w": round(float(p.max() - p.min()) + 1.0 / CELL, 3),
-        })
+        rect = [tuple(a + perp0 * half_w), tuple(b + perp0 * half_w),
+                tuple(b - perp0 * half_w), tuple(a - perp0 * half_w)]
+        poly = clip_polygon(rect, pts.min(axis=0), pts.max(axis=0))
+        bands.append({"poly": [[round(float(x), 3), round(float(y), 3)]
+                                for (x, y) in poly]})
         # drop display-only slivers from the clickable cell grid: chain cells
         # without solid pink, plus neighbours whose pink is just the band's
         # corner spilling into them (the correlation detector misses some of
         # those, and they'd render as floating shaft stubs)
         half = (p.max() - p.min()) / 2 + 0.2
-        perp = np.array([-d[1], d[0]])
         for (x, y) in set(chain) | {(x + dx, y + dy) for (x, y) in chain
                                     for dx in (-1, 0, 1) for dy in (-1, 0, 1)}:
             if (x, y) not in cells:
@@ -204,7 +235,7 @@ def extract_diag_bands(cells: dict, pink: np.ndarray, ox: int, oy: int):
             ys, xs = np.nonzero(blk)
             cpts = np.column_stack([(x0 + xs + 0.5 - ox) / CELL,
                                     (y0 + ys + 0.5 - oy) / CELL])
-            if np.all(np.abs((cpts - ctr) @ perp) <= half):
+            if np.all(np.abs((cpts - ctr) @ perp0) <= half):
                 del cells[(x, y)]
     return bands
 
@@ -246,7 +277,13 @@ def extract_area(img_path: Path):
                 continue
             full = np.s_[y0:y0 + CELL, x0:x0 + CELL]
             kind = "room"
-            if pink[full].sum() + cyan[full].sum() < 26 and ship[full].sum() < 3:
+            # a baked-in station icon (green map-station letter, orange/red/
+            # yellow ship/boss glyph) displaces room pink in its cell, which
+            # can otherwise drop the room below the shaft threshold — a real
+            # room with a map icon on it measures ~23px pink+cyan, just under
+            # the cutoff, so count icon pixels as fill too
+            if (pink[full].sum() + cyan[full].sum() + green[full].sum() < 26
+                    and ship[full].sum() < 3):
                 pys, pxs = np.nonzero(pink[full])
                 tall = (pys.max() - pys.min()) if len(pys) else 0
                 wide = (pxs.max() - pxs.min()) if len(pxs) else 0
