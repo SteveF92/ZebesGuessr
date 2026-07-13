@@ -52,8 +52,10 @@ a:hover { color: var(--cyan); text-decoration: underline; }
 @keyframes zgPipPulse { 0%,100% { box-shadow: 0 0 8px rgba(255,210,77,.5); } 50% { box-shadow: 0 0 16px rgba(255,210,77,.9); } }
 
 /* ---------- global backdrop FX (fixed, non-interactive) ---------- */
+/* clips the animated layers so their transforms can't inflate document scroll height */
+.fx-layer { position: fixed; inset: 0; overflow: hidden; pointer-events: none; }
 .stars {
-  position: fixed; inset: -260px 0 0 0; pointer-events: none; z-index: 0; opacity: .55;
+  position: absolute; inset: -260px 0 0 0; z-index: 0; opacity: .55;
   background-image:
     radial-gradient(1px 1px at 20px 30px, #7f9dff, transparent),
     radial-gradient(1px 1px at 130px 90px, rgba(77,255,136,.9), transparent),
@@ -65,15 +67,15 @@ a:hover { color: var(--cyan); text-decoration: underline; }
   animation: zgStar 16s linear infinite;
 }
 .fx-scanlines {
-  position: fixed; inset: 0; pointer-events: none; z-index: 60; mix-blend-mode: multiply;
+  position: absolute; inset: 0; z-index: 60; mix-blend-mode: multiply;
   background: repeating-linear-gradient(rgba(0,0,0,0) 0px, rgba(0,0,0,0) 2px, rgba(0,0,0,.22) 3px);
 }
 .fx-flicker {
-  position: fixed; inset: 0; pointer-events: none; z-index: 61;
+  position: absolute; inset: 0; z-index: 61;
   background: rgba(120,255,180,.06); animation: zgFlicker 4.5s steps(2) infinite;
 }
 .fx-scanbar {
-  position: fixed; left: 0; right: 0; top: 0; height: 140px; pointer-events: none; z-index: 62;
+  position: absolute; left: 0; right: 0; top: 0; height: 140px; z-index: 62;
   background: linear-gradient(rgba(160,248,248,0), rgba(160,248,248,.045), rgba(160,248,248,0));
   animation: zgScan 7s linear infinite;
 }
