@@ -288,15 +288,15 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, result
           className={`map-canvas${editing ? " editing" : ""}`}
           onMouseMove={(e) => {
             const c = cellFromEvent(e);
-            if (editing) {
-              setHover(c);
-              return;
-            }
             const occ = c !== null && occupied.has(`${c.x},${c.y}`);
             onHoverCell?.(
               area.id,
               occ ? { x: c!.x - area.map.dx, y: c!.y - area.map.dy } : null
             );
+            if (editing) {
+              setHover(c);
+              return;
+            }
             if (result) return;
             setHover(occ ? c : null);
           }}
