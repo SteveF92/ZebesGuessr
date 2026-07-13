@@ -23,6 +23,20 @@ export interface MapGlyph {
   t: "save" | "map" | "ship" | "boss";
 }
 
+/**
+ * A diagonal stair passage: one straight pink band with cyan edges, fitted to
+ * the source pixels (the in-game map draws these sub-cell and not at 45°).
+ * Coordinates are fractional MAP cells (centerline endpoints), w is the band
+ * width in cells. Drawn under the room cells so the junctions merge.
+ */
+export interface DiagBand {
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+  w: number;
+}
+
 export interface AreaMap {
   cols: number;
   rows: number;
@@ -31,6 +45,7 @@ export interface AreaMap {
   dy: number;
   cells: MapCell[];
   glyphs: MapGlyph[];
+  bands: DiagBand[];
   source: "ingame" | "fallback";
 }
 

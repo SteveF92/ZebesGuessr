@@ -29,6 +29,17 @@ CYAN = (160, 248, 248)
 GREEN = (0, 248, 88)
 SHIP = [(248, 136, 56), (176, 16, 8), (248, 248, 104)]
 
+# annotation cleanup: pink components smaller than this can only be caption
+# text / arrow dashes (letters are 6-16 px, dashes 1-3 px); the smallest real
+# geometry, a one-tile room interior, is 26+ px
+ANNOT_MAX_PX = 24
+# ... and real pink is always outlined in cyan: every real component measures
+# cyan-enclosure >= 0.75, annotations measure <= 0.38 (captions exactly 0.0)
+ANNOT_MAX_ENCLOSURE = 0.5
+# a diag-chain cell with at least this much pink is a real map tile; below it
+# is a corner sliver of the band that exists for display continuity only
+DIAG_SOLID_PX = 24
+
 N, E, S, W = 1, 2, 4, 8
 
 
@@ -44,10 +55,13 @@ def detect_phase(solid: np.ndarray) -> tuple[int, int]:
     return (ox + 1) % CELL, (oy + 1) % CELL
 
 
-def components(m: np.ndarray):
-    """Connected components (4-conn) of a boolean mask -> list of pixel lists."""
+def components(m: np.ndarray, diagonal: bool = False):
+    """Connected components of a boolean mask -> list of pixel lists."""
     seen = np.zeros_like(m, bool)
     out = []
+    steps = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+    if diagonal:
+        steps += [(-1, -1), (-1, 1), (1, -1), (1, 1)]
     for sy, sx in zip(*np.nonzero(m)):
         if seen[sy, sx]:
             continue
@@ -56,13 +70,45 @@ def components(m: np.ndarray):
         while q:
             y, x = q.popleft()
             comp.append((y, x))
-            for ny, nx in ((y-1,x),(y+1,x),(y,x-1),(y,x+1)):
+            for dy, dx in steps:
+                ny, nx = y + dy, x + dx
                 if 0 <= ny < m.shape[0] and 0 <= nx < m.shape[1] \
                         and m[ny, nx] and not seen[ny, nx]:
                     seen[ny, nx] = True
                     q.append((ny, nx))
         out.append(comp)
     return out
+
+
+def erase_annotations(pink: np.ndarray, cyan: np.ndarray) -> int:
+    """Erase caption text and exit-arrow dashes from the pink mask, in place.
+
+    The map recreations annotate area exits in the same pink as rooms: caption
+    words (BRINSTAR, WRECKED SHIP, ...) and the dashes of elevator/arrow
+    markers. Some captions sit within 8-connectivity of real rooms on the cell
+    grid, so cell-level filtering can't catch them all. At the pixel level the
+    signal is unambiguous: real pink is enclosed by a cyan outline, annotation
+    pink is not. Erase small pink components with low cyan-enclosure.
+    Returns the number of pixels erased.
+    """
+    h, w = pink.shape
+    erased = 0
+    for comp in components(pink, diagonal=True):
+        if len(comp) >= ANNOT_MAX_PX:
+            continue
+        border = set()
+        for (y, x) in comp:
+            for dy in (-1, 0, 1):
+                for dx in (-1, 0, 1):
+                    ny, nx = y + dy, x + dx
+                    if 0 <= ny < h and 0 <= nx < w and not pink[ny, nx]:
+                        border.add((ny, nx))
+        ncyan = sum(1 for (y, x) in border if cyan[y, x])
+        if border and ncyan / len(border) < ANNOT_MAX_ENCLOSURE:
+            for (y, x) in comp:
+                pink[y, x] = False
+            erased += len(comp)
+    return erased
 
 
 def diagonal_dir(pink: np.ndarray, x0: int, y0: int):
@@ -89,6 +135,80 @@ def diagonal_dir(pink: np.ndarray, x0: int, y0: int):
     return "/" if corr < 0 else "\\"
 
 
+def extract_diag_bands(cells: dict, pink: np.ndarray, ox: int, oy: int):
+    """Fit one straight band through each chain of diag cells.
+
+    The source draws a stair passage as a smooth sub-cell pink band (not 45°:
+    Crateria's moat descent runs ~30°). Per-cell rendering can't reproduce
+    that, so emit the band itself: centerline endpoints + width, in fractional
+    cell coordinates. Cells with a solid amount of pink stay in the cell dict
+    as real (clickable) map tiles; corner slivers exist only so the drawn band
+    reads as continuous, and are removed here — the band polygon covers them.
+    Returns a list of band dicts; mutates `cells`.
+    """
+    diag = {c for c, v in cells.items() if v["kind"] == "diag"}
+    bands = []
+    seen: set = set()
+    for start in sorted(diag):
+        if start in seen:
+            continue
+        chain, stack = [], [start]
+        seen.add(start)
+        while stack:
+            x, y = stack.pop()
+            chain.append((x, y))
+            for dx in (-1, 0, 1):
+                for dy in (-1, 0, 1):
+                    n = (x + dx, y + dy)
+                    if n in diag and n not in seen:
+                        seen.add(n)
+                        stack.append(n)
+        if len(chain) < 2:
+            continue  # lone cell: no line to fit; renderer falls back
+        # pink pixels of the whole chain, in fractional cell coordinates
+        pts = []
+        for (x, y) in chain:
+            x0, y0 = ox + x * CELL, oy + y * CELL
+            ys, xs = np.nonzero(pink[y0:y0 + CELL, x0:x0 + CELL])
+            pts += [((x0 + px + 0.5 - ox) / CELL, (y0 + py + 0.5 - oy) / CELL)
+                    for py, px in zip(ys, xs)]
+        pts = np.array(pts)
+        ctr = pts.mean(axis=0)
+        cov = np.cov((pts - ctr).T)
+        evals, evecs = np.linalg.eigh(cov)
+        d = evecs[:, np.argmax(evals)]  # principal direction
+        t = (pts - ctr) @ d
+        p = (pts - ctr) @ np.array([-d[1], d[0]])
+        pad = 0.3  # tuck the band ends under the rooms drawn on top
+        a = ctr + d * (t.min() - pad)
+        b = ctr + d * (t.max() + pad)
+        bands.append({
+            "x1": round(float(a[0]), 3), "y1": round(float(a[1]), 3),
+            "x2": round(float(b[0]), 3), "y2": round(float(b[1]), 3),
+            "w": round(float(p.max() - p.min()) + 1.0 / CELL, 3),
+        })
+        # drop display-only slivers from the clickable cell grid: chain cells
+        # without solid pink, plus neighbours whose pink is just the band's
+        # corner spilling into them (the correlation detector misses some of
+        # those, and they'd render as floating shaft stubs)
+        half = (p.max() - p.min()) / 2 + 0.2
+        perp = np.array([-d[1], d[0]])
+        for (x, y) in set(chain) | {(x + dx, y + dy) for (x, y) in chain
+                                    for dx in (-1, 0, 1) for dy in (-1, 0, 1)}:
+            if (x, y) not in cells:
+                continue
+            x0, y0 = ox + x * CELL, oy + y * CELL
+            blk = pink[y0:y0 + CELL, x0:x0 + CELL]
+            if blk.sum() >= DIAG_SOLID_PX:
+                continue
+            ys, xs = np.nonzero(blk)
+            cpts = np.column_stack([(x0 + xs + 0.5 - ox) / CELL,
+                                    (y0 + ys + 0.5 - oy) / CELL])
+            if np.all(np.abs((cpts - ctr) @ perp) <= half):
+                del cells[(x, y)]
+    return bands
+
+
 def side_has_wall(cyan: np.ndarray, x0: int, y0: int, side: int, h: int, w: int) -> bool:
     """Check the two pixel rows/cols straddling a cell boundary."""
     def row(y):
@@ -110,6 +230,7 @@ def extract_area(img_path: Path):
     for c in SHIP:
         ship |= mask(im, c)
     ox, oy = detect_phase(pink | cyan)
+    erased = erase_annotations(pink, cyan)
     cols, rows = (w - ox) // CELL, (h - oy) // CELL
 
     cells = {}
@@ -117,8 +238,10 @@ def extract_area(img_path: Path):
         for x in range(cols):
             x0, y0 = ox + x * CELL, oy + y * CELL
             inner = np.s_[y0 + 1:y0 + CELL - 1, x0 + 1:x0 + CELL - 1]
-            fill = int(pink[inner].sum() + cyan[inner].sum()
-                       + ship[inner].sum() + green[inner].sum())
+            # cyan does not count toward occupancy: the twin rails of
+            # elevator-exit markers are cyan-only and must not become cells
+            fill = int(pink[inner].sum() + ship[inner].sum()
+                       + green[inner].sum())
             if fill < 4:
                 continue
             full = np.s_[y0:y0 + CELL, x0:x0 + CELL]
@@ -163,7 +286,8 @@ def extract_area(img_path: Path):
         if 12 <= len(comp) <= 30 and 4 <= bw <= 8 and 4 <= bh <= 8:
             glyphs.append({"x": round((np.mean(xs) - ox) / CELL, 2),
                            "y": round((np.mean(ys) - oy) / CELL, 2), "t": "save"})
-    return cols, rows, cells, glyphs
+    bands = extract_diag_bands(cells, pink, ox, oy)
+    return cols, rows, cells, glyphs, bands, erased
 
 
 def drop_label_text(cells: dict) -> int:
@@ -230,11 +354,13 @@ def fallback_map(area):
         if (x - 1, y) not in occ: walls |= W
         cells.append({"x": x, "y": y, "k": "room", "w": walls})
     return {"cols": area["cols"], "rows": area["rows"], "dx": 0, "dy": 0,
-            "cells": cells, "glyphs": [], "source": "fallback"}
+            "cells": cells, "glyphs": [], "bands": [], "source": "fallback"}
 
 
 def main() -> None:
     for data_file in (ROOT / "public" / "data").glob("*.json"):
+        if data_file.name.startswith("glyphs."):
+            continue  # hand-placed landmark icons; never touched by extraction
         data = json.loads(data_file.read_text())
         game_id = data["game"]
         for area in data["areas"]:
@@ -243,7 +369,7 @@ def main() -> None:
                 area["map"] = fallback_map(area)
                 print(f"  {area['id']}: no in-game image, using fallback grid")
                 continue
-            cols, rows, cells, glyphs = extract_area(img)
+            cols, rows, cells, glyphs, bands, erased = extract_area(img)
             dropped_labels = drop_label_text(cells)
             # the orange/yellow icon is Samus' ship only on the landing-site
             # map; elsewhere it is a boss marker (Kraid, Phantoon, ...)
@@ -263,11 +389,13 @@ def main() -> None:
                      **({"d": v["dir"]} if "dir" in v else {})}
                     for (x, y), v in sorted(cells.items())],
                 "glyphs": glyphs,
+                "bands": bands,
                 "source": "ingame",
             }
             print(f"  {area['id']}: {cols}x{rows} map, {len(cells)} cells, "
-                  f"{len(glyphs)} glyphs, offset ({dx},{dy}), {matches} aligned, "
-                  f"{dropped} targets dropped, {dropped_labels} label cells removed")
+                  f"{len(glyphs)} glyphs, {len(bands)} bands, offset ({dx},{dy}), "
+                  f"{matches} aligned, {dropped} targets dropped, "
+                  f"{erased} annotation px erased, {dropped_labels} label cells removed")
         data_file.write_text(json.dumps(data))
         print(f"patched {data_file.relative_to(ROOT)}")
 
