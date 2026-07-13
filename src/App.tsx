@@ -449,7 +449,7 @@ function AboutModal({
         </p>
         <p>
           Made by Steve Fallon, who also builds{" "}
-          <a href="https://www.fantasycritic.games">Fantasy Critic</a>, a fantasy-league
+          <a href="https://www.fantasycritic.games">Fantasy Critic</a>, a fantasy league
           game for video games. The code for this site is available on <a href="https://github.com/SteveF92/zebesguessr">Github</a>.
         </p>
         <form className="cheat-form" onSubmit={submitCheat}>
