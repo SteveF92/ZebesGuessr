@@ -62,14 +62,16 @@ file** (dev server only) and commit the JSON.
 
 ## Credits
 
-- **Maps**: Rick Bruns ([snesmaps.com](https://www.snesmaps.com)) — enormous
-  thanks. Additional maps referenced from the [VGMaps](https://www.vgmaps.com)
-  community atlas.
+- **Maps**: this project uses maps from [snesmaps.com](https://www.snesmaps.com)
+  and the [VGMaps](https://www.vgmaps.com) community. The Super Metroid maps are
+  the work of Rick Bruns — enormous thanks. The mapmakers are not affiliated with
+  or involved in this project.
 - **Metroid, Samus Aran, and all game imagery** © Nintendo / developed by
   Nintendo R&D1 and Intelligent Systems. This project is not affiliated with,
   endorsed by, or connected to Nintendo in any way.
 - Room nicknames come from the Super Metroid speedrunning community
   ([wiki.supermetroid.run](https://wiki.supermetroid.run), [deertier.com](https://deertier.com)).
+- Built by Steve Fallon, creator of [Fantasy Critic](https://www.fantasycritic.games).
 
 If you are a rights holder and want anything removed, open an issue and it's gone.
 

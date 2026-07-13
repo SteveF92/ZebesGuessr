@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import type { FormEvent } from "react";
 import GuessMap from "./components/GuessMap";
 import TileViewer from "./components/TileViewer";
 import { useCountUp } from "./hooks/useCountUp";
@@ -38,6 +39,10 @@ export default function App() {
   const [debug, setDebug] = useState(false);
   const [editIcons, setEditIcons] = useState(false);
   const [hoverTile, setHoverTile] = useState<{ areaId: string; cell: Cell } | null>(null);
+  const [showAbout, setShowAbout] = useState(false);
+  const [cheatEnabled, setCheatEnabled] = useState(
+    () => localStorage.getItem("zg-cheat") === "1"
+  );
 
   const difficulty = getDifficulty(difficultyId);
   const total = results.reduce((s, r) => s + r.score, 0);
@@ -59,6 +64,11 @@ export default function App() {
   function pickDifficulty(id: string) {
     setDifficultyId(id);
     localStorage.setItem("zg-difficulty", id);
+  }
+
+  function unlockCheat() {
+    setCheatEnabled(true);
+    localStorage.setItem("zg-cheat", "1");
   }
 
   async function startGame(gameId: string) {
@@ -157,7 +167,10 @@ export default function App() {
           <p className="init">INITIALIZING ARCHIVE<span className="cursor">_</span></p>
         )}
         {best > 0 && <p className="best">◆ PERSONAL BEST&nbsp;&nbsp;{best.toLocaleString()}</p>}
-        <Credits />
+        <Credits onAbout={() => setShowAbout(true)} />
+        {showAbout && (
+          <AboutModal onClose={() => setShowAbout(false)} onUnlockCheat={unlockCheat} />
+        )}
       </div>
     );
   }
@@ -209,7 +222,12 @@ export default function App() {
         <div className="summary-actions">
           <button className="btn primary" onClick={() => startGame(data.game)}>▶ PLAY AGAIN</button>
           <button className="btn secondary" onClick={() => setPhase("menu")}>MENU</button>
+          <button className="btn secondary" onClick={() => setShowAbout(true)}>ABOUT</button>
         </div>
+        <Credits onAbout={() => setShowAbout(true)} />
+        {showAbout && (
+          <AboutModal onClose={() => setShowAbout(false)} onUnlockCheat={unlockCheat} />
+        )}
       </div>
     );
   }
@@ -243,27 +261,33 @@ export default function App() {
             <div className="score-label">SCORE</div>
             <div className="score-value">{total.toLocaleString()}</div>
           </div>
-          <button
-            className={`btn toggle ${debug ? "active" : ""}`}
-            onClick={() => setDebug((d) => !d)}
-            title="Show the real screen for hovered map cells"
-          >
-            debug
-          </button>
-          <button
-            className={`btn toggle ${editIcons ? "active" : ""}`}
-            onClick={() => setEditIcons((e) => !e)}
-            title="Place/erase landmark icons, then Save to file"
-          >
-            icons
-          </button>
-          <button
-            className="btn toggle"
-            onClick={() => loadGameData(data.game).then(setData)}
-            title="Re-fetch data/<game>.json without losing round state (for tweaking map data by hand)"
-          >
-            reload
-          </button>
+          {(import.meta.env.DEV || cheatEnabled) && (
+            <button
+              className={`btn toggle ${debug ? "active" : ""}`}
+              onClick={() => setDebug((d) => !d)}
+              title="Show the real screen for hovered map cells"
+            >
+              debug
+            </button>
+          )}
+          {import.meta.env.DEV && (
+            <>
+              <button
+                className={`btn toggle ${editIcons ? "active" : ""}`}
+                onClick={() => setEditIcons((e) => !e)}
+                title="Place/erase landmark icons, then Save to file"
+              >
+                icons
+              </button>
+              <button
+                className="btn toggle"
+                onClick={() => loadGameData(data.game).then(setData)}
+                title="Re-fetch data/<game>.json without losing round state (for tweaking map data by hand)"
+              >
+                reload
+              </button>
+            </>
+          )}
         </div>
       </header>
 
@@ -346,14 +370,103 @@ function areaName(data: GameData, areaId: string): string {
   return data.areas.find((a) => a.id === areaId)?.name ?? areaId;
 }
 
-function Credits() {
+function Credits({ onAbout }: { onAbout: () => void }) {
   return (
     <footer className="credits">
       <p>
-        A non-commercial fan project. Metroid and all game imagery © Nintendo.
-        Maps by Rick Bruns (<a href="https://www.snesmaps.com">snesmaps.com</a>) and the{" "}
-        <a href="https://www.vgmaps.com">VGMaps</a> community. Not affiliated with Nintendo.
+        A non-commercial fan project. Metroid and all game imagery © Nintendo. Not
+        affiliated with Nintendo.
+      </p>
+      <p>
+        This site uses maps from <a href="https://www.snesmaps.com">snesmaps.com</a> and the{" "}
+        <a href="https://www.vgmaps.com">VGMaps</a> community.
+      </p>
+      <p>
+        Made by Steve Fallon, creator of{" "}
+        <a href="https://www.fantasycritic.games">fantasycritic.games</a>.{" "}
+        <button className="link-btn" onClick={onAbout}>
+          About
+        </button>
       </p>
     </footer>
+  );
+}
+
+function AboutModal({
+  onClose,
+  onUnlockCheat,
+}: {
+  onClose: () => void;
+  onUnlockCheat: () => void;
+}) {
+  const [cheat, setCheat] = useState("");
+  const [cheatMsg, setCheatMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose();
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  function submitCheat(e: FormEvent) {
+    e.preventDefault();
+    if (cheat.trim().toUpperCase() === "JUSTIN BAILEY") {
+      onUnlockCheat();
+      setCheatMsg("▶ DEBUG SCAN UNLOCKED");
+    }
+    setCheat("");
+  }
+
+  return (
+    <div className="modal-backdrop" onClick={onClose}>
+      <div
+        className="modal"
+        role="dialog"
+        aria-modal="true"
+        aria-label="About ZebesGuessr"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button className="modal-close" onClick={onClose} aria-label="Close">
+          ✕
+        </button>
+        <h2>ABOUT ZEBESGUESSR</h2>
+        <p>
+          ZebesGuessr is GeoGuessr for 2D Metroid: you get a cropped screen from the game
+          and pin where it is on a recreation of the in-game pause map.
+        </p>
+        <p>
+          The Super Metroid maps are by <strong>Rick Bruns</strong> (
+          <a href="https://www.snesmaps.com">snesmaps.com</a>); additional maps come from
+          the <a href="https://www.vgmaps.com">VGMaps</a> community.
+        </p>
+        <p>
+          Metroid and all game imagery are © Nintendo. This is a non-commercial fan project
+          and is not affiliated with or endorsed by Nintendo. If you are a rights holder and
+          want something removed, open an issue and it's gone.
+        </p>
+        <p>
+          Made by Steve Fallon, who also builds{" "}
+          <a href="https://www.fantasycritic.games">Fantasy Critic</a>, a fantasy-league
+          game for video games.
+        </p>
+        <form className="cheat-form" onSubmit={submitCheat}>
+          <label htmlFor="cheat-input">CHEATS</label>
+          <input
+            id="cheat-input"
+            className="cheat-input edit-name"
+            value={cheat}
+            onChange={(e) => {
+              setCheat(e.target.value);
+              setCheatMsg(null);
+            }}
+            autoComplete="off"
+            spellCheck={false}
+          />
+          {cheatMsg && <span className="cheat-msg">{cheatMsg}</span>}
+        </form>
+      </div>
+    </div>
   );
 }
