@@ -1,8 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import GuessMap from "./components/GuessMap";
 import TileViewer from "./components/TileViewer";
 import { GAMES, loadGameData, pickTargets, roomName, tileUrl } from "./data";
-import { MAX_SCORE, ROUNDS_PER_RUN, cellDistance, scoreRank, scoreRound } from "./scoring";
+import {
+  DIFFICULTIES, MAX_SCORE, ROUNDS_PER_RUN,
+  cellDistance, getDifficulty, scoreRank, scoreRound,
+} from "./scoring";
 import type { Cell, GameData, RoundResult, RoundTarget } from "./types";
 
 type Phase = "menu" | "loading" | "guessing" | "reveal" | "summary";
@@ -13,10 +16,29 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [targets, setTargets] = useState<RoundTarget[]>([]);
   const [round, setRound] = useState(0);
-  const [zoomStep, setZoomStep] = useState(0);
   const [selected, setSelected] = useState<{ areaId: string; cell: Cell } | null>(null);
   const [results, setResults] = useState<RoundResult[]>([]);
   const [best, setBest] = useState<number>(() => Number(localStorage.getItem("zg-best") ?? 0));
+  const [difficultyId, setDifficultyId] = useState<string>(
+    () => localStorage.getItem("zg-difficulty") ?? "hunter"
+  );
+  const [debug, setDebug] = useState(false);
+  const [hoverTile, setHoverTile] = useState<{ areaId: string; cell: Cell } | null>(null);
+
+  const difficulty = getDifficulty(difficultyId);
+
+  const playable = useMemo(() => {
+    const m = new Map<string, Set<string>>();
+    for (const a of data?.areas ?? []) {
+      m.set(a.id, new Set(a.cells.map((c) => `${c.x},${c.y}`)));
+    }
+    return m;
+  }, [data]);
+
+  function pickDifficulty(id: string) {
+    setDifficultyId(id);
+    localStorage.setItem("zg-difficulty", id);
+  }
 
   async function startGame(gameId: string) {
     setPhase("loading");
@@ -27,7 +49,6 @@ export default function App() {
       setTargets(pickTargets(d, ROUNDS_PER_RUN));
       setRound(0);
       setResults([]);
-      setZoomStep(0);
       setSelected(null);
       setPhase("guessing");
     } catch (e) {
@@ -42,9 +63,9 @@ export default function App() {
     const result: RoundResult = {
       target,
       guess: selected,
-      zoomStep,
+      difficulty: difficulty.id,
       distance: cellDistance(target, selected),
-      score: scoreRound(target, selected, zoomStep),
+      score: scoreRound(target, selected, difficulty),
     };
     setResults((r) => [...r, result]);
     setPhase("reveal");
@@ -55,7 +76,6 @@ export default function App() {
       setPhase("summary");
     } else {
       setRound((r) => r + 1);
-      setZoomStep(0);
       setSelected(null);
       setPhase("guessing");
     }
@@ -76,6 +96,19 @@ export default function App() {
         <h1 className="logo">ZebesGuessr</h1>
         <p className="tagline">You woke up somewhere on the planet. Where?</p>
         {error && <p className="error">{error}</p>}
+        <div className="diff-row">
+          {DIFFICULTIES.map((d) => (
+            <button
+              key={d.id}
+              className={`btn diff-btn ${d.id === difficultyId ? "active" : ""}`}
+              onClick={() => pickDifficulty(d.id)}
+              title={`${Math.round(d.crop * 100)}% of the screen shown, ×${d.mult} score`}
+            >
+              {d.label}
+              <span className="diff-hint">{Math.round(d.crop * 100)}% view · ×{d.mult}</span>
+            </button>
+          ))}
+        </div>
         <div className="game-list">
           {GAMES.map((g) => (
             <button
@@ -100,7 +133,7 @@ export default function App() {
       <div className="shell menu">
         <h1 className="logo">Run complete</h1>
         <p className="total">
-          {total.toLocaleString()} / {(MAX_SCORE * ROUNDS_PER_RUN).toLocaleString()}
+          {total.toLocaleString()} / {(Math.round(MAX_SCORE * difficulty.mult) * ROUNDS_PER_RUN).toLocaleString()}
         </p>
         <p className="rank">{scoreRank(total)}</p>
         <ol className="round-list">
@@ -127,6 +160,8 @@ export default function App() {
   if (!data) return null;
   const target = targets[round];
   const result = phase === "reveal" ? results[results.length - 1] : null;
+  const hoverHasTile =
+    hoverTile && playable.get(hoverTile.areaId)?.has(`${hoverTile.cell.x},${hoverTile.cell.y}`);
 
   return (
     <div className="shell game">
@@ -134,13 +169,19 @@ export default function App() {
         <span className="logo small">ZebesGuessr</span>
         <span>Round {round + 1}/{targets.length}</span>
         <span>Score {total.toLocaleString()}</span>
+        <button
+          className={`btn toggle ${debug ? "active" : ""}`}
+          onClick={() => setDebug((d) => !d)}
+          title="Show the real screen for hovered map cells"
+        >
+          debug
+        </button>
       </header>
       <div className="panes">
         <section className="pane left">
           <TileViewer
             tileUrl={tileUrl(data, target)}
-            zoomStep={zoomStep}
-            onZoomOut={() => setZoomStep((z) => z + 1)}
+            crop={difficulty.crop}
             revealed={phase === "reveal"}
           />
           {phase === "reveal" && result && (
@@ -167,9 +208,38 @@ export default function App() {
               {selected ? "Confirm guess" : "Click the map to guess"}
             </button>
           )}
+          {debug && (
+            <div className="debug-panel">
+              <p className="debug-title">debug: hovered cell</p>
+              {hoverTile && hoverHasTile ? (
+                <>
+                  <img
+                    src={tileUrl(data, { areaId: hoverTile.areaId, cell: hoverTile.cell })}
+                    alt="hovered screen"
+                  />
+                  <p className="debug-coords">
+                    {areaName(data, hoverTile.areaId)} ({hoverTile.cell.x},{hoverTile.cell.y})
+                  </p>
+                </>
+              ) : hoverTile ? (
+                <p className="debug-coords">
+                  {areaName(data, hoverTile.areaId)} ({hoverTile.cell.x},{hoverTile.cell.y}) — no
+                  screen for this cell (map-only)
+                </p>
+              ) : (
+                <p className="debug-coords">hover the map…</p>
+              )}
+            </div>
+          )}
         </section>
         <section className="pane right">
-          <GuessMap data={data} selected={selected} onSelect={(areaId, cell) => setSelected({ areaId, cell })} result={result} />
+          <GuessMap
+            data={data}
+            selected={selected}
+            onSelect={(areaId, cell) => setSelected({ areaId, cell })}
+            onHoverCell={(areaId, cell) => setHoverTile(cell ? { areaId, cell } : null)}
+            result={result}
+          />
         </section>
       </div>
     </div>

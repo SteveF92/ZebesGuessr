@@ -6,6 +6,8 @@ interface Props {
   /** selection in TILE coordinates */
   selected: { areaId: string; cell: Cell } | null;
   onSelect: (areaId: string, cell: Cell) => void;
+  /** reports the hovered cell in TILE coordinates (debug preview) */
+  onHoverCell?: (areaId: string, cell: Cell | null) => void;
   /** when set, the round is over: draw target/guess markers, ignore clicks */
   result: RoundResult | null;
 }
@@ -34,7 +36,7 @@ const N = 1, E = 2, SO = 4, W = 8;
  * in-game pause map are drawn on canvas (rooms, shafts, station glyphs,
  * Samus' ship) — no environment art, knowledge only.
  */
-export default function GuessMap({ data, selected, onSelect, result }: Props) {
+export default function GuessMap({ data, selected, onSelect, onHoverCell, result }: Props) {
   const [areaId, setAreaId] = useState(data.areas[0].id);
   const area = data.areas.find((a) => a.id === areaId)!;
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -185,11 +187,19 @@ export default function GuessMap({ data, selected, onSelect, result }: Props) {
           ref={canvasRef}
           className="map-canvas"
           onMouseMove={(e) => {
-            if (result) return;
             const c = cellFromEvent(e);
-            setHover(c && occupied.has(`${c.x},${c.y}`) ? c : null);
+            const occ = c !== null && occupied.has(`${c.x},${c.y}`);
+            onHoverCell?.(
+              area.id,
+              occ ? { x: c!.x - area.map.dx, y: c!.y - area.map.dy } : null
+            );
+            if (result) return;
+            setHover(occ ? c : null);
           }}
-          onMouseLeave={() => setHover(null)}
+          onMouseLeave={() => {
+            setHover(null);
+            onHoverCell?.(area.id, null);
+          }}
           onClick={(e) => {
             if (result) return;
             const c = cellFromEvent(e);

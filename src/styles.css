@@ -138,3 +138,28 @@ body {
   .pane.left { width: 100%; }
   .tile-frame, .tile-frame img { width: 280px; height: 280px; }
 }
+
+/* difficulty picker */
+.diff-row { display: flex; gap: 0.5rem; margin-bottom: 0.5rem; }
+.diff-btn { display: flex; flex-direction: column; align-items: center; gap: 0.15rem; }
+.diff-btn.active { border-color: var(--accent); color: var(--accent); }
+.diff-hint { font-size: 0.72rem; opacity: 0.6; }
+
+/* debug hover preview */
+.btn.toggle { padding: 0.2rem 0.6rem; font-size: 0.8rem; opacity: 0.6; }
+.btn.toggle.active { opacity: 1; border-color: var(--gold); color: var(--gold); }
+.debug-panel {
+  margin-top: 0.75rem;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  padding: 0.5rem;
+}
+.debug-title { margin: 0 0 0.4rem; font-size: 0.75rem; opacity: 0.55; }
+.debug-panel img {
+  width: 192px;
+  height: 192px;
+  image-rendering: pixelated;
+  display: block;
+  border-radius: 4px;
+}
+.debug-coords { margin: 0.35rem 0 0; font-size: 0.8rem; opacity: 0.75; }

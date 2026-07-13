@@ -14,8 +14,11 @@ are planned.
 ## How it works
 
 - 5 rounds per run, max 5,000 points each.
-- Each round shows a tight crop of one map cell. You can zoom out twice;
-  each step lowers the max score (100% → 75% → 50%).
+- Each round shows a crop of one screen. Difficulty presets control how
+  tight the crop is and the score multiplier (tune `DIFFICULTIES` in
+  `src/scoring.ts`).
+- A debug toggle in the round header previews the real screen for any
+  hovered map cell â useful when tuning map data.
 - Score falls off with distance from the true cell. Wrong area = 0.
 
 ## Development

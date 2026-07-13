@@ -3,10 +3,30 @@ import type { Guess, RoundTarget } from "./types";
 export const MAX_SCORE = 5000;
 export const ROUNDS_PER_RUN = 5;
 
-/** Multiplier per zoom-out step. Step 0 = tightest crop. */
-export const ZOOM_MULTIPLIERS = [1.0, 0.75, 0.5];
-/** Fraction of the cell shown at each zoom step. */
-export const ZOOM_CROPS = [0.4, 0.65, 1.0];
+/**
+ * Difficulty presets — tweak these freely to find the right feel.
+ * `crop`: fraction of the screen shown (1.0 = the full 256px screen,
+ *         0.4 = a tight crop of the middle).
+ * `mult`: score multiplier, rewarding tighter crops.
+ */
+export interface Difficulty {
+  id: string;
+  label: string;
+  crop: number;
+  mult: number;
+}
+
+export const DIFFICULTIES: Difficulty[] = [
+  { id: "recruit", label: "Recruit", crop: 1.0, mult: 0.75 },
+  { id: "hunter", label: "Bounty Hunter", crop: 0.65, mult: 1.0 },
+  { id: "chozo", label: "Chozo Warrior", crop: 0.4, mult: 1.25 },
+];
+
+export const DEFAULT_DIFFICULTY = "hunter";
+
+export function getDifficulty(id: string | null): Difficulty {
+  return DIFFICULTIES.find((d) => d.id === id) ?? DIFFICULTIES[1];
+}
 
 export function cellDistance(target: RoundTarget, guess: Guess): number {
   if (target.areaId !== guess.areaId) return Infinity;
@@ -19,11 +39,10 @@ export function cellDistance(target: RoundTarget, guess: Guess): number {
  * Exact cell = full score. Falls off exponentially with distance
  * (half score at ~4 cells). Wrong area = 0.
  */
-export function scoreRound(target: RoundTarget, guess: Guess, zoomStep: number): number {
+export function scoreRound(target: RoundTarget, guess: Guess, diff: Difficulty): number {
   const d = cellDistance(target, guess);
   if (!isFinite(d)) return 0;
-  const mult = ZOOM_MULTIPLIERS[Math.min(zoomStep, ZOOM_MULTIPLIERS.length - 1)];
-  return Math.round(MAX_SCORE * mult * Math.exp(-d / 5.77)); // exp(-4/5.77) ≈ 0.5
+  return Math.round(MAX_SCORE * diff.mult * Math.exp(-d / 5.77)); // exp(-4/5.77) ≈ 0.5
 }
 
 export function scoreRank(total: number): string {

@@ -71,7 +71,7 @@ export interface Guess {
 export interface RoundResult {
   target: RoundTarget;
   guess: Guess;
-  zoomStep: number;
+  difficulty: string;
   distance: number; // cells; Infinity if wrong area
   score: number;
 }
