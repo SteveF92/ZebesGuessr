@@ -2,10 +2,10 @@ import { useEffect, useMemo, useState } from "react";
 import GuessMap from "./components/GuessMap";
 import TileViewer from "./components/TileViewer";
 import { useCountUp } from "./hooks/useCountUp";
-import { GAMES, loadGameData, pickTargets, roomName, tileUrl } from "./data";
+import { GAMES, cellRating, loadGameData, pickTargets, roomName, tileUrl } from "./data";
 import {
   DIFFICULTIES, MAX_SCORE, ROUNDS_PER_RUN,
-  cellDistance, getDifficulty, rankFlavor, revealFlavor, scoreRank, scoreRound,
+  cellDistance, getDifficulty, rankFlavor, revealFlavor, scoreRank, scoreRound, tileMult,
 } from "./scoring";
 import type { Cell, GameData, RoundResult, RoundTarget } from "./types";
 
@@ -67,7 +67,7 @@ export default function App() {
     try {
       const d = await loadGameData(gameId);
       setData(d);
-      setTargets(pickTargets(d, ROUNDS_PER_RUN));
+      setTargets(pickTargets(d, ROUNDS_PER_RUN, difficulty));
       setRound(0);
       setResults([]);
       setSelected(null);
@@ -81,12 +81,13 @@ export default function App() {
   function submitGuess() {
     if (!data || !selected) return;
     const target = targets[round];
+    const rating = cellRating(data, target.areaId, target.cell);
     const result: RoundResult = {
       target,
       guess: selected,
-      difficulty: difficulty.id,
+      rating,
       distance: cellDistance(target, selected),
-      score: scoreRound(target, selected, difficulty),
+      score: scoreRound(target, selected, rating),
     };
     setResults((r) => [...r, result]);
     setPhase("reveal");
@@ -129,10 +130,10 @@ export default function App() {
                 key={d.id}
                 className={`diff-btn ${d.id === difficultyId ? "active" : ""}`}
                 onClick={() => pickDifficulty(d.id)}
-                title={`${Math.round(d.crop * 100)}% of the screen shown, ×${d.mult} score`}
+                title={`Draws screens rated ${d.min}–${d.max} of 5; obscure screens score more`}
               >
                 {d.label}
-                <span className="diff-hint">{Math.round(d.crop * 100)}% VIEW · ×{d.mult}</span>
+                <span className="diff-hint">{d.hint}</span>
               </button>
             ))}
           </div>
@@ -163,7 +164,7 @@ export default function App() {
 
   // ---------------------------------------------------------------- SUMMARY
   if (phase === "summary" && data) {
-    const maxTotal = Math.round(MAX_SCORE * difficulty.mult) * ROUNDS_PER_RUN;
+    const maxTotal = results.reduce((s, r) => s + Math.round(MAX_SCORE * tileMult(r.rating)), 0);
     return (
       <div className="shell menu">
         <BackdropFX />
@@ -180,7 +181,7 @@ export default function App() {
 
         <ol className="round-list">
           {results.map((r, i) => {
-            const per = MAX_SCORE * getDifficulty(r.difficulty).mult;
+            const per = MAX_SCORE * tileMult(r.rating);
             const pct = Math.max(0, Math.min(1, r.score / per));
             const dist = !isFinite(r.distance)
               ? "wrong area"
@@ -268,11 +269,7 @@ export default function App() {
 
       <div className="panes">
         <section className="pane left">
-          <TileViewer
-            tileUrl={tileUrl(data, target)}
-            crop={difficulty.crop}
-            revealed={phase === "reveal"}
-          />
+          <TileViewer tileUrl={tileUrl(data, target)} revealed={phase === "reveal"} />
 
           {phase === "reveal" && result && (
             <div className="reveal-box">

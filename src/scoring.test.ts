@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  DEFAULT_RATING,
   DIFFICULTIES,
   MAX_SCORE,
   ROUNDS_PER_RUN,
@@ -7,6 +8,7 @@ import {
   getDifficulty,
   scoreRank,
   scoreRound,
+  tileMult,
 } from "./scoring";
 import type { Guess, RoundTarget } from "./types";
 
@@ -14,8 +16,6 @@ const at = (areaId: string, x: number, y: number): RoundTarget & Guess => ({
   areaId,
   cell: { x, y },
 });
-
-const hunter = getDifficulty("hunter");
 
 describe("cellDistance", () => {
   it("is 0 for the exact cell", () => {
@@ -32,17 +32,31 @@ describe("cellDistance", () => {
   });
 });
 
+describe("tileMult", () => {
+  it("maps the 1–5 rating range onto ×0.75–×1.25", () => {
+    expect(tileMult(1)).toBe(0.75);
+    expect(tileMult(2)).toBe(0.875);
+    expect(tileMult(3)).toBe(1.0);
+    expect(tileMult(4)).toBe(1.125);
+    expect(tileMult(5)).toBe(1.25);
+  });
+
+  it("is neutral for the default rating", () => {
+    expect(tileMult(DEFAULT_RATING)).toBe(1.0);
+  });
+});
+
 describe("scoreRound", () => {
-  it("gives the full score for an exact guess", () => {
-    expect(scoreRound(at("brinstar", 5, 5), at("brinstar", 5, 5), hunter)).toBe(MAX_SCORE);
+  it("gives the full score for an exact guess at the default rating", () => {
+    expect(scoreRound(at("brinstar", 5, 5), at("brinstar", 5, 5), DEFAULT_RATING)).toBe(MAX_SCORE);
   });
 
   it("gives 0 for a wrong-area guess", () => {
-    expect(scoreRound(at("brinstar", 5, 5), at("norfair", 5, 5), hunter)).toBe(0);
+    expect(scoreRound(at("brinstar", 5, 5), at("norfair", 5, 5), DEFAULT_RATING)).toBe(0);
   });
 
   it("halves the score at roughly 4 cells away", () => {
-    const score = scoreRound(at("brinstar", 0, 0), at("brinstar", 4, 0), hunter);
+    const score = scoreRound(at("brinstar", 0, 0), at("brinstar", 4, 0), DEFAULT_RATING);
     expect(score).toBeGreaterThan(MAX_SCORE * 0.45);
     expect(score).toBeLessThan(MAX_SCORE * 0.55);
   });
@@ -51,17 +65,17 @@ describe("scoreRound", () => {
     const target = at("brinstar", 0, 0);
     let prev = Infinity;
     for (const x of [1, 2, 5, 10, 30]) {
-      const score = scoreRound(target, at("brinstar", x, 0), hunter);
+      const score = scoreRound(target, at("brinstar", x, 0), DEFAULT_RATING);
       expect(score).toBeLessThan(prev);
       prev = score;
     }
   });
 
-  it("applies the difficulty multiplier to an exact guess", () => {
+  it("applies the tile multiplier to an exact guess", () => {
     const target = at("brinstar", 5, 5);
-    for (const diff of DIFFICULTIES) {
-      expect(scoreRound(target, at("brinstar", 5, 5), diff)).toBe(
-        Math.round(MAX_SCORE * diff.mult),
+    for (const rating of [1, 2, 3, 4, 5]) {
+      expect(scoreRound(target, at("brinstar", 5, 5), rating)).toBe(
+        Math.round(MAX_SCORE * tileMult(rating)),
       );
     }
   });
@@ -85,6 +99,15 @@ describe("scoreRank", () => {
     [0, "Space Pirate Cannon Fodder"],
   ])("%f of max total is ranked %s", (fraction, rank) => {
     expect(scoreRank(max * fraction)).toBe(rank);
+  });
+});
+
+describe("DIFFICULTIES", () => {
+  it("every tier's band includes the default rating, so unrated data plays on any tier", () => {
+    for (const diff of DIFFICULTIES) {
+      expect(diff.min).toBeLessThanOrEqual(DEFAULT_RATING);
+      expect(diff.max).toBeGreaterThanOrEqual(DEFAULT_RATING);
+    }
   });
 });
 

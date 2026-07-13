@@ -99,6 +99,8 @@ export interface GameData {
   areas: AreaData[];
   /** optional speedrun/community room names: "areaId:x,y" -> name */
   roomNames?: Record<string, string>;
+  /** per-tile difficulty ratings 1–5: "areaId:x,y" -> rating (missing = 3) */
+  cellDifficulty?: Record<string, number>;
 }
 
 export interface RoundTarget {
@@ -114,7 +116,8 @@ export interface Guess {
 export interface RoundResult {
   target: RoundTarget;
   guess: Guess;
-  difficulty: string;
+  /** the target tile's difficulty rating (1–5) — sets the round's max score */
+  rating: number;
   distance: number; // cells; Infinity if wrong area
   score: number;
 }

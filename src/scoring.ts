@@ -5,24 +5,37 @@ export const ROUNDS_PER_RUN = 5;
 
 /**
  * Difficulty presets — tweak these freely to find the right feel.
- * `crop`: fraction of the screen shown (1.0 = the full 256px screen,
- *         0.4 = a tight crop of the middle).
- * `mult`: score multiplier, rewarding tighter crops.
+ * Each tier draws round targets from a band of per-tile ratings
+ * (1 = unmissable landmark … 5 = anonymous corridor). All bands include
+ * the default rating (3), so unrated data behaves the same on every tier.
+ * `hint`: short blurb shown under the label on the menu.
  */
 export interface Difficulty {
   id: string;
   label: string;
-  crop: number;
-  mult: number;
+  min: number;
+  max: number;
+  hint: string;
 }
 
 export const DIFFICULTIES: Difficulty[] = [
-  { id: "recruit", label: "Recruit", crop: 1.0, mult: 0.75 },
-  { id: "hunter", label: "Bounty Hunter", crop: 0.65, mult: 1.0 },
-  { id: "chozo", label: "Chozo Warrior", crop: 0.4, mult: 1.25 },
+  { id: "recruit", label: "Recruit", min: 1, max: 3, hint: "FAMILIAR GROUND" },
+  { id: "hunter", label: "Bounty Hunter", min: 2, max: 4, hint: "OFF THE BEATEN PATH" },
+  { id: "chozo", label: "Chozo Warrior", min: 3, max: 5, hint: "DEEP ARCHIVE" },
 ];
 
 export const DEFAULT_DIFFICULTY = "hunter";
+
+/** Rating assumed for any cell missing from difficulty.<game>.json. */
+export const DEFAULT_RATING = 3;
+
+/**
+ * Score multiplier carried by the tile itself: obscure screens are worth
+ * more. Rating 3 (the default) is ×1.0; the 1–5 range spans ×0.75–×1.25.
+ */
+export function tileMult(rating: number): number {
+  return 0.75 + 0.125 * (rating - 1);
+}
 
 export function getDifficulty(id: string | null): Difficulty {
   return DIFFICULTIES.find((d) => d.id === id) ?? DIFFICULTIES[1];
@@ -36,13 +49,13 @@ export function cellDistance(target: RoundTarget, guess: Guess): number {
 }
 
 /**
- * Exact cell = full score. Falls off exponentially with distance
- * (half score at ~4 cells). Wrong area = 0.
+ * Exact cell = full score (scaled by the tile's rating). Falls off
+ * exponentially with distance (half score at ~4 cells). Wrong area = 0.
  */
-export function scoreRound(target: RoundTarget, guess: Guess, diff: Difficulty): number {
+export function scoreRound(target: RoundTarget, guess: Guess, rating: number): number {
   const d = cellDistance(target, guess);
   if (!isFinite(d)) return 0;
-  return Math.round(MAX_SCORE * diff.mult * Math.exp(-d / 5.77)); // exp(-4/5.77) ≈ 0.5
+  return Math.round(MAX_SCORE * tileMult(rating) * Math.exp(-d / 5.77)); // exp(-4/5.77) ≈ 0.5
 }
 
 export function scoreRank(total: number): string {

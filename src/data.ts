@@ -1,3 +1,4 @@
+import { DEFAULT_RATING, type Difficulty } from "./scoring";
 import type { GameData, MapGlyph, Connector, RoundTarget, Cell } from "./types";
 
 export const GAMES = [
@@ -47,6 +48,10 @@ export function overlayOverridesUrl(gameId: string): string {
 
 export function roomNamesUrl(gameId: string): string {
   return `${import.meta.env.BASE_URL}data/roomNames.${gameId}.json`;
+}
+
+export function difficultyUrl(gameId: string): string {
+  return `${import.meta.env.BASE_URL}data/difficulty.${gameId}.json`;
 }
 
 export async function loadGameData(gameId: string): Promise<GameData> {
@@ -99,6 +104,18 @@ export async function loadGameData(gameId: string): Promise<GameData> {
   } catch {
     /* no room-name file yet — keep whatever was baked in */
   }
+
+  // Per-tile difficulty ratings (1–5), same keying as room names. Missing
+  // file or missing key both mean the neutral default rating.
+  try {
+    const dres = await fetch(difficultyUrl(gameId));
+    if (dres.ok) {
+      const overrides: Record<string, number> = await dres.json();
+      data.cellDifficulty = { ...data.cellDifficulty, ...overrides };
+    }
+  } catch {
+    /* no difficulty file yet — every cell rates the default */
+  }
   return data;
 }
 
@@ -110,11 +127,28 @@ export function roomName(data: GameData, t: RoundTarget): string | undefined {
   return data.roomNames?.[`${t.areaId}:${t.cell.x},${t.cell.y}`];
 }
 
-/** Pick n distinct random targets, weighted by area size. */
-export function pickTargets(data: GameData, n: number): RoundTarget[] {
-  const pool: RoundTarget[] = [];
+/** The cell's difficulty rating (1–5); unrated cells get the default. */
+export function cellRating(data: GameData, areaId: string, cell: Cell): number {
+  return data.cellDifficulty?.[cellKey(areaId, cell)] ?? DEFAULT_RATING;
+}
+
+/**
+ * Pick n distinct random targets, weighted by area size. With a difficulty,
+ * only cells rated inside its band are drawn — unless that leaves fewer than
+ * n cells, in which case the full pool is used.
+ */
+export function pickTargets(data: GameData, n: number, diff?: Difficulty): RoundTarget[] {
+  const all: RoundTarget[] = [];
   for (const area of data.areas) {
-    for (const cell of area.cells) pool.push({ areaId: area.id, cell });
+    for (const cell of area.cells) all.push({ areaId: area.id, cell });
+  }
+  let pool = all;
+  if (diff) {
+    const banded = all.filter((t) => {
+      const r = cellRating(data, t.areaId, t.cell);
+      return r >= diff.min && r <= diff.max;
+    });
+    if (banded.length >= n) pool = banded;
   }
   const picked: RoundTarget[] = [];
   const used = new Set<string>();
