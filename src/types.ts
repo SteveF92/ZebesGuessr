@@ -20,7 +20,7 @@ export interface MapGlyph {
   /** fractional MAP cell coordinates of the glyph centre */
   x: number;
   y: number;
-  t: "save" | "map" | "ship" | "boss" | "item";
+  t: "save" | "map" | "ship" | "boss" | "item" | "recharge";
 }
 
 /**

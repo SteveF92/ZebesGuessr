@@ -21,6 +21,7 @@ type Tool = GlyphType | "connector" | "erase";
 const TOOLS: { id: Tool; label: string }[] = [
   { id: "save", label: "Save (S)" },
   { id: "map", label: "Map (M)" },
+  { id: "recharge", label: "Recharge (R)" },
   { id: "ship", label: "Ship" },
   { id: "boss", label: "Boss" },
   { id: "item", label: "Item" },
@@ -297,11 +298,14 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, result
       }
       return;
     }
-    ctx.fillStyle = g.t === "save" ? COL.wall : COL.map;
+    const letters: Record<"save" | "map" | "recharge", string> = { save: "S", map: "M", recharge: "R" };
+    const colors: Record<"save" | "map" | "recharge", string> = { save: COL.map, map: COL.map, recharge: COL.map };
+    const t = g.t as "save" | "map" | "recharge";
+    ctx.fillStyle = colors[t];
     ctx.font = `bold ${S - 4}px monospace`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText(g.t === "save" ? "S" : "M", cx, cy + 1);
+    ctx.fillText(letters[t], cx, cy + 1);
   }
 
   /** A transit connector: twin cyan rails with a dashed pink core, in either
