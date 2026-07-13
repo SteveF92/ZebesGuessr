@@ -44,7 +44,7 @@ const COL = {
   ship: "#f88838",
   hover: "rgba(255,255,255,0.85)",
   selected: "#ffd24d",
-  item: "#f8f858",
+  item: "#f8f8f8",
   target: "#4dff88",
   guess: "#ff5d5d",
 };
@@ -61,7 +61,9 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, result
   const area = data.areas.find((a) => a.id === areaId)!;
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const shipImageRef = useRef<HTMLImageElement | null>(null);
+  const bossImageRef = useRef<HTMLImageElement | null>(null);
   const [shipLoaded, setShipLoaded] = useState(false);
+  const [bossLoaded, setBossLoaded] = useState(false);
   const [hover, setHover] = useState<Cell | null>(null);
 
   // editable copy of every area's glyphs; edits win over the loaded data
@@ -101,12 +103,17 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, result
     if (result) setAreaId(result.target.areaId);
   }, [result]);
 
-  // Load ship image
+  // Load ship and boss images
   useEffect(() => {
     const img = new Image();
     img.onload = () => setShipLoaded(true);
     img.src = `${import.meta.env.BASE_URL}assets/ship.png`;
     shipImageRef.current = img;
+
+    const bossImg = new Image();
+    bossImg.onload = () => setBossLoaded(true);
+    bossImg.src = `${import.meta.env.BASE_URL}assets/boss.png`;
+    bossImageRef.current = bossImg;
   }, []);
 
   useEffect(draw); // repaint on every state change; canvas is small
@@ -211,19 +218,26 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, result
   function drawGlyph(ctx: CanvasRenderingContext2D, g: MapGlyph) {
     const cx = g.x * S, cy = g.y * S;
     if (g.t === "boss") {
-      // boss marker: orange diamond with dark core
-      ctx.fillStyle = COL.ship;
-      ctx.beginPath();
-      ctx.moveTo(cx, cy - S * 0.45);
-      ctx.lineTo(cx + S * 0.45, cy);
-      ctx.lineTo(cx, cy + S * 0.45);
-      ctx.lineTo(cx - S * 0.45, cy);
-      ctx.closePath();
-      ctx.fill();
-      ctx.fillStyle = "#a01008";
-      ctx.beginPath();
-      ctx.arc(cx, cy, S * 0.14, 0, Math.PI * 2);
-      ctx.fill();
+      const img = bossImageRef.current;
+      if (img && bossLoaded) {
+        const bossWidth = S * 1.2;
+        const bossHeight = (img.height / img.width) * bossWidth;
+        ctx.drawImage(img, cx - bossWidth / 2, cy - bossHeight / 2, bossWidth, bossHeight);
+      } else {
+        // Fallback: orange diamond with dark core
+        ctx.fillStyle = COL.ship;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy - S * 0.45);
+        ctx.lineTo(cx + S * 0.45, cy);
+        ctx.lineTo(cx, cy + S * 0.45);
+        ctx.lineTo(cx - S * 0.45, cy);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = "#a01008";
+        ctx.beginPath();
+        ctx.arc(cx, cy, S * 0.14, 0, Math.PI * 2);
+        ctx.fill();
+      }
       return;
     }
     if (g.t === "item") {
@@ -237,8 +251,7 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, result
     if (g.t === "ship") {
       const img = shipImageRef.current;
       if (img && shipLoaded) {
-        // Scale ship to fit nicely in about 2.5 cells width
-        const shipWidth = S * 2.5;
+        const shipWidth = S * 1.8;
         const shipHeight = (img.height / img.width) * shipWidth;
         ctx.drawImage(img, cx - shipWidth / 2, cy - shipHeight / 2, shipWidth, shipHeight);
       } else {
