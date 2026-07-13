@@ -30,14 +30,6 @@
         "label": "BRINSTAR"
       },
       {
-        "x0": 42,
-        "y0": 7,
-        "x1": 44,
-        "y1": 7,
-        "label": "WRECKED SHIP",
-        "labelPos": "below"
-      },
-      {
         "x0": 13,
         "y0": 19,
         "x1": 13,
@@ -51,6 +43,14 @@
         "x1": 13,
         "y1": 13,
         "label": "TOURIAN"
+      },
+      {
+        "x0": 42,
+        "y0": 6,
+        "x1": 44,
+        "y1": 6,
+        "label": "Wrecked Ship",
+        "labelPos": "above"
       }
     ]
   },
