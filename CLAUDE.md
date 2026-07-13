@@ -45,9 +45,14 @@ Conversion: `map (x,y) = tile (x+dx, y+dy)` with `dx`/`dy` on `area.map`. `Guess
 
 Asset URLs must be prefixed with `import.meta.env.BASE_URL` — Vite `base` is `/ZebesGuessr/` for GitHub Pages (deploys automatically on push to main via `.github/workflows/deploy.yml`).
 
-## Landmark glyphs are hand-curated
+## Hand-curated map overlays (glyphs, elevators, dotted lines)
 
-`public/data/glyphs.<game>.json` (Save/Map/Ship/Boss icons) is edited by hand or via the in-app editor: the **icons** toggle in the round header stamps/erases glyphs, and **Save to file** POSTs to `/__save-glyphs`, a dev-only Vite middleware (`glyphSaver` in `vite.config.ts`) that writes the JSON directly for committing. `loadGameData` applies this file as an override on top of whatever the pipeline extracted, and `extract_ingame_maps.py` deliberately never touches it. Don't regenerate or overwrite it from pipeline code.
+Two files hold data the pipeline can't reliably extract, both edited via the in-app editor (**icons** toggle in the round header) and applied by `loadGameData` as overrides on top of extraction:
+
+- `public/data/glyphs.<game>.json` — Save/Map/Ship/Boss landmark icons.
+- `public/data/overlays.<game>.json` — vertical elevator shafts (with a destination-area label) and horizontal dashed transit lines, keyed `{ areaId: { elevators, lines } }`.
+
+The editor's tools stamp glyphs, place elevators (two clicks: top then bottom; name via the toolbar field), and place dotted lines (two clicks: left then right); **Erase** removes any of them. **Save to file** POSTs both to `/__save-map`, a dev-only Vite middleware (`glyphSaver` in `vite.config.ts`) that writes the JSON directly for committing. `extract_ingame_maps.py` deliberately never touches either file (both are skipped by name) — don't regenerate or overwrite them from pipeline code. Elevators and lines are overlay-only: they are not in `area.cells`, so they never become guess targets.
 
 ## Map extraction heuristics
 

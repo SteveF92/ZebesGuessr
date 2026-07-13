@@ -43,6 +43,23 @@ Two pixel-level rules in `extract_ingame_maps.py`:
 `drop_label_text` (drop wall-less 8-connected cell components) is retained as
 a cheap backstop; after the pixel-level pass it removes nothing.
 
+### Closing open room edges
+`side_has_wall` needs >=4 cyan px on a boundary, so a room whose source outline
+is thin or anti-aliased can keep an open side facing empty space (13 such edges
+across the six areas). `close_perimeter` runs after `drop_label_text`: for every
+`room` cell it ORs a wall bit onto any side whose neighbour is unoccupied. It
+only adds walls on exterior sides — never between two occupied cells, and never
+touches shaft/diag cells — so the map perimeter always reads closed while shared
+interior edges stay open. Rerun and it is idempotent.
+
+### Elevators and dashed transit lines are hand-placed
+The pipeline erases elevator/exit channels (above) and Maridia's dashed transit
+lines, and never re-detects them. Both are curated by hand in the app's icon
+editor (Elevator / Dotted line tools) and stored in `overlays.<game>.json`
+(`{ areaId: { elevators, lines } }`), which `loadGameData` applies as an override
+just like `glyphs.<game>.json`. `extract_ingame_maps.py` emits empty `elevators`
+/ `lines` arrays and never writes the overlays file (it is skipped by name).
+
 ### Residual difficulties / assumptions
 - The 24px / 0.5-enclosure thresholds are empirical, though the observed gap
   is wide (0.38 vs 0.75). A real pink feature smaller than 24px *without* a

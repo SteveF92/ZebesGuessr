@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { AreaData, Cell, DiagBand, GameData, MapCell, MapGlyph, RoundResult } from "../types";
+import type {
+  AreaData, Cell, DiagBand, DottedLine, Elevator, GameData, MapCell, MapGlyph, RoundResult,
+} from "../types";
 
 interface Props {
   data: GameData;
@@ -15,14 +17,18 @@ interface Props {
 }
 
 type GlyphType = MapGlyph["t"];
-type Tool = GlyphType | "erase";
+type Tool = GlyphType | "elevator" | "line" | "erase";
 const TOOLS: { id: Tool; label: string }[] = [
   { id: "save", label: "Save (S)" },
   { id: "map", label: "Map (M)" },
   { id: "ship", label: "Ship" },
   { id: "boss", label: "Boss" },
+  { id: "elevator", label: "Elevator" },
+  { id: "line", label: "Dotted line" },
   { id: "erase", label: "Erase" },
 ];
+
+type Overlays = { elevators: Elevator[]; lines: DottedLine[] };
 
 /** css px per map cell */
 const S = 16;
@@ -64,6 +70,22 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, result
   const [saveMsg, setSaveMsg] = useState("");
   const glyphs = edits[area.id] ?? area.map.glyphs;
 
+  // editable copy of every area's elevators + dashed lines (like `edits`)
+  const [overlayEdits, setOverlayEdits] = useState<Record<string, Overlays>>(() => {
+    const m: Record<string, Overlays> = {};
+    for (const a of data.areas) {
+      m[a.id] = {
+        elevators: a.map.elevators.map((e) => ({ ...e })),
+        lines: a.map.lines.map((l) => ({ ...l })),
+      };
+    }
+    return m;
+  });
+  // two-click placement anchor (map coords) and the selected elevator (for naming)
+  const [anchor, setAnchor] = useState<Cell | null>(null);
+  const [selEl, setSelEl] = useState<number | null>(null);
+  const overlays = overlayEdits[area.id] ?? { elevators: area.map.elevators, lines: area.map.lines };
+
   const occupied = useMemo(() => {
     const m = new Map<string, MapCell>();
     for (const c of area.map.cells) m.set(`${c.x},${c.y}`, c);
@@ -99,6 +121,9 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, result
     // stair passages go first so room cells drawn after cover the band ends
     for (const b of area.map.bands ?? []) drawBand(ctx, b);
     for (const c of area.map.cells) drawCell(ctx, c);
+    for (const e of overlays.elevators) drawElevator(ctx, e, false);
+    for (const l of overlays.lines) drawDottedLine(ctx, l, false);
+    if (editing) drawOverlayEditing(ctx);
     for (const g of glyphs) drawGlyph(ctx, g);
 
     const box = (tile: Cell, color: string, lw: number) => {
@@ -206,6 +231,77 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, result
     ctx.fillText(g.t === "save" ? "S" : "M", cx, cy + 1);
   }
 
+  /** A vertical elevator shaft: twin cyan rails with a dashed pink core, plus
+   *  the destination-area label beside it. Spans whole cells y0..y1. */
+  function drawElevator(ctx: CanvasRenderingContext2D, e: Elevator, preview: boolean) {
+    const cx = e.x * S + S / 2;
+    const top = e.y0 * S, bot = (e.y1 + 1) * S;
+    ctx.save();
+    if (preview) ctx.globalAlpha = 0.5;
+    ctx.fillStyle = COL.wall; // twin rails, 4px apart
+    ctx.fillRect(cx - 4, top, 2, bot - top);
+    ctx.fillRect(cx + 2, top, 2, bot - top);
+    ctx.strokeStyle = COL.room; // dashed core
+    ctx.lineWidth = 2;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(cx, top);
+    ctx.lineTo(cx, bot);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    if (e.label) {
+      ctx.fillStyle = COL.wall;
+      ctx.font = `bold ${S - 6}px monospace`;
+      ctx.textAlign = "left";
+      ctx.textBaseline = "middle";
+      ctx.fillText(e.label, e.x * S + S + 2, top + S / 2);
+    }
+    ctx.restore();
+  }
+
+  /** A horizontal dashed transit line across row y, x0..x1. */
+  function drawDottedLine(ctx: CanvasRenderingContext2D, l: DottedLine, preview: boolean) {
+    const y = l.y * S + S / 2;
+    ctx.save();
+    if (preview) ctx.globalAlpha = 0.5;
+    ctx.strokeStyle = COL.room;
+    ctx.lineWidth = 2;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(l.x0 * S, y);
+    ctx.lineTo((l.x1 + 1) * S, y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
+  }
+
+  /** editor-only overlays: selected-shaft highlight + placement preview */
+  function drawOverlayEditing(ctx: CanvasRenderingContext2D) {
+    if (tool === "elevator" && selEl !== null) {
+      const e = overlays.elevators[selEl];
+      if (e) {
+        ctx.strokeStyle = COL.selected;
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(e.x * S + 0.5, e.y0 * S + 0.5, S - 1, (e.y1 - e.y0 + 1) * S - 1);
+      }
+    }
+    if (anchor && hover) {
+      if (tool === "elevator") {
+        drawElevator(
+          ctx,
+          { x: anchor.x, y0: Math.min(anchor.y, hover.y), y1: Math.max(anchor.y, hover.y) },
+          true
+        );
+      } else if (tool === "line") {
+        drawDottedLine(
+          ctx,
+          { y: anchor.y, x0: Math.min(anchor.x, hover.x), x1: Math.max(anchor.x, hover.x) },
+          true
+        );
+      }
+    }
+  }
+
   /** returns MAP coordinates */
   function cellFromEvent(e: React.MouseEvent): Cell | null {
     const canvas = canvasRef.current!;
@@ -216,33 +312,91 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, result
     return { x, y };
   }
 
-  /** stamp or erase a landmark glyph at map cell c (centred in the cell) */
-  function editAt(c: Cell) {
-    setSaveMsg("");
+  function updateOverlays(fn: (o: Overlays) => Overlays) {
+    setOverlayEdits((prev) => ({
+      ...prev,
+      [area.id]: fn(prev[area.id] ?? { elevators: [], lines: [] }),
+    }));
+  }
+
+  /** stamp a landmark glyph at map cell c (centred in the cell) */
+  function stampGlyph(c: Cell, t: GlyphType) {
     setEdits((prev) => {
       const list = (prev[area.id] ?? []).filter(
         (g) => Math.floor(g.x) !== c.x || Math.floor(g.y) !== c.y
       );
-      if (tool !== "erase") list.push({ x: c.x + 0.5, y: c.y + 0.5, t: tool });
+      list.push({ x: c.x + 0.5, y: c.y + 0.5, t });
       return { ...prev, [area.id]: list };
     });
   }
 
-  async function saveGlyphs() {
+  /** erase whatever overlay sits at map cell c (glyph, elevator span, or line) */
+  function eraseAt(c: Cell) {
+    setEdits((prev) => ({
+      ...prev,
+      [area.id]: (prev[area.id] ?? []).filter(
+        (g) => Math.floor(g.x) !== c.x || Math.floor(g.y) !== c.y
+      ),
+    }));
+    updateOverlays((o) => ({
+      elevators: o.elevators.filter((e) => !(e.x === c.x && c.y >= e.y0 && c.y <= e.y1)),
+      lines: o.lines.filter((l) => !(l.y === c.y && c.x >= l.x0 && c.x <= l.x1)),
+    }));
+    setSelEl(null);
+  }
+
+  /** two-click vertical shaft: click empty to anchor/commit, click a shaft to select */
+  function placeShaft(c: Cell) {
+    if (anchor === null) {
+      const idx = overlays.elevators.findIndex(
+        (e) => e.x === c.x && c.y >= e.y0 && c.y <= e.y1
+      );
+      if (idx >= 0) return setSelEl(idx); // select existing shaft to rename it
+      setSelEl(null);
+      setAnchor(c);
+      return;
+    }
+    const y0 = Math.min(anchor.y, c.y), y1 = Math.max(anchor.y, c.y);
+    updateOverlays((o) => ({ ...o, elevators: [...o.elevators, { x: anchor.x, y0, y1, label: "" }] }));
+    setSelEl(overlays.elevators.length); // index of the shaft just added
+    setAnchor(null);
+  }
+
+  /** two-click horizontal dashed line locked to the anchor's row */
+  function placeLine(c: Cell) {
+    if (anchor === null) return setAnchor(c);
+    const x0 = Math.min(anchor.x, c.x), x1 = Math.max(anchor.x, c.x);
+    updateOverlays((o) => ({ ...o, lines: [...o.lines, { y: anchor.y, x0, x1 }] }));
+    setAnchor(null);
+  }
+
+  function handleEditClick(c: Cell) {
+    setSaveMsg("");
+    if (tool === "elevator") return placeShaft(c);
+    if (tool === "line") return placeLine(c);
+    if (tool === "erase") return eraseAt(c);
+    stampGlyph(c, tool); // tool narrows to GlyphType here
+  }
+
+  async function saveMap() {
     setSaveMsg("saving…");
-    const rounded: Record<string, MapGlyph[]> = {};
+    const glyphsOut: Record<string, MapGlyph[]> = {};
     for (const [id, list] of Object.entries(edits)) {
-      rounded[id] = list.map((g) => ({
+      glyphsOut[id] = list.map((g) => ({
         x: Math.round(g.x * 100) / 100, y: Math.round(g.y * 100) / 100, t: g.t,
       }));
     }
+    const overlaysOut: Record<string, Overlays> = {};
+    for (const [id, o] of Object.entries(overlayEdits)) {
+      if (o.elevators.length || o.lines.length) overlaysOut[id] = o;
+    }
     try {
-      const res = await fetch("/__save-glyphs", {
+      const res = await fetch("/__save-map", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ game: data.game, glyphs: rounded }),
+        body: JSON.stringify({ game: data.game, glyphs: glyphsOut, overlays: overlaysOut }),
       });
-      setSaveMsg(res.ok ? "saved ✓ (commit glyphs.*.json)" : `error: ${await res.text()}`);
+      setSaveMsg(res.ok ? "saved ✓ (commit glyphs/overlays.*.json)" : `error: ${await res.text()}`);
     } catch (e) {
       setSaveMsg(`error: ${e instanceof Error ? e.message : e}`);
     }
@@ -267,12 +421,26 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, result
             <button
               key={t.id}
               className={`btn tiny ${tool === t.id ? "active" : ""}`}
-              onClick={() => setTool(t.id)}
+              onClick={() => { setTool(t.id); setAnchor(null); setSelEl(null); }}
             >
               {t.label}
             </button>
           ))}
-          <button className="btn tiny save" onClick={saveGlyphs}>Save to file</button>
+          {tool === "elevator" && selEl !== null && overlays.elevators[selEl] && (
+            <input
+              className="edit-name"
+              placeholder="destination area"
+              value={overlays.elevators[selEl].label ?? ""}
+              onChange={(ev) => {
+                const label = ev.target.value;
+                updateOverlays((o) => ({
+                  ...o,
+                  elevators: o.elevators.map((e, i) => (i === selEl ? { ...e, label } : e)),
+                }));
+              }}
+            />
+          )}
+          <button className="btn tiny save" onClick={saveMap}>Save to file</button>
           {saveMsg && <span className="edit-msg">{saveMsg}</span>}
         </div>
       )}
@@ -302,7 +470,7 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, result
             const c = cellFromEvent(e);
             if (!c) return;
             if (editing) {
-              editAt(c);
+              handleEditClick(c);
               return;
             }
             if (result) return;

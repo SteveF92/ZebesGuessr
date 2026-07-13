@@ -1,4 +1,4 @@
-import type { GameData, MapGlyph, RoundTarget, Cell } from "./types";
+import type { GameData, MapGlyph, Elevator, DottedLine, RoundTarget, Cell } from "./types";
 
 export const GAMES = [
   { id: "super-metroid", title: "Super Metroid", available: true },
@@ -9,14 +9,31 @@ export const GAMES = [
 /** hand-placed landmark icons, keyed by areaId; overrides pipeline extraction */
 export type GlyphOverrides = Record<string, MapGlyph[]>;
 
+/** hand-placed elevator shafts + dashed transit lines, keyed by areaId */
+export type OverlayOverrides = Record<
+  string,
+  { elevators?: Elevator[]; lines?: DottedLine[] }
+>;
+
 export function glyphOverridesUrl(gameId: string): string {
   return `${import.meta.env.BASE_URL}data/glyphs.${gameId}.json`;
+}
+
+export function overlayOverridesUrl(gameId: string): string {
+  return `${import.meta.env.BASE_URL}data/overlays.${gameId}.json`;
 }
 
 export async function loadGameData(gameId: string): Promise<GameData> {
   const res = await fetch(`${import.meta.env.BASE_URL}data/${gameId}.json`);
   if (!res.ok) throw new Error(`No data for ${gameId}. Run the pipeline first (see pipeline/README).`);
   const data: GameData = await res.json();
+
+  // Elevators/lines are hand-placed; ensure the arrays exist even for data
+  // baked before these fields were added.
+  for (const area of data.areas) {
+    area.map.elevators ??= [];
+    area.map.lines ??= [];
+  }
 
   // Icons are curated by hand in glyphs.<game>.json and win over extraction.
   try {
@@ -29,6 +46,24 @@ export async function loadGameData(gameId: string): Promise<GameData> {
     }
   } catch {
     /* no override file yet — keep extracted glyphs */
+  }
+
+  // Elevators + dashed transit lines are likewise hand-curated and win over
+  // extraction (which erases them). A present area entry fully replaces that
+  // area's layers.
+  try {
+    const ores = await fetch(overlayOverridesUrl(gameId));
+    if (ores.ok) {
+      const overrides: OverlayOverrides = await ores.json();
+      for (const area of data.areas) {
+        const o = overrides[area.id];
+        if (!o) continue;
+        if (o.elevators) area.map.elevators = o.elevators;
+        if (o.lines) area.map.lines = o.lines;
+      }
+    }
+  } catch {
+    /* no overlay file yet — keep defaults */
   }
   return data;
 }

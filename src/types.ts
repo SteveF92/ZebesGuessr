@@ -24,6 +24,35 @@ export interface MapGlyph {
 }
 
 /**
+ * A vertical elevator shaft (twin cyan rails + dashes on the pause map). Hand
+ * placed in the icon editor; the pipeline erases these as annotations. Spans
+ * whole MAP cells; `label` names the destination area, drawn beside the shaft.
+ */
+export interface Elevator {
+  /** map-cell column (shaft is one cell wide) */
+  x: number;
+  /** top map-cell row (inclusive) */
+  y0: number;
+  /** bottom map-cell row (inclusive) */
+  y1: number;
+  /** destination area name, shown next to the shaft */
+  label?: string;
+}
+
+/**
+ * A horizontal dashed transit line (e.g. Maridia's tube runs). Hand placed;
+ * decoration only. Spans whole MAP cells along row `y`.
+ */
+export interface DottedLine {
+  /** map-cell row */
+  y: number;
+  /** left map-cell column (inclusive) */
+  x0: number;
+  /** right map-cell column (inclusive) */
+  x1: number;
+}
+
+/**
  * A diagonal stair passage: a pink band with cyan edges, fitted to the source
  * pixels (the in-game map draws these sub-cell and not at 45°) and clipped to
  * their true bounding box so the ends mitre flush into the corridors it
@@ -45,6 +74,10 @@ export interface AreaMap {
   cells: MapCell[];
   glyphs: MapGlyph[];
   bands: DiagBand[];
+  /** hand-placed vertical elevator shafts (overlay only, not guessable) */
+  elevators: Elevator[];
+  /** hand-placed horizontal dashed transit lines (overlay only) */
+  lines: DottedLine[];
   source: "ingame" | "fallback";
 }
 

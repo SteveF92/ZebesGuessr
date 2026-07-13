@@ -341,6 +341,29 @@ def drop_label_text(cells: dict) -> int:
     return removed
 
 
+def close_perimeter(cells: dict) -> int:
+    """Wall off exterior room edges the cyan detector missed.
+
+    ``side_has_wall`` needs >=4 cyan px on a boundary, so a room whose source
+    outline is thin or anti-aliased can end up with an open side facing empty
+    space. Any room-cell side with no occupied neighbour is a map boundary and
+    must show a wall, so OR those bits in. Only adds walls on exterior sides —
+    never between two occupied cells, and never touches shaft/diag cells (which
+    render no walls). Returns the number of edges closed.
+    """
+    occ = set(cells)
+    added = 0
+    for (x, y), v in cells.items():
+        if v["kind"] != "room":
+            continue
+        for bit, nb in ((N, (x, y - 1)), (E, (x + 1, y)),
+                        (S, (x, y + 1)), (W, (x - 1, y))):
+            if nb not in occ and not (v["walls"] & bit):
+                v["walls"] |= bit
+                added += 1
+    return added
+
+
 def align(map_cells, mcols, mrows, tile_cells, tcols, trows):
     occ = np.zeros((mrows, mcols), bool)
     for (x, y) in map_cells:
@@ -372,13 +395,14 @@ def fallback_map(area):
         if (x - 1, y) not in occ: walls |= W
         cells.append({"x": x, "y": y, "k": "room", "w": walls})
     return {"cols": area["cols"], "rows": area["rows"], "dx": 0, "dy": 0,
-            "cells": cells, "glyphs": [], "bands": [], "source": "fallback"}
+            "cells": cells, "glyphs": [], "bands": [],
+            "elevators": [], "lines": [], "source": "fallback"}
 
 
 def main() -> None:
     for data_file in (ROOT / "public" / "data").glob("*.json"):
-        if data_file.name.startswith("glyphs."):
-            continue  # hand-placed landmark icons; never touched by extraction
+        if data_file.name.startswith(("glyphs.", "overlays.")):
+            continue  # hand-placed icons / elevators / lines; not touched by extraction
         data = json.loads(data_file.read_text())
         game_id = data["game"]
         for area in data["areas"]:
@@ -389,6 +413,7 @@ def main() -> None:
                 continue
             cols, rows, cells, bands, erased = extract_area(img)
             dropped_labels = drop_label_text(cells)
+            closed = close_perimeter(cells)
             dx, dy, matches = align(cells, cols, rows, area["cells"],
                                     area["cols"], area["rows"])
             occ = set(cells)
@@ -403,12 +428,15 @@ def main() -> None:
                     for (x, y), v in sorted(cells.items())],
                 "glyphs": [],
                 "bands": bands,
+                "elevators": [],
+                "lines": [],
                 "source": "ingame",
             }
             print(f"  {area['id']}: {cols}x{rows} map, {len(cells)} cells, "
                   f"{len(bands)} bands, offset ({dx},{dy}), "
                   f"{matches} aligned, {dropped} targets dropped, "
-                  f"{erased} annotation px erased, {dropped_labels} label cells removed")
+                  f"{erased} annotation px erased, {dropped_labels} label cells removed, "
+                  f"{closed} edges closed")
         data_file.write_text(json.dumps(data))
         print(f"patched {data_file.relative_to(ROOT)}")
 
