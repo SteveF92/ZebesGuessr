@@ -375,20 +375,20 @@ function Credits({ onAbout }: { onAbout: () => void }) {
   return (
     <footer className="credits">
       <p>
-        A non-commercial fan project. Metroid and all game imagery © Nintendo. Not
-        affiliated with Nintendo.
-      </p>
-      <p>
-        This site uses maps from <a href="https://www.snesmaps.com">snesmaps.com</a> and the{" "}
-        <a href="https://www.vgmaps.com">VGMaps</a> community.
-      </p>
-      <p>
         Made by Steve Fallon, creator of{" "}
         <a href="https://www.fantasycritic.games">fantasycritic.games</a>.{" "}
         <button className="link-btn" onClick={onAbout}>
           About
         </button>
       </p>
+      <p>
+        Metroid and all game imagery © Nintendo. Not affiliated with Nintendo.
+      </p>
+      <p>
+        This site uses maps from <a href="https://www.snesmaps.com">snesmaps.com</a> and the{" "}
+        <a href="https://www.vgmaps.com">VGMaps</a> community.
+      </p>
+
     </footer>
   );
 }
@@ -450,7 +450,7 @@ function AboutModal({
         <p>
           Made by Steve Fallon, who also builds{" "}
           <a href="https://www.fantasycritic.games">Fantasy Critic</a>, a fantasy-league
-          game for video games.
+          game for video games. The code for this site is available on <a href="https://github.com/SteveF92/zebesguessr">Github</a>.
         </p>
         <form className="cheat-form" onSubmit={submitCheat}>
           <label htmlFor="cheat-input">CHEATS</label>
