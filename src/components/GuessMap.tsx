@@ -86,8 +86,10 @@ const COL = {
   hover: "rgba(255,255,255,0.85)",
   selected: "#ffd24d",
   item: "#f8f8f8",
-  target: "#4dff88",
-  guess: "#ff5d5d",
+  target: "#00ff88",
+  guess: "#ff4444",
+  targetOutline: "#004422",
+  guessOutline: "#660000",
 };
 
 const N = 1, E = 2, SO = 4, W = 8;
@@ -204,18 +206,26 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, result
     for (const g of glyphs) drawGlyph(ctx, g);
     if (editing) drawRoomTint(ctx);
 
-    const box = (tile: Cell, color: string, lw: number) => {
+    const box = (tile: Cell, color: string, outlineColor: string | null, lw: number) => {
+      const x = (tile.x + dx) * S + 1;
+      const y = (tile.y + dy) * S + 1;
+      const size = S - 2;
+      if (outlineColor) {
+        ctx.strokeStyle = outlineColor;
+        ctx.lineWidth = lw + 2;
+        ctx.strokeRect(x, y, size, size);
+      }
       ctx.strokeStyle = color;
       ctx.lineWidth = lw;
-      ctx.strokeRect((tile.x + dx) * S + 1, (tile.y + dy) * S + 1, S - 2, S - 2);
+      ctx.strokeRect(x, y, size, size);
     };
 
     if (!result) {
-      if (hover) box({ x: hover.x - dx, y: hover.y - dy }, COL.hover, 1.5);
-      if (selected && selected.areaId === area.id) box(selected.cell, COL.selected, 2.5);
+      if (hover) box({ x: hover.x - dx, y: hover.y - dy }, COL.hover, null, 1.5);
+      if (selected && selected.areaId === area.id) box(selected.cell, COL.selected, null, 2.5);
     } else {
-      if (result.guess.areaId === area.id) box(result.guess.cell, COL.guess, 2.5);
-      if (result.target.areaId === area.id) box(result.target.cell, COL.target, 2.5);
+      if (result.guess.areaId === area.id) box(result.guess.cell, COL.guess, COL.guessOutline, 3.5);
+      if (result.target.areaId === area.id) box(result.target.cell, COL.target, COL.targetOutline, 3.5);
       if (result.target.areaId === area.id && revealPulse < 1) {
         const cx = (result.target.cell.x + dx + 0.5) * S;
         const cy = (result.target.cell.y + dy + 0.5) * S;
@@ -228,9 +238,9 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, result
         ctx.globalAlpha = 1;
       }
       if (result.guess.areaId === area.id && result.target.areaId === area.id) {
-        ctx.strokeStyle = "rgba(255,255,255,0.6)";
-        ctx.lineWidth = 1.5;
-        ctx.setLineDash([4, 4]);
+        ctx.strokeStyle = "#ffff00";
+        ctx.lineWidth = 2.5;
+        ctx.setLineDash([6, 4]);
         ctx.beginPath();
         ctx.moveTo((result.guess.cell.x + dx + 0.5) * S, (result.guess.cell.y + dy + 0.5) * S);
         ctx.lineTo((result.target.cell.x + dx + 0.5) * S, (result.target.cell.y + dy + 0.5) * S);
