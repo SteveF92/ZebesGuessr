@@ -119,7 +119,8 @@ def extract_area(img_path: Path):
                            "y": round((np.mean(ys) - oy) / CELL, 2), "t": "map"})
     # ship: orange/red/yellow components merged into one glyph
     ship_px = list(zip(*np.nonzero(ship)))
-    if len(ship_px) >= 6:
+    yellow = mask(im, (248, 248, 104))
+    if len(ship_px) >= 6 and yellow.sum() >= 4:
         ys = [p[0] for p in ship_px]; xs = [p[1] for p in ship_px]
         glyphs.append({"x": round((np.mean(xs) - ox) / CELL, 2),
                        "y": round((np.mean(ys) - oy) / CELL, 2), "t": "ship"})
@@ -141,8 +142,8 @@ def align(map_cells, mcols, mrows, tile_cells, tcols, trows):
     for c in tile_cells:
         ours[c["y"], c["x"]] = True
     best = (-1, 0, 0)
-    for dy in range(-8, 9):
-        for dx in range(-8, 9):
+    for dy in range(-12, 21):
+        for dx in range(-12, 21):
             s = 0
             for (cy, cx) in zip(*np.nonzero(ours)):
                 my, mx = cy + dy, cx + dx
@@ -178,6 +179,11 @@ def main() -> None:
                 print(f"  {area['id']}: no in-game image, using fallback grid")
                 continue
             cols, rows, cells, glyphs = extract_area(img)
+            # the orange/yellow icon is Samus' ship only on the landing-site
+            # map; elsewhere it is a boss marker (Kraid, Phantoon, ...)
+            for g in glyphs:
+                if g["t"] == "ship" and area["id"] != "crateria":
+                    g["t"] = "boss"
             dx, dy, matches = align(cells, cols, rows, area["cells"],
                                     area["cols"], area["rows"])
             occ = set(cells)

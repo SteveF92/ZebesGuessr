@@ -11,7 +11,28 @@
         "ingameUrl": "https://vgmaps.de/files/snes/maps/super-metroid-crateria-in-game-map-snes-map.webp",
         "offsetX": 0,
         "offsetY": 0,
-        "excludeCells": [[0, 0], [1, 0], [0, 1], [1, 1], [33, 0]]
+        "excludeCells": [
+          [
+            0,
+            0
+          ],
+          [
+            1,
+            0
+          ],
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            1
+          ],
+          [
+            33,
+            0
+          ]
+        ]
       },
       {
         "id": "brinstar",
@@ -19,8 +40,29 @@
         "url": "https://www.snesmaps.com/maps/SuperMetroid/SuperMetroidMapBrinstar.png",
         "ingameUrl": "https://vgmaps.de/files/snes/maps/super-metroid-brinstar-in-game-map-snes-map.webp",
         "offsetX": 0,
-        "offsetY": 0,
-        "excludeCells": [[0, 0], [1, 0], [0, 1], [1, 1], [4, 0]]
+        "offsetY": 64,
+        "excludeCells": [
+          [
+            0,
+            0
+          ],
+          [
+            1,
+            0
+          ],
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            1
+          ],
+          [
+            4,
+            0
+          ]
+        ]
       },
       {
         "id": "norfair",
@@ -29,7 +71,24 @@
         "ingameUrl": "https://vgmaps.de/files/snes/maps/super-metroid-norfair-in-game-map-snes-map.webp",
         "offsetX": 0,
         "offsetY": 48,
-        "excludeCells": [[0, 0], [1, 0], [2, 0], [3, 0]]
+        "excludeCells": [
+          [
+            0,
+            0
+          ],
+          [
+            1,
+            0
+          ],
+          [
+            2,
+            0
+          ],
+          [
+            3,
+            0
+          ]
+        ]
       },
       {
         "id": "wrecked-ship",
@@ -38,7 +97,24 @@
         "ingameUrl": "https://vgmaps.de/files/snes/maps/super-metroid-wrecked-ship-in-game-map-snes-map.webp",
         "offsetX": 128,
         "offsetY": 0,
-        "excludeCells": [[0, 0], [1, 0], [0, 1], [1, 1]]
+        "excludeCells": [
+          [
+            0,
+            0
+          ],
+          [
+            1,
+            0
+          ],
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            1
+          ]
+        ]
       },
       {
         "id": "maridia",
@@ -47,7 +123,24 @@
         "ingameUrl": "https://vgmaps.de/files/snes/maps/super-metroid-maridia-in-game-map-snes-map.webp",
         "offsetX": 112,
         "offsetY": 48,
-        "excludeCells": [[0, 0], [1, 0], [0, 1], [1, 1]]
+        "excludeCells": [
+          [
+            0,
+            0
+          ],
+          [
+            1,
+            0
+          ],
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            1
+          ]
+        ]
       },
       {
         "id": "tourian",
@@ -56,7 +149,24 @@
         "ingameUrl": "https://vgmaps.de/files/snes/maps/super-metroid-tourian-in-game-map-snes-map.webp",
         "offsetX": 0,
         "offsetY": 48,
-        "excludeCells": [[0, 0], [1, 0], [0, 1], [1, 1]]
+        "excludeCells": [
+          [
+            0,
+            0
+          ],
+          [
+            1,
+            0
+          ],
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            1
+          ]
+        ]
       }
     ]
   }

@@ -124,6 +124,22 @@ export default function GuessMap({ data, selected, onSelect, result }: Props) {
 
   function drawGlyph(ctx: CanvasRenderingContext2D, g: MapGlyph) {
     const cx = g.x * S, cy = g.y * S;
+    if (g.t === "boss") {
+      // boss marker: orange diamond with dark core
+      ctx.fillStyle = COL.ship;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy - S * 0.45);
+      ctx.lineTo(cx + S * 0.45, cy);
+      ctx.lineTo(cx, cy + S * 0.45);
+      ctx.lineTo(cx - S * 0.45, cy);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = "#a01008";
+      ctx.beginPath();
+      ctx.arc(cx, cy, S * 0.14, 0, Math.PI * 2);
+      ctx.fill();
+      return;
+    }
     if (g.t === "ship") {
       ctx.fillStyle = COL.ship;
       ctx.beginPath();

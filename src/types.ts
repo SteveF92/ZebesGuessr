@@ -18,7 +18,7 @@ export interface MapGlyph {
   /** fractional MAP cell coordinates of the glyph centre */
   x: number;
   y: number;
-  t: "save" | "map" | "ship";
+  t: "save" | "map" | "ship" | "boss";
 }
 
 export interface AreaMap {

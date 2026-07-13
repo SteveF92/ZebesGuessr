@@ -116,4 +116,13 @@ def process_game(game_id: str, game: dict) -> None:
     print(f"wrote public/data/{game_id}.json")
 
 
-def load_room_name
+def load_room_names(game_id: str) -> dict:
+    """Optional community/speedrun room names, curated by hand."""
+    f = ROOT / "pipeline" / "room_names" / f"{game_id}.json"
+    return json.loads(f.read_text()) if f.exists() else {}
+
+
+if __name__ == "__main__":
+    for gid, g in CONFIG.items():
+        print(f"== {g['title']}")
+        process_game(gid, g)
