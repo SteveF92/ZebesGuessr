@@ -256,10 +256,32 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, result
     ctx.closePath();
     ctx.fillStyle = COL.room;
     ctx.fill();
+    // rasterization can leave a hairline gap between the polygon's clipped
+    // edge and the adjoining cell's boundary; a thin room-colored stroke
+    // along the whole outline bridges it before the real walls go on top
+    ctx.strokeStyle = COL.room;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // Only the two long diagonal "rail" edges are real in-game walls. The
+    // short axis-aligned edges are artifacts of clipping the fitted band to
+    // its pixel bounding box (mitring the ends flush into the corridors it
+    // joins) — stroking those draws phantom cyan notches at the joints.
     ctx.strokeStyle = COL.wall;
     ctx.lineWidth = 2;
     ctx.lineJoin = "round";
-    ctx.stroke();
+    const n = b.poly.length;
+    for (let i = 0; i < n; i++) {
+      const [x0, y0] = b.poly[i];
+      const [x1, y1] = b.poly[(i + 1) % n];
+      const dx = Math.abs(x1 - x0), dy = Math.abs(y1 - y0);
+      const axisAligned = dx < 0.02 || dy < 0.02;
+      if (axisAligned) continue;
+      ctx.beginPath();
+      ctx.moveTo(x0 * S, y0 * S);
+      ctx.lineTo(x1 * S, y1 * S);
+      ctx.stroke();
+    }
   }
 
   function drawCell(ctx: CanvasRenderingContext2D, c: MapCell) {
