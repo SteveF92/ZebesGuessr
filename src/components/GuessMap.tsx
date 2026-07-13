@@ -23,6 +23,7 @@ const TOOLS: { id: Tool; label: string }[] = [
   { id: "map", label: "Map (M)" },
   { id: "ship", label: "Ship" },
   { id: "boss", label: "Boss" },
+  { id: "item", label: "Item" },
   { id: "elevator", label: "Elevator" },
   { id: "line", label: "Dotted line" },
   { id: "erase", label: "Erase" },
@@ -43,6 +44,7 @@ const COL = {
   ship: "#f88838",
   hover: "rgba(255,255,255,0.85)",
   selected: "#ffd24d",
+  item: "#f8f858",
   target: "#4dff88",
   guess: "#ff5d5d",
 };
@@ -221,6 +223,14 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, result
       ctx.fillStyle = "#a01008";
       ctx.beginPath();
       ctx.arc(cx, cy, S * 0.14, 0, Math.PI * 2);
+      ctx.fill();
+      return;
+    }
+    if (g.t === "item") {
+      // item blip: small bright dot, like the in-game map's item markers
+      ctx.fillStyle = COL.item;
+      ctx.beginPath();
+      ctx.arc(cx, cy, S * 0.16, 0, Math.PI * 2);
       ctx.fill();
       return;
     }
