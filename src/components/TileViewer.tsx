@@ -7,7 +7,11 @@ interface Props {
   revealed: boolean;
 }
 
-/** Shows the mystery screen, cropped according to the chosen difficulty. */
+/**
+ * Shows the mystery screen, cropped according to the chosen difficulty.
+ * Dressed as a scanner "visor": corner brackets + a sweeping scan line
+ * while the round is live.
+ */
 export default function TileViewer({ tileUrl, crop, revealed }: Props) {
   const [loaded, setLoaded] = useState(false);
   useEffect(() => setLoaded(false), [tileUrl]);
@@ -16,6 +20,7 @@ export default function TileViewer({ tileUrl, crop, revealed }: Props) {
 
   return (
     <div className="tile-viewer">
+      <p className="signal-label">UNKNOWN SIGNAL // WHERE IS THIS?</p>
       <div className="tile-frame">
         <img
           src={tileUrl}
@@ -27,7 +32,12 @@ export default function TileViewer({ tileUrl, crop, revealed }: Props) {
             visibility: loaded ? "visible" : "hidden",
           }}
         />
-        {!loaded && <div className="tile-loading">Scanning…</div>}
+        <span className="corner tl" />
+        <span className="corner tr" />
+        <span className="corner bl" />
+        <span className="corner br" />
+        {!revealed && loaded && <div className="tile-scanline" />}
+        {!loaded && <div className="tile-loading">SCANNING…</div>}
       </div>
     </div>
   );

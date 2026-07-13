@@ -55,3 +55,24 @@ export function scoreRank(total: number): string {
   if (pct >= 0.2) return "Lost in Maridia";
   return "Space Pirate Cannon Fodder";
 }
+
+/** Flavour line shown under the rank on the summary screen. */
+export function rankFlavor(total: number): string {
+  const pct = total / (MAX_SCORE * ROUNDS_PER_RUN);
+  if (pct >= 0.95) return "The whole planet is mapped behind your visor.";
+  if (pct >= 0.8) return "The statues would approve.";
+  if (pct >= 0.6) return "The Federation pays well for eyes like yours.";
+  if (pct >= 0.4) return "You'll find your way. Eventually.";
+  if (pct >= 0.2) return "The current keeps pulling you back under.";
+  return "Ridley barely noticed you.";
+}
+
+/** One-liner shown on the reveal card, keyed off how close the guess landed. */
+export function revealFlavor(distance: number): string {
+  if (!isFinite(distance)) return "The map betrayed you.";
+  if (distance === 0) return "Chozo blood runs in your veins.";
+  if (distance < 2) return "Dead on the money.";
+  if (distance < 5) return "A confident read.";
+  if (distance < 10) return "In the neighborhood.";
+  return "You'll want that map data.";
+}
