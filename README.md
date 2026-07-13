@@ -1,8 +1,7 @@
 # ZebesGuessr
 
 GeoGuessr, but for 2D Metroid. You're shown a mystery screen from the game;
-click where it is on the map. Pick your difficulty — from Recruit (the full
-screen, fewer points) to Chozo Warrior (a tight crop, bonus points).
+click where it is on the map.
 
 A strictly **non-commercial fan project**. No logins, no tracking, no ads.
 Best scores live in your browser's localStorage.
@@ -15,8 +14,7 @@ are planned.
 ## How it works
 
 - 5 rounds per run, max 5,000 points each.
-- Each round shows a crop of one screen. Difficulty presets control how
-  tight the crop is and the score multiplier (tune `DIFFICULTIES` in
+- Each round shows a crop of one screen. Difficulty presets control which rooms can show up. (tune `DIFFICULTIES` in
   `src/scoring.ts`).
 - A debug toggle in the round header previews the real screen for any
   hovered map cell — useful when tuning map data.
@@ -73,7 +71,7 @@ file** (dev server only) and commit the JSON.
   ([wiki.supermetroid.run](https://wiki.supermetroid.run), [deertier.com](https://deertier.com)).
 - Built by Steve Fallon, creator of [Fantasy Critic](https://www.fantasycritic.games).
 
-If you are a rights holder and want anything removed, open an issue and it's gone.
+If you are a rights holder and want anything removed, open an issue and I'll remove it.
 
 ## License
 

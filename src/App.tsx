@@ -434,7 +434,7 @@ function AboutModal({
         </button>
         <h2>ABOUT ZEBESGUESSR</h2>
         <p>
-          ZebesGuessr is GeoGuessr for 2D Metroid: you get a cropped screen from the game
+          ZebesGuessr is GeoGuessr for 2D Metroid: you get a single screen from the game
           and pin where it is on a recreation of the in-game pause map.
         </p>
         <p>
@@ -445,7 +445,7 @@ function AboutModal({
         <p>
           Metroid and all game imagery are © Nintendo. This is a non-commercial fan project
           and is not affiliated with or endorsed by Nintendo. If you are a rights holder and
-          want something removed, open an issue and it's gone.
+          want something removed, open an issue and I'll remove it.
         </p>
         <p>
           Made by Steve Fallon, who also builds{" "}
