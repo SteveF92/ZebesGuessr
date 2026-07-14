@@ -15,7 +15,11 @@ export default function TileViewer({ tileUrl, revealed }: Props) {
 
   return (
     <div className="tile-viewer">
-      <p className="signal-label">UNKNOWN SIGNAL // WHERE IS THIS?</p>
+      <p className="signal-label">
+        UNKNOWN SIGNAL
+        <br />
+        WHERE IS THIS?
+      </p>
       <div className="tile-frame">
         <img
           src={tileUrl}

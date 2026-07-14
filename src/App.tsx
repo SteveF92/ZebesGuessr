@@ -133,7 +133,7 @@ export default function App() {
         </p>
         {error && <p className="error">{error}</p>}
 
-        <div style={{ width: "100%", maxWidth: 560 }}>
+        <div style={{ width: "100%", maxWidth: 760 }}>
           <p className="loadout-label">◇ CHOOSE YOUR MISSION ◇</p>
           <div className="diff-row">
             {DIFFICULTIES.map((d) => (
