@@ -62,15 +62,26 @@ def process_game(game_id: str, game: dict) -> None:
         tile_dir.mkdir(parents=True, exist_ok=True)
 
         excluded = {tuple(c) for c in area.get("excludeCells", [])}
+        # dark rooms (mostly black on the detail map) fall under FILL_THRESHOLD
+        # even though they're real, in-game-mapped rooms; force them in by cell.
+        forced = {tuple(c) for c in area.get("includeCells", [])}
+        # A few rooms are drawn away from their logical grid slot (the in-game
+        # map even shows a displacement arrow, e.g. Brinstar's Energy Tank).
+        # Pull those cells' screenshots from an offset source rectangle so the
+        # tile shows the actual room, not the empty grid slot it maps to.
+        crop_offsets = {tuple(int(v) for v in k.split(",")): tuple(o)
+                        for k, o in area.get("cellCropOffsets", {}).items()}
         cells = []
         for y in range(rows):
             for x in range(cols):
                 if (x, y) in excluded:
                     continue
                 x0, y0 = ox + x * size, oy + y * size
-                if cell_playable(gray, x0, y0, size):
+                if (x, y) in forced or cell_playable(gray, x0, y0, size):
                     cells.append([x, y])
-                    img.crop((x0, y0, x0 + size, y0 + size)).save(
+                    dxp, dyp = crop_offsets.get((x, y), (0, 0))
+                    img.crop((x0 + dxp, y0 + dyp,
+                              x0 + dxp + size, y0 + dyp + size)).save(
                         tile_dir / f"cell_{x}_{y}.png", optimize=True
                     )
 
