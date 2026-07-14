@@ -102,6 +102,13 @@ const N = 1, E = 2, SO = 4, W = 8;
 export default function GuessMap({ data, selected, onSelect, onHoverCell, result, editing }: Props) {
   const [areaId, setAreaId] = useState(data.areas[0].id);
   const area = data.areas.find((a) => a.id === areaId)!;
+
+  // L/R shoulder buttons cycle areas, like in the real pause screen
+  function cycleArea(dir: number) {
+    const idx = data.areas.findIndex((a) => a.id === areaId);
+    const n = data.areas.length;
+    setAreaId(data.areas[(idx + dir + n) % n].id);
+  }
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const shipImageRef = useRef<HTMLImageElement | null>(null);
   const bossImageRef = useRef<HTMLImageElement | null>(null);
@@ -642,6 +649,9 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, result
   return (
     <div className="guess-map">
       <div className="area-tabs">
+        <button className="shoulder l" title="Previous area" onClick={() => cycleArea(-1)}>
+          L
+        </button>
         {data.areas.map((a: AreaData) => (
           <button
             key={a.id}
@@ -651,6 +661,9 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, result
             {a.name}
           </button>
         ))}
+        <button className="shoulder r" title="Next area" onClick={() => cycleArea(1)}>
+          R
+        </button>
       </div>
       {editing && (
         <div className="icon-editor">

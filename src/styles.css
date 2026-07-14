@@ -21,7 +21,9 @@
 
   --font-body: "Chakra Petch", "Segoe UI", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
-  --font-display: "Press Start 2P", monospace;
+  /* SNES pixel fonts (public/fonts/, hand-downloaded) with web fallback */
+  --font-display: "Super Metroid Large Alt", "Press Start 2P", monospace;
+  --font-title: "Super Metroid Title", "Press Start 2P", monospace;
 }
 
 * { box-sizing: border-box; }
@@ -44,6 +46,11 @@ a:hover { color: var(--cyan); text-decoration: underline; }
   0%, 100% { text-shadow: 0 0 18px rgba(77,255,136,.45), 0 0 42px rgba(77,255,136,.16); }
   50%      { text-shadow: 0 0 28px rgba(77,255,136,.7),  0 0 64px rgba(77,255,136,.28); }
 }
+/* title-screen logo glow: animated on filter because the text fill is a clipped gradient */
+@keyframes zgTitleGlow {
+  0%, 100% { filter: drop-shadow(0 3px 0 #200602) drop-shadow(0 0 14px rgba(255,122,30,.35)); }
+  50%      { filter: drop-shadow(0 3px 0 #200602) drop-shadow(0 0 26px rgba(255,160,60,.6)); }
+}
 @keyframes zgScan { from { transform: translateY(-140px); } to { transform: translateY(120vh); } }
 @keyframes zgFlicker { 0%,100% { opacity: .05; } 50% { opacity: .09; } }
 @keyframes zgRise { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
@@ -65,6 +72,14 @@ a:hover { color: var(--cyan); text-decoration: underline; }
     radial-gradient(1px 1px at 260px 230px, #fff, transparent);
   background-size: 340px 260px;
   animation: zgStar 16s linear infinite;
+}
+/* pause-map dotted grid, behind the panels */
+.fx-grid {
+  position: absolute; inset: 0; z-index: 1; opacity: .5;
+  background-image: radial-gradient(circle, rgba(96,112,255,.22) 1px, transparent 1.6px);
+  background-size: 26px 26px;
+  mask-image: radial-gradient(circle at 50% 40%, rgba(0,0,0,.9), rgba(0,0,0,.25) 75%);
+  -webkit-mask-image: radial-gradient(circle at 50% 40%, rgba(0,0,0,.9), rgba(0,0,0,.25) 75%);
 }
 .fx-scanlines {
   position: absolute; inset: 0; z-index: 60; mix-blend-mode: multiply;
@@ -95,24 +110,28 @@ a:hover { color: var(--cyan); text-decoration: underline; }
   padding: 44px 20px; gap: 16px; animation: zgRise .55s ease both;
 }
 .kicker {
-  font-family: var(--font-display); font-size: 9px; letter-spacing: .32em;
+  font-family: var(--font-display); font-size: 12px; letter-spacing: .32em;
   color: var(--cyan); opacity: .72;
 }
+/* SUPER METROID title-screen treatment: metallic gradient fill + warm glow */
 .logo {
-  font-family: var(--font-display); font-size: clamp(24px, 6vw, 50px);
-  margin: 8px 0 2px; color: var(--accent); letter-spacing: .02em; line-height: 1.1;
-  animation: zgGlow 3.4s ease-in-out infinite;
+  font-family: var(--font-title); font-size: clamp(26px, 6.5vw, 56px);
+  margin: 8px 0 2px; letter-spacing: .02em; line-height: 1.1;
+  background: linear-gradient(180deg,
+    #fff6d8 0%, #ffe9a0 22%, #ffb84d 42%, #f2701d 60%, #c22c12 80%, #6e1206 100%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  animation: zgTitleGlow 3.4s ease-in-out infinite;
 }
 .logo.small {
-  font-size: 12px; margin: 0; animation: none;
-  text-shadow: 0 0 12px rgba(77,255,136,.4);
+  font-size: 15px; margin: 0; animation: none;
+  filter: drop-shadow(0 1px 0 #200602) drop-shadow(0 0 10px rgba(255,122,30,.4));
 }
 .tagline { font-size: 17px; color: var(--dim); margin: 0; }
 .tagline em { color: var(--accent); font-style: normal; }
 .error { color: var(--red); max-width: 480px; }
 
 .loadout-label {
-  font-family: var(--font-mono); font-size: 10px; letter-spacing: .28em;
+  font-family: var(--font-mono); font-size: 11px; letter-spacing: .28em;
   color: var(--dim); margin-bottom: 9px;
 }
 .diff-row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
@@ -128,7 +147,7 @@ a:hover { color: var(--cyan); text-decoration: underline; }
   border-color: var(--accent); color: var(--accent);
   box-shadow: 0 0 20px rgba(77,255,136,.18), inset 0 0 20px rgba(77,255,136,.05);
 }
-.diff-hint { font-family: var(--font-mono); font-size: 10.5px; font-weight: 400; letter-spacing: .04em; opacity: .75; }
+.diff-hint { font-family: var(--font-mono); font-size: 11.5px; font-weight: 400; letter-spacing: .04em; opacity: .75; }
 
 .game-list { display: flex; flex-direction: column; gap: 8px; width: 100%; max-width: 360px; }
 .game-btn {
@@ -141,7 +160,7 @@ a:hover { color: var(--cyan); text-decoration: underline; }
 }
 .game-btn:hover:not(:disabled) { border-color: var(--accent); box-shadow: 0 0 22px rgba(77,255,136,.14); }
 .game-btn:disabled { background: var(--panel); color: var(--dim); opacity: .5; cursor: default; box-shadow: none; }
-.standby { font-family: var(--font-mono); font-size: 9.5px; letter-spacing: .22em; opacity: .6; }
+.standby { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .22em; opacity: .6; }
 .init { font-family: var(--font-mono); font-size: 12px; color: var(--cyan); letter-spacing: .2em; }
 .init .cursor { animation: zgBlink 1s steps(1) infinite; }
 
@@ -150,7 +169,7 @@ a:hover { color: var(--cyan); text-decoration: underline; }
   border: 1px solid rgba(255,210,77,.35); border-radius: 999px; padding: 6px 18px;
   box-shadow: 0 0 22px rgba(255,210,77,.12); margin: 0;
 }
-.credits { margin-top: 26px; font-size: 12.5px; color: var(--dim); max-width: 560px; line-height: 1.6; }
+.credits { margin-top: 26px; font-size: 13.5px; color: var(--dim); max-width: 560px; line-height: 1.6; }
 .credits p { margin: 4px 0; }
 .link-btn {
   font-family: var(--font-body); font-size: inherit; color: var(--accent);
@@ -201,16 +220,22 @@ a:hover { color: var(--cyan); text-decoration: underline; }
   background: linear-gradient(var(--panel), var(--bg2));
   box-shadow: inset 0 0 44px rgba(20,44,88,.25);
 }
-.hud-sub { font-family: var(--font-mono); font-size: 10px; letter-spacing: .24em; color: var(--dim); }
+.hud-sub { font-family: var(--font-mono); font-size: 11px; letter-spacing: .24em; color: var(--dim); }
 .hud-center { flex: 1; display: flex; align-items: center; justify-content: center; gap: 16px; }
-.pips { display: flex; gap: 7px; align-items: center; }
-.pip { width: 9px; height: 9px; border-radius: 50%; border: 1px solid var(--line); background: transparent; }
-.pip.past { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 8px rgba(77,255,136,.6); }
-.pip.current { width: 11px; height: 11px; background: var(--gold); border-color: var(--gold); animation: zgPipPulse 1.4s ease-in-out infinite; }
-.round-label { font-family: var(--font-mono); font-size: 13px; letter-spacing: .14em; }
+/* rounds as pause-HUD energy tanks: filled pink squares */
+.pips { display: flex; gap: 6px; align-items: center; }
+.pip { width: 10px; height: 10px; border-radius: 1px; border: 1px solid var(--line); background: transparent; }
+.pip.past { background: var(--pink); border-color: #ff8ac8; box-shadow: 0 0 8px rgba(216,56,144,.6); }
+.pip.current { width: 12px; height: 12px; background: var(--gold); border-color: var(--gold); animation: zgPipPulse 1.4s ease-in-out infinite; }
+.round-label { font-family: var(--font-display); font-size: 13px; letter-spacing: .14em; }
 .hud-right { display: flex; align-items: center; gap: 16px; }
-.score-readout { font-family: var(--font-mono); text-align: right; }
-.score-label { font-size: 8.5px; letter-spacing: .28em; color: var(--dim); }
+/* SAMUS-box style readout: SNES bevel borders around the score */
+.score-readout {
+  font-family: var(--font-mono); text-align: right; padding: 4px 12px 5px;
+  border: 2px solid; border-color: #ffe9a0 #7a5200 #7a5200 #ffe9a0; border-radius: 3px;
+  background: linear-gradient(#231803, #120c02);
+}
+.score-label { font-size: 10px; letter-spacing: .28em; color: var(--dim); font-family: var(--font-display); }
 .score-value { font-size: 20px; color: var(--gold); line-height: 1.05; text-shadow: 0 0 14px rgba(255,210,77,.25); }
 
 .panes { display: flex; gap: 14px; flex: 1; min-height: 0; align-items: flex-start; }
@@ -219,7 +244,7 @@ a:hover { color: var(--cyan); text-decoration: underline; }
 
 /* ---------- mystery-screen "visor" ---------- */
 .tile-viewer { display: flex; flex-direction: column; }
-.signal-label { font-family: var(--font-mono); font-size: 10px; letter-spacing: .24em; color: var(--cyan); margin-bottom: 8px; }
+.signal-label { font-family: var(--font-mono); font-size: 11px; letter-spacing: .24em; color: var(--cyan); margin-bottom: 8px; }
 .tile-frame {
   position: relative; width: 340px; height: 340px; overflow: hidden;
   border: 1px solid var(--line); border-radius: 10px; background: #000;
@@ -250,20 +275,25 @@ a:hover { color: var(--cyan); text-decoration: underline; }
   transition: border-color .15s, box-shadow .15s, transform .05s;
 }
 .btn:active:not(:disabled) { transform: scale(0.985); }
+/* main actions as SNES pause-screen boxes: pixel font + beveled borders */
 .btn.confirm {
-  width: 100%; padding: 14px; font-weight: 700; font-size: 14.5px; letter-spacing: .07em;
-  border: 1px solid var(--gold); color: var(--gold);
-  background: linear-gradient(rgba(255,210,77,.14), rgba(255,210,77,.03));
+  width: 100%; padding: 15px 14px; font-size: 14px; letter-spacing: .08em;
+  font-family: var(--font-display);
+  border: 2px solid; border-color: #ffe9a0 #7a5200 #7a5200 #ffe9a0; border-radius: 3px;
+  color: var(--gold);
+  background: linear-gradient(rgba(255,210,77,.16), rgba(255,210,77,.03));
   text-shadow: 0 0 12px rgba(255,210,77,.3);
 }
 .btn.confirm:disabled { border-color: var(--line); background: var(--panel); color: var(--dim); cursor: default; text-shadow: none; }
 .btn.primary, .btn.next {
-  padding: 13px 26px; font-weight: 700; font-size: 15px; letter-spacing: .06em;
-  border: 1px solid var(--accent); color: var(--accent);
-  background: linear-gradient(rgba(77,255,136,.14), rgba(77,255,136,.03));
+  padding: 14px 26px; font-size: 14px; letter-spacing: .07em;
+  font-family: var(--font-display);
+  border: 2px solid; border-color: #9dffc2 #0e6a30 #0e6a30 #9dffc2; border-radius: 3px;
+  color: var(--accent);
+  background: linear-gradient(rgba(77,255,136,.16), rgba(77,255,136,.03));
   text-shadow: 0 0 12px rgba(77,255,136,.3);
 }
-.btn.next { width: 100%; margin-top: 14px; padding: 13px; font-size: 14px; }
+.btn.next { width: 100%; margin-top: 14px; padding: 14px 13px; font-size: 13px; }
 .btn.secondary {
   padding: 13px 26px; font-weight: 600; font-size: 15px; letter-spacing: .04em;
   border: 1px solid var(--line); background: var(--panel); color: var(--dim);
@@ -282,13 +312,13 @@ a:hover { color: var(--cyan); text-decoration: underline; }
   padding: 15px 16px; background: linear-gradient(var(--panel), var(--bg2));
   box-shadow: 0 0 30px rgba(20,52,94,.3);
 }
-.reveal-label { font-family: var(--font-mono); font-size: 10px; letter-spacing: .26em; color: var(--dim); }
+.reveal-label { font-family: var(--font-mono); font-size: 11px; letter-spacing: .26em; color: var(--dim); }
 .reveal-area { font-weight: 700; font-size: 21px; color: var(--cyan); margin-top: 5px; }
 .reveal-room { font-size: 14px; color: var(--dim); font-style: italic; margin-top: 2px; }
 .reveal-dist { margin: 11px 0 6px; font-size: 15px; color: var(--text); }
 .reveal-scoreline { display: flex; align-items: baseline; gap: 9px; }
 .reveal-score { font-family: var(--font-mono); font-size: 34px; color: var(--gold); text-shadow: 0 0 20px rgba(255,210,77,.4); line-height: 1; }
-.reveal-pts { font-family: var(--font-mono); font-size: 11px; letter-spacing: .2em; color: var(--dim); }
+.reveal-pts { font-family: var(--font-mono); font-size: 12px; letter-spacing: .2em; color: var(--dim); }
 .reveal-flavor { font-size: 13.5px; color: var(--accent); margin-top: 8px; }
 
 .debug-panel {
@@ -301,14 +331,26 @@ a:hover { color: var(--cyan); text-decoration: underline; }
 
 /* ---------- map (chrome only; canvas untouched) ---------- */
 .guess-map { display: flex; flex-direction: column; height: 100%; gap: 8px; }
-.area-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+.area-tabs { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
 .tab {
-  padding: 7px 14px; border-radius: 6px 6px 0 0; cursor: pointer; background: var(--panel);
+  padding: 9px 13px 7px; border-radius: 6px 6px 0 0; cursor: pointer; background: var(--panel);
   border: 1px solid var(--line); border-bottom: none; color: var(--text);
-  font-family: var(--font-body); font-size: 13.5px; transition: color .12s, border-color .12s;
+  font-family: var(--font-display); font-size: 12px; letter-spacing: .06em;
+  transition: color .12s, border-color .12s;
 }
 .tab:hover { color: var(--cyan); }
-.tab.active { border-color: var(--accent); color: var(--accent); }
+/* active area glows pause-map pink, like the CRATERIA / MARIDIA labels */
+.tab.active { border-color: var(--pink); color: #ff9ad8; text-shadow: 0 0 10px rgba(216,56,144,.55); }
+/* SNES shoulder-button pills flanking the tabs; they cycle areas like L/R in-game */
+.shoulder {
+  width: 46px; height: 26px; border-radius: 13px; cursor: pointer;
+  font-family: var(--font-display); font-size: 12px; line-height: 1; color: #10131f;
+  background: linear-gradient(#d8dce8, #8890a8); border: 1px solid #565f78;
+  box-shadow: inset 0 1px 0 #f4f6fc, 0 2px 4px rgba(0,0,0,.5);
+  transition: filter .12s, transform .05s;
+}
+.shoulder:hover { filter: brightness(1.12); }
+.shoulder:active { transform: translateY(1px); box-shadow: inset 0 1px 3px rgba(0,0,0,.4); }
 .map-scroll {
   overflow: auto; border: 1px solid var(--line); border-radius: 0 10px 10px 10px;
   background: #04060f; flex: 1; box-shadow: inset 0 0 60px rgba(10,30,60,.4);
@@ -334,7 +376,7 @@ a:hover { color: var(--cyan); text-decoration: underline; }
 /* ============================================================
    SUMMARY
    ============================================================ */
-.debrief-kicker { font-family: var(--font-mono); font-size: 10px; letter-spacing: .34em; color: var(--cyan); }
+.debrief-kicker { font-family: var(--font-mono); font-size: 11px; letter-spacing: .34em; color: var(--cyan); }
 .total {
   font-family: var(--font-mono); font-size: clamp(30px, 6vw, 52px); color: var(--gold);
   text-shadow: 0 0 28px rgba(255,210,77,.3); line-height: 1.05; white-space: nowrap; margin: 0;
@@ -360,8 +402,8 @@ a:hover { color: var(--cyan); text-decoration: underline; }
 .bar-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--accent), var(--cyan)); box-shadow: 0 0 10px rgba(77,255,136,.4); transition: width .6s ease; }
 .summary-actions { display: flex; gap: 12px; margin-top: 18px; }
 .sign-off {
-  font-family: var(--font-mono); font-weight: 700;
-  font-size: clamp(18px, 3.2vw, 30px); letter-spacing: .32em;
+  font-family: var(--font-display); font-weight: 400;
+  font-size: clamp(14px, 2.6vw, 24px); letter-spacing: .32em;
   color: var(--gold); text-shadow: 0 0 26px rgba(255,210,77,.5);
   margin: 30px 0 4px; text-indent: .32em;
   animation: signOffPulse 2.4s ease-in-out infinite;

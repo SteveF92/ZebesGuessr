@@ -78,6 +78,17 @@ export function AboutModal({
           want something removed, open an issue and I'll remove it.
         </p>
         <p>
+          Pixel fonts:{" "}
+          <a href="https://fontstruct.com/fontstructions/show/1940859/super-metroid-title">
+            Super Metroid Title
+          </a>{" "}
+          by Kitomoto and{" "}
+          <a href="https://fontstruct.com/fontstructions/show/2383815/super-metroid-large-alt-snes">
+            Super Metroid (Large Alt)
+          </a>{" "}
+          by Patrick H. Lauke (CC BY 3.0), both via FontStruct.
+        </p>
+        <p>
           Made by Steve Fallon, who also builds{" "}
           <a href="https://www.fantasycritic.games">Fantasy Critic</a>, a fantasy league
           game for video games. The code for this site is available on <a href="https://github.com/SteveF92/zebesguessr">Github</a>.

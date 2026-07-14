@@ -17,6 +17,7 @@ function BackdropFX() {
   return (
     <div className="fx-layer">
       <div className="stars" />
+      <div className="fx-grid" />
       <div className="fx-scanlines" />
       <div className="fx-flicker" />
       <div className="fx-scanbar" />
