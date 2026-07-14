@@ -330,7 +330,7 @@ a:hover { color: var(--cyan); text-decoration: underline; }
 .debug-coords { margin: 0; }
 
 /* ---------- map (chrome only; canvas untouched) ---------- */
-.guess-map { display: flex; flex-direction: column; height: 100%; gap: 8px; }
+.guess-map { display: flex; flex-direction: column; align-items: flex-start; height: 100%; gap: 8px; }
 .area-tabs { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
 .tab {
   padding: 9px 13px 7px; border-radius: 6px 6px 0 0; cursor: pointer; background: var(--panel);
@@ -354,6 +354,7 @@ a:hover { color: var(--cyan); text-decoration: underline; }
 .map-scroll {
   overflow: auto; border: 1px solid var(--line); border-radius: 0 10px 10px 10px;
   background: #04060f; flex: 1; box-shadow: inset 0 0 60px rgba(10,30,60,.4);
+  max-width: 100%;
 }
 .map-canvas { image-rendering: pixelated; display: block; cursor: crosshair; }
 .map-canvas.editing { cursor: cell; }
