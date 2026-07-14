@@ -8,3 +8,4 @@ pipeline/debug/
 .DS_Store
 Thumbs.db
 __pycache__/
+.worktrees/
