@@ -283,15 +283,28 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, result
     ctx.lineWidth = 1.5;
     ctx.stroke();
 
-    // The two long diagonal "rail" edges are the real in-game walls; the
-    // short axis-aligned edges left over from clipping the fitted band to
-    // its pixel bounding box double as the end caps the source map draws
-    // where a band mitres into the corridor it joins, so the whole outline
-    // gets stroked the same way.
+    // Only the two long diagonal "rail" edges are real in-game walls. The
+    // short edges left over from clipping the fitted band to its pixel
+    // bounding box are the left/right end caps, where the passage opens into
+    // the square room next door — the in-game map draws no wall there, the
+    // diagonal simply bleeds into the room (drawCell likewise omits the
+    // room's wall facing a diag cell). So stroke only the long edges and let
+    // the pink fill/bridge stroke carry the caps into their neighbours.
     ctx.strokeStyle = COL.wall;
     ctx.lineWidth = 2;
     ctx.lineJoin = "round";
-    ctx.stroke();
+    ctx.lineCap = "round";
+    const RAIL = 0.5; // map cells: rails span several, caps stay well under
+    for (let i = 0; i < b.poly.length; i++) {
+      const [ax, ay] = b.poly[i];
+      const [bx, by] = b.poly[(i + 1) % b.poly.length];
+      if (Math.abs(bx - ax) < RAIL || Math.abs(by - ay) < RAIL) continue;
+      ctx.beginPath();
+      ctx.moveTo(ax * S, ay * S);
+      ctx.lineTo(bx * S, by * S);
+      ctx.stroke();
+    }
+    ctx.lineCap = "butt";
   }
 
   function drawCell(ctx: CanvasRenderingContext2D, c: MapCell) {
@@ -309,12 +322,15 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, result
     }
     ctx.fillStyle = COL.room;
     ctx.fillRect(x, y, S, S);
-    // cyan walls
+    // cyan walls — but never between a room and an adjacent diagonal passage:
+    // in-game the room opens straight into the stairs with no door/wall.
+    const opensToDiag = (nx: number, ny: number) =>
+      occupied.get(`${nx},${ny}`)?.k === "diag";
     ctx.fillStyle = COL.wall;
-    if (c.w & N) ctx.fillRect(x, y, S, 2);
-    if (c.w & SO) ctx.fillRect(x, y + S - 2, S, 2);
-    if (c.w & W) ctx.fillRect(x, y, 2, S);
-    if (c.w & E) ctx.fillRect(x + S - 2, y, 2, S);
+    if (c.w & N && !opensToDiag(c.x, c.y - 1)) ctx.fillRect(x, y, S, 2);
+    if (c.w & SO && !opensToDiag(c.x, c.y + 1)) ctx.fillRect(x, y + S - 2, S, 2);
+    if (c.w & W && !opensToDiag(c.x - 1, c.y)) ctx.fillRect(x, y, 2, S);
+    if (c.w & E && !opensToDiag(c.x + 1, c.y)) ctx.fillRect(x + S - 2, y, 2, S);
   }
 
   function drawGlyph(ctx: CanvasRenderingContext2D, g: MapGlyph) {
