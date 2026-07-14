@@ -3,6 +3,7 @@ import type {
   AreaData, Cell, Connector, DiagBand, GameData, MapCell, MapGlyph, RoundResult,
 } from "../types";
 import { cellKey } from "../data";
+import { DEFAULT_RATING, EXCLUDED_RATING } from "../scoring";
 
 interface Props {
   data: GameData;
@@ -19,7 +20,7 @@ interface Props {
 }
 
 type GlyphType = MapGlyph["t"];
-type Tool = GlyphType | "connector" | "roomname" | "erase";
+type Tool = GlyphType | "connector" | "roomname" | "difficulty" | "erase";
 const TOOLS: { id: Tool; label: string }[] = [
   { id: "save", label: "Save (S)" },
   { id: "map", label: "Map (M)" },
@@ -29,8 +30,19 @@ const TOOLS: { id: Tool; label: string }[] = [
   { id: "item", label: "Item" },
   { id: "connector", label: "Connector" },
   { id: "roomname", label: "Name" },
+  { id: "difficulty", label: "Diff" },
   { id: "erase", label: "Erase" },
 ];
+
+/** Diff-tool overlay colors, rating 1 (easy) → 5 (hard); 6 = never served. */
+const RATING_COLORS: Record<number, string> = {
+  1: "46, 204, 113",
+  2: "163, 224, 72",
+  3: "241, 196, 15",
+  4: "230, 126, 34",
+  5: "231, 76, 60",
+  6: "25, 25, 25",
+};
 
 type Overlays = { connectors: Connector[] };
 
@@ -148,11 +160,24 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, result
   const [roomPending, setRoomPending] = useState<{ minX: number; maxX: number; minY: number; maxY: number } | null>(null);
   const roomInputRef = useRef<HTMLInputElement>(null);
 
+  // editable per-cell difficulty ratings ("areaId:tileX,tileY" -> 1..6),
+  // seeded from the loaded data. The Diff tool paints one cell per click.
+  const [diffEdits, setDiffEdits] = useState<Record<string, number>>(
+    () => ({ ...(data.cellDifficulty ?? {}) })
+  );
+  const [diffRating, setDiffRating] = useState(DEFAULT_RATING);
+
   const occupied = useMemo(() => {
     const m = new Map<string, MapCell>();
     for (const c of area.map.cells) m.set(`${c.x},${c.y}`, c);
     return m;
   }, [area]);
+
+  // playable (guessable) cells in TILE coords — the only cells ratings apply to
+  const playableTiles = useMemo(
+    () => new Set(area.cells.map((c) => `${c.x},${c.y}`)),
+    [area]
+  );
 
   // Jump to the target's area when a round ends.
   useEffect(() => {
@@ -214,7 +239,7 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, result
     for (const c of overlays.connectors) drawConnector(ctx, c, false);
     if (editing) drawOverlayEditing(ctx);
     for (const g of glyphs) drawGlyph(ctx, g);
-    if (editing) drawRoomTint(ctx);
+    if (editing) (tool === "difficulty" ? drawDiffTint : drawRoomTint)(ctx);
 
     const box = (tile: Cell, color: string, outlineColor: string | null, lw: number) => {
       const x = (tile.x + dx) * S + 1;
@@ -510,6 +535,24 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, result
     ctx.restore();
   }
 
+  /** Diff-tool overlay: every playable cell tinted by its rating (green →
+   *  red, 6 = blacked out). Cells with no explicit rating show the default's
+   *  color at lower alpha so unrated coverage is visible at a glance. */
+  function drawDiffTint(ctx: CanvasRenderingContext2D) {
+    const { dx, dy } = area.map;
+    ctx.save();
+    for (const c of area.cells) {
+      const key = cellKey(area.id, c);
+      const rated = key in diffEdits;
+      const rating = rated ? diffEdits[key] : DEFAULT_RATING;
+      const rgb = RATING_COLORS[rating] ?? RATING_COLORS[DEFAULT_RATING];
+      const alpha = rating === EXCLUDED_RATING ? 0.8 : rated ? 0.55 : 0.25;
+      ctx.fillStyle = `rgba(${rgb}, ${alpha})`;
+      ctx.fillRect((c.x + dx) * S, (c.y + dy) * S, S, S);
+    }
+    ctx.restore();
+  }
+
   /** returns MAP coordinates */
   function cellFromEvent(e: React.MouseEvent): Cell | null {
     const canvas = canvasRef.current!;
@@ -627,8 +670,16 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, result
     setSaveMsg("");
     if (tool === "connector") return placeConnector(c);
     if (tool === "roomname") return placeRoom(c);
+    if (tool === "difficulty") return paintDiff(c);
     if (tool === "erase") return eraseAt(c);
     stampGlyph(c, tool); // tool narrows to GlyphType here
+  }
+
+  /** set the clicked cell's rating to the toolbar's selected value */
+  function paintDiff(c: Cell) {
+    const tile = { x: c.x - area.map.dx, y: c.y - area.map.dy };
+    if (!playableTiles.has(`${tile.x},${tile.y}`)) return; // ratings only apply to guessable cells
+    setDiffEdits((prev) => ({ ...prev, [cellKey(area.id, tile)]: diffRating }));
   }
 
   async function saveMap() {
@@ -648,15 +699,21 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, result
     for (const key of Object.keys(roomEdits).sort()) {
       if (roomEdits[key]) roomNamesOut[key] = roomEdits[key];
     }
+    const difficultyOut: Record<string, number> = {};
+    for (const key of Object.keys(diffEdits).sort()) {
+      difficultyOut[key] = diffEdits[key];
+    }
     try {
       const res = await fetch("/__save-map", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           game: data.game, glyphs: glyphsOut, overlays: overlaysOut, roomNames: roomNamesOut,
+          // omit when empty so a session with no ratings doesn't create the file
+          difficulty: Object.keys(difficultyOut).length ? difficultyOut : undefined,
         }),
       });
-      setSaveMsg(res.ok ? "saved ✓ (commit glyphs/overlays/roomNames.*.json)" : `error: ${await res.text()}`);
+      setSaveMsg(res.ok ? "saved ✓ (commit glyphs/overlays/roomNames/difficulty.*.json)" : `error: ${await res.text()}`);
     } catch (e) {
       setSaveMsg(`error: ${e instanceof Error ? e.message : e}`);
     }
@@ -711,6 +768,29 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, result
                   : roomAnchor
                     ? "click opposite corner"
                     : "click a room's start corner"}
+              </span>
+            </>
+          )}
+          {tool === "difficulty" && (
+            <>
+              {[1, 2, 3, 4, 5, 6].map((r) => (
+                <button
+                  key={r}
+                  className={`btn tiny ${diffRating === r ? "active" : ""}`}
+                  style={{
+                    background: `rgba(${RATING_COLORS[r]}, ${diffRating === r ? 0.9 : 0.45})`,
+                    color: r === 6 ? "#eee" : "#111",
+                  }}
+                  title={r === 6 ? "6 — never served as a target" : `rating ${r} (1 easy … 5 hard)`}
+                  onClick={() => setDiffRating(r)}
+                >
+                  {r}
+                </button>
+              ))}
+              <span className="edit-msg">
+                {hover && occupied.has(`${hover.x},${hover.y}`)
+                  ? `hovered: ${diffEdits[roomKeyAt(hover)] ?? `${DEFAULT_RATING} (unrated)`}`
+                  : "click a cell to rate it"}
               </span>
             </>
           )}

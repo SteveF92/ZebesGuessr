@@ -29,6 +29,9 @@ export const DEFAULT_DIFFICULTY = "hunter";
 /** Rating assumed for any cell missing from difficulty.<game>.json. */
 export const DEFAULT_RATING = 3;
 
+/** Cells rated 6 are never served as round targets in any mode. */
+export const EXCLUDED_RATING = 6;
+
 /**
  * Score multiplier carried by the tile itself: obscure screens are worth
  * more. Rating 3 (the default) is ×1.0; the 1–5 range spans ×0.75–×1.25.

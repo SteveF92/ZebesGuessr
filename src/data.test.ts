@@ -91,6 +91,47 @@ describe("pickTargets", () => {
   });
 });
 
+describe("pickTargets rating-6 exclusion", () => {
+  it("never serves rating-6 cells on any tier", () => {
+    const data = makeData(
+      { brinstar: grid(4, 4) },
+      { "brinstar:0,0": 6, "brinstar:1,0": 6 },
+    );
+    for (const id of ["recruit", "hunter", "chozo"]) {
+      for (let i = 0; i < 30; i++) {
+        for (const t of pickTargets(data, 5, getDifficulty(id))) {
+          expect(cellRating(data, t.areaId, t.cell)).toBeLessThan(6);
+        }
+      }
+    }
+  });
+
+  it("keeps rating-6 cells out of the small-pool fallback", () => {
+    // All cells rated 5 except one rated 6: Recruit's band (1–3) is empty, so
+    // the fallback pool kicks in — and must still exclude the 6.
+    const cells = grid(3, 3);
+    const ratings = Object.fromEntries(cells.map((c) => [cellKey("norfair", c), 5]));
+    ratings["norfair:0,0"] = 6;
+    const data = makeData({ norfair: cells }, ratings);
+    for (let i = 0; i < 30; i++) {
+      const targets = pickTargets(data, 8, getDifficulty("recruit"));
+      expect(targets).toHaveLength(8);
+      for (const t of targets) {
+        expect(cellRating(data, t.areaId, t.cell)).toBeLessThan(6);
+      }
+    }
+  });
+
+  it("excludes rating-6 cells even with no difficulty given", () => {
+    const data = makeData({ brinstar: grid(2, 2) }, { "brinstar:0,0": 6 });
+    const targets = pickTargets(data, 4);
+    expect(targets).toHaveLength(3);
+    for (const t of targets) {
+      expect(cellKey(t.areaId, t.cell)).not.toBe("brinstar:0,0");
+    }
+  });
+});
+
 describe("cellRating", () => {
   it("returns the rated value for a rated cell", () => {
     const data = makeData({ brinstar: grid(2, 2) }, { "brinstar:1,1": 5 });

@@ -1,4 +1,4 @@
-import { DEFAULT_RATING, type Difficulty } from "./scoring";
+import { DEFAULT_RATING, EXCLUDED_RATING, type Difficulty } from "./scoring";
 import type { GameData, MapGlyph, Connector, RoundTarget, Cell } from "./types";
 
 export const GAMES = [
@@ -135,12 +135,16 @@ export function cellRating(data: GameData, areaId: string, cell: Cell): number {
 /**
  * Pick n distinct random targets, weighted by area size. With a difficulty,
  * only cells rated inside its band are drawn — unless that leaves fewer than
- * n cells, in which case the full pool is used.
+ * n cells, in which case the full pool is used. Cells rated EXCLUDED_RATING
+ * never enter either pool.
  */
 export function pickTargets(data: GameData, n: number, diff?: Difficulty): RoundTarget[] {
   const all: RoundTarget[] = [];
   for (const area of data.areas) {
-    for (const cell of area.cells) all.push({ areaId: area.id, cell });
+    for (const cell of area.cells) {
+      if (cellRating(data, area.id, cell) >= EXCLUDED_RATING) continue;
+      all.push({ areaId: area.id, cell });
+    }
   }
   let pool = all;
   if (diff) {

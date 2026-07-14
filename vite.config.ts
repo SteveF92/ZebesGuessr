@@ -5,8 +5,9 @@ import { resolve } from "node:path";
 
 // Dev-only endpoint for the in-app icon editor: POST the curated map data and
 // it is written straight into public/data/*.<game>.json, ready to commit —
-// glyphs into glyphs.<game>.json, connectors into overlays.<game>.json, and
-// room names into roomNames.<game>.json. Not part of the production build.
+// glyphs into glyphs.<game>.json, connectors into overlays.<game>.json, room
+// names into roomNames.<game>.json, and per-cell difficulty ratings into
+// difficulty.<game>.json. Not part of the production build.
 function glyphSaver(): Plugin {
   return {
     name: "zg-glyph-saver",
@@ -21,7 +22,7 @@ function glyphSaver(): Plugin {
         req.on("data", (c) => (body += c));
         req.on("end", async () => {
           try {
-            const { game, glyphs, overlays, roomNames } = JSON.parse(body);
+            const { game, glyphs, overlays, roomNames, difficulty } = JSON.parse(body);
             if (!/^[a-z0-9-]+$/.test(game ?? "")) throw new Error("bad game id");
             const written: string[] = [];
             const write = async (name: string, data: unknown) => {
@@ -32,6 +33,7 @@ function glyphSaver(): Plugin {
             if (glyphs) await write("glyphs", glyphs);
             if (overlays) await write("overlays", overlays);
             if (roomNames) await write("roomNames", roomNames);
+            if (difficulty) await write("difficulty", difficulty);
             res.statusCode = 200;
             res.end(JSON.stringify({ ok: true, files: written }));
           } catch (e) {
