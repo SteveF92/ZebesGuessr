@@ -1,6 +1,10 @@
 export interface Cell {
   x: number;
   y: number;
+  /** a real, guessable room the in-game pause map never charts (e.g. Lower
+   *  Norfair Fireflea Room's hidden east half). Kept out of `AreaMap.cells`
+   *  so it isn't drawn or clickable; still a valid target (guessed blind). */
+  secret?: boolean;
 }
 
 export type MapCellKind = "room" | "vshaft" | "hshaft" | "diag";
