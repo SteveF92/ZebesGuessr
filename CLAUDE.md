@@ -18,7 +18,10 @@ npm run build      # tsc -b && vite build
 npx tsc -b         # typecheck only
 npm test           # vitest run (scoring + target-picking unit tests)
 npx vitest run src/scoring.test.ts   # single test file
+npm run format      # prettier --write . — includes public/data/*.json (diffs nicer pretty-printed), excludes public/tiles and pipeline/debug
 ```
+
+Run `npm run format` before every commit. This includes `public/data/*.json` — Python's `json.dump` doesn't match Prettier's formatting, so also run it after regenerating those files via the pipeline.
 
 There is no lint setup. The map pipeline (Python, needs `pip install pillow numpy`) only matters when regenerating data — the repo ships with baked tiles/JSON:
 
