@@ -11,6 +11,8 @@ interface Props {
   /** reports the hovered cell in TILE coordinates (debug preview), plus its
    *  current room name (reflects live editor edits) if any */
   onHoverCell?: (areaId: string, cell: Cell | null, roomName?: string) => void;
+  /** reports the area currently displayed on the map (tab/shoulder switches) */
+  onAreaChange?: (areaId: string) => void;
   /** when set, the round is over: draw target/guess markers, ignore clicks */
   result: RoundResult | null;
   /** dev icon-placement mode: clicks stamp/erase landmark glyphs */
@@ -129,9 +131,14 @@ const N = 1,
  * in-game pause map are drawn on canvas (rooms, shafts, station glyphs,
  * Samus' ship) — no environment art, knowledge only.
  */
-export default function GuessMap({ data, selected, onSelect, onHoverCell, result, editing, showTiles }: Props) {
+export default function GuessMap({ data, selected, onSelect, onHoverCell, onAreaChange, result, editing, showTiles }: Props) {
   const [areaId, setAreaId] = useState(data.areas[0].id);
   const area = data.areas.find((a) => a.id === areaId)!;
+
+  useEffect(() => {
+    onAreaChange?.(areaId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [areaId]);
 
   // L/R shoulder buttons cycle areas, like in the real pause screen
   function cycleArea(dir: number) {

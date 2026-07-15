@@ -34,6 +34,7 @@ export default function App() {
   const [targets, setTargets] = useState<RoundTarget[]>([]);
   const [round, setRound] = useState(0);
   const [selected, setSelected] = useState<{ areaId: string; cell: Cell } | null>(null);
+  const [viewingAreaId, setViewingAreaId] = useState<string | null>(null);
   const [results, setResults] = useState<RoundResult[]>([]);
   const [best, setBest] = useState<number>(() => Number(localStorage.getItem('zg-best') ?? 0));
   const [difficultyId, setDifficultyId] = useState<string>(() => localStorage.getItem('zg-difficulty') ?? 'recruit');
@@ -89,8 +90,10 @@ export default function App() {
     }
   }
 
+  const canSubmit = !!selected && (!viewingAreaId || selected.areaId === viewingAreaId);
+
   function submitGuess() {
-    if (!data || !selected) return;
+    if (!data || !selected || !canSubmit) return;
     const target = targets[round];
     const rating = cellRating(data, target.areaId, target.cell);
     const distance = cellDistance(target, selected);
@@ -127,7 +130,7 @@ export default function App() {
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
       if (e.key !== 'Enter') return;
-      if (phase === 'guessing' && selected) {
+      if (phase === 'guessing' && canSubmit) {
         submitGuess();
       } else if (phase === 'reveal') {
         nextRound();
@@ -336,8 +339,8 @@ export default function App() {
           )}
 
           {phase === 'guessing' && (
-            <button className="btn confirm" disabled={!selected} onClick={submitGuess}>
-              {selected ? '▶ TRANSMIT GUESS ↵' : 'SELECT A LOCATION'}
+            <button className="btn confirm" disabled={!canSubmit} onClick={submitGuess}>
+              {!selected ? 'SELECT A LOCATION' : canSubmit ? '▶ TRANSMIT GUESS ↵' : 'RETURN TO YOUR GUESS TO TRANSMIT'}
             </button>
           )}
 
@@ -376,6 +379,7 @@ export default function App() {
             selected={selected}
             onSelect={(areaId, cell) => setSelected({ areaId, cell })}
             onHoverCell={(areaId, cell, name) => setHoverTile(cell ? { areaId, cell, name } : null)}
+            onAreaChange={setViewingAreaId}
             result={result}
             editing={editIcons}
             showTiles={showTiles}
