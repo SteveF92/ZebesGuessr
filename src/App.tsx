@@ -39,6 +39,7 @@ export default function App() {
   );
   const [debug, setDebug] = useState(false);
   const [editIcons, setEditIcons] = useState(false);
+  const [showTiles, setShowTiles] = useState(false);
   const [hoverTile, setHoverTile] = useState<{ areaId: string; cell: Cell; name?: string } | null>(null);
   const [showAbout, setShowAbout] = useState(false);
   const [cheatEnabled, setCheatEnabled] = useState(
@@ -282,6 +283,13 @@ export default function App() {
                 icons
               </button>
               <button
+                className={`btn toggle ${showTiles ? "active" : ""}`}
+                onClick={() => setShowTiles((t) => !t)}
+                title="Overlay the real game screens on the map (aids the Diff tool)"
+              >
+                tiles
+              </button>
+              <button
                 className="btn toggle"
                 onClick={() => loadGameData(data.game).then(setData)}
                 title="Re-fetch data/<game>.json without losing round state (for tweaking map data by hand)"
@@ -362,6 +370,7 @@ export default function App() {
             onHoverCell={(areaId, cell, name) => setHoverTile(cell ? { areaId, cell, name } : null)}
             result={result}
             editing={editIcons}
+            showTiles={showTiles}
           />
         </section>
       </div>

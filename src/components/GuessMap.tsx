@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type {
   AreaData, Cell, Connector, DiagBand, GameData, MapCell, MapGlyph, RoundResult,
 } from "../types";
-import { cellKey } from "../data";
+import { cellKey, tileUrl } from "../data";
 import { DEFAULT_RATING, EXCLUDED_RATING } from "../scoring";
 
 interface Props {
@@ -17,6 +17,9 @@ interface Props {
   result: RoundResult | null;
   /** dev icon-placement mode: clicks stamp/erase landmark glyphs */
   editing?: boolean;
+  /** dev difficulty-rating aid: paint each playable cell's actual game screen
+   *  onto the map so ratings can be judged against the real imagery */
+  showTiles?: boolean;
 }
 
 type GlyphType = MapGlyph["t"];
@@ -84,8 +87,12 @@ function connectorFromDrag(a: Cell, c: Cell): Connector {
   return { x0: a.x, y0: Math.min(a.y, c.y), x1: a.x, y1: Math.max(a.y, c.y), label: "" };
 }
 
-/** css px per map cell */
+/** logical units per map cell (all drawing math is in these units) */
 const S = 16;
+/** on-screen magnification: the canvas backing store and context are scaled by
+ *  this so every cell renders SCALE×S css px. Bump to grow/shrink the whole map
+ *  uniformly (cells, walls, glyphs, and the tile overlay together). */
+const SCALE = 2;
 
 // SNES pause-map palette
 const COL = {
@@ -111,7 +118,7 @@ const N = 1, E = 2, SO = 4, W = 8;
  * in-game pause map are drawn on canvas (rooms, shafts, station glyphs,
  * Samus' ship) — no environment art, knowledge only.
  */
-export default function GuessMap({ data, selected, onSelect, onHoverCell, result, editing }: Props) {
+export default function GuessMap({ data, selected, onSelect, onHoverCell, result, editing, showTiles }: Props) {
   const [areaId, setAreaId] = useState(data.areas[0].id);
   const area = data.areas.find((a) => a.id === areaId)!;
 
@@ -127,6 +134,11 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, result
   const [shipLoaded, setShipLoaded] = useState(false);
   const [bossLoaded, setBossLoaded] = useState(false);
   const [hover, setHover] = useState<Cell | null>(null);
+
+  // Actual-game-screen overlay (showTiles): cache of the per-cell tile PNGs,
+  // keyed by URL. Bumping tileVersion as they stream in triggers a repaint.
+  const tileCache = useRef<Map<string, HTMLImageElement>>(new Map());
+  const [, setTileVersion] = useState(0);
 
   // editable copy of every area's glyphs; edits win over the loaded data
   const [edits, setEdits] = useState<Record<string, MapGlyph[]>>(() => {
@@ -212,16 +224,34 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, result
     bossImageRef.current = bossImg;
   }, []);
 
+  // Lazily fetch the actual game screens for the current area while showTiles
+  // is on; each arrival repaints so the overlay fills in progressively.
+  useEffect(() => {
+    if (!showTiles) return;
+    let cancelled = false;
+    for (const c of area.cells) {
+      const url = tileUrl(data, { areaId: area.id, cell: c });
+      if (tileCache.current.has(url)) continue;
+      const img = new Image();
+      img.onload = () => { if (!cancelled) setTileVersion((v) => v + 1); };
+      tileCache.current.set(url, img);
+      img.src = url;
+    }
+    return () => { cancelled = true; };
+  }, [showTiles, area, data]);
+
   useEffect(draw); // repaint on every state change; canvas is small
 
   function draw() {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const { cols, rows, dx, dy } = area.map;
-    const w = cols * S, h = rows * S;
-    if (canvas.width !== w) canvas.width = w;
-    if (canvas.height !== h) canvas.height = h;
+    const w = cols * S, h = rows * S;          // logical dims (all draw math)
+    const bw = w * SCALE, bh = h * SCALE;      // backing/displayed px
+    if (canvas.width !== bw) canvas.width = bw;
+    if (canvas.height !== bh) canvas.height = bh;
     const ctx = canvas.getContext("2d")!;
+    ctx.setTransform(SCALE, 0, 0, SCALE, 0, 0); // 1 logical unit -> SCALE css px
 
     // background: black with the purple dot lattice of the pause screen
     ctx.fillStyle = COL.bg;
@@ -239,6 +269,7 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, result
     for (const c of overlays.connectors) drawConnector(ctx, c, false);
     if (editing) drawOverlayEditing(ctx);
     for (const g of glyphs) drawGlyph(ctx, g);
+    if (showTiles) drawTiles(ctx);
     if (editing) (tool === "difficulty" ? drawDiffTint : drawRoomTint)(ctx);
 
     const box = (tile: Cell, color: string, outlineColor: string | null, lw: number) => {
@@ -531,6 +562,23 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, result
       if (!name || !key.startsWith(prefix)) continue;
       const [tx, ty] = key.slice(prefix.length).split(",").map(Number);
       ctx.fillRect((tx + dx) * S, (ty + dy) * S, S, S);
+    }
+    ctx.restore();
+  }
+
+  /** showTiles overlay: paint each playable cell's actual game screen (the
+   *  sliced tile PNG) into its map position, so difficulty ratings can be
+   *  judged against the real imagery. Images stream in asynchronously; cells
+   *  whose PNG hasn't loaded yet keep the recreation fill until it arrives.
+   *  Drawn under the Diff tint (which stays translucent) and the markers. */
+  function drawTiles(ctx: CanvasRenderingContext2D) {
+    const { dx, dy } = area.map;
+    ctx.save();
+    ctx.imageSmoothingEnabled = false;
+    for (const c of area.cells) {
+      const img = tileCache.current.get(tileUrl(data, { areaId: area.id, cell: c }));
+      if (!img || !img.complete || img.naturalWidth === 0) continue;
+      ctx.drawImage(img, (c.x + dx) * S, (c.y + dy) * S, S, S);
     }
     ctx.restore();
   }
