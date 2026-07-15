@@ -47,6 +47,10 @@ const RATING_COLORS: Record<number, string> = {
   6: "25, 25, 25",
 };
 
+/** outline color for the Diff tool's isolate mode — picked for max contrast
+ *  against every rating color and the map's dark background. */
+const ISOLATE_HIGHLIGHT = "#39ff14";
+
 type Overlays = { connectors: Connector[] };
 
 /** label-position cycle order for the editor toggle */
@@ -178,6 +182,8 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, result
     () => ({ ...(data.cellDifficulty ?? {}) })
   );
   const [diffRating, setDiffRating] = useState(DEFAULT_RATING);
+  // when set, the Diff tint only highlights cells matching diffRating
+  const [diffIsolate, setDiffIsolate] = useState(false);
 
   const occupied = useMemo(() => {
     const m = new Map<string, MapCell>();
@@ -593,6 +599,16 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, result
       const key = cellKey(area.id, c);
       const rated = key in diffEdits;
       const rating = rated ? diffEdits[key] : DEFAULT_RATING;
+      if (diffIsolate) {
+        if (rating !== diffRating) continue;
+        // bright outline instead of a fill so room detail underneath stays visible
+        const x = (c.x + dx) * S + 1.5;
+        const y = (c.y + dy) * S + 1.5;
+        ctx.strokeStyle = ISOLATE_HIGHLIGHT;
+        ctx.lineWidth = 3;
+        ctx.strokeRect(x, y, S - 3, S - 3);
+        continue;
+      }
       const rgb = RATING_COLORS[rating] ?? RATING_COLORS[DEFAULT_RATING];
       const alpha = rating === EXCLUDED_RATING ? 0.8 : rated ? 0.55 : 0.25;
       ctx.fillStyle = `rgba(${rgb}, ${alpha})`;
@@ -835,6 +851,13 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, result
                   {r}
                 </button>
               ))}
+              <button
+                className={`btn tiny ${diffIsolate ? "active" : ""}`}
+                title="only tint cells matching the selected rating"
+                onClick={() => setDiffIsolate((v) => !v)}
+              >
+                Isolate
+              </button>
               <span className="edit-msg">
                 {hover && occupied.has(`${hover.x},${hover.y}`)
                   ? `hovered: ${diffEdits[roomKeyAt(hover)] ?? `${DEFAULT_RATING} (unrated)`}`
