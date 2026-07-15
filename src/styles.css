@@ -977,11 +977,22 @@ a:hover {
   flex: 1;
   box-shadow: inset 0 0 60px rgba(10, 30, 60, 0.4);
   max-width: 100%;
+  /* center the fitted canvas (leftover space on ultrawide displays) */
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .map-canvas {
   image-rendering: pixelated;
   display: block;
   cursor: crosshair;
+  /* Scale the map down to fit the viewport so the big areas (Brinstar,
+     Crateria) no longer force the page to scroll on a ~1080p screen. The
+     canvas keeps its full-resolution backing store; only the CSS box shrinks,
+     and hit-testing reads getBoundingClientRect so clicks stay accurate.
+     170px ≈ the HUD + area tabs + paddings sitting above the map. */
+  max-width: 100%;
+  max-height: calc(100vh - 170px);
 }
 .map-canvas.editing {
   cursor: cell;
@@ -1083,6 +1094,35 @@ a:hover {
   border-radius: 999px;
   padding: 6px 20px;
   animation: zgGlow 2s ease-in-out infinite;
+}
+/* debrief layout: stacked by default, hero beside the round list on wide
+   screens so the summary no longer scrolls on a ~1080p display */
+.debrief-grid {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+.debrief-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+/* 1220px: enough for the hero column + 56px gap + the 500px round list
+   without the two columns ever overflowing horizontally */
+@media (min-width: 1220px) {
+  .debrief-grid {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 56px;
+  }
+  .debrief-grid .round-list {
+    margin-top: 0;
+    flex-shrink: 0;
+  }
 }
 .round-list {
   width: 100%;
@@ -1217,15 +1257,74 @@ a:hover {
 }
 
 @media (max-width: 800px) {
+  .game {
+    padding: 10px;
+    gap: 10px;
+  }
   .panes {
     flex-direction: column;
+    /* stretch (not flex-start) so the stacked right pane gets the viewport
+       width; otherwise the map canvas has no definite parent to size against
+       and overflows the screen horizontally */
+    align-items: stretch;
   }
+  /* center the left column as a uniform-width stack (mystery screen, confirm
+     button, reveal box all line up), shrinking on very narrow phones */
   .pane.left {
     width: 100%;
+    align-items: center;
   }
+  .pane.left > * {
+    width: min(340px, 100%);
+  }
+  /* square mystery screen that shrinks with the column */
   .tile-frame,
   .tile-frame img {
-    width: 300px;
-    height: 300px;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1 / 1;
+  }
+
+  /* HUD: keep it compact so it doesn't sprawl across several rows */
+  .hud {
+    gap: 10px 12px;
+    padding: 8px 12px;
+    flex-wrap: wrap;
+  }
+  .hud-sub {
+    display: none;
+  }
+  .round-label {
+    font-size: 18px;
+  }
+  .score-value {
+    font-size: 24px;
+  }
+  /* two tidy rows: logo + score on top, the round/pips centered below */
+  .hud-center {
+    order: 3;
+    flex-basis: 100%;
+  }
+  .hud-right {
+    margin-left: auto;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  /* area tabs: one swipeable row instead of wrapping into three */
+  .area-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    width: 100%;
+    padding-bottom: 2px;
+    scrollbar-width: thin;
+  }
+  .area-tabs .tab {
+    flex: 0 0 auto;
+    padding: 9px 13px 7px;
+    font-size: 15px;
+  }
+  .area-tabs .shoulder {
+    flex: 0 0 auto;
   }
 }

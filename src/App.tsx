@@ -240,48 +240,52 @@ export default function App() {
   if (phase === 'summary' && data) {
     const maxTotal = results.reduce((s, r) => s + maxForRating(r.rating), 0);
     return (
-      <div className="shell menu">
+      <div className="shell menu summary">
         <BackdropFX phase={phase} />
-        <p className="debrief-kicker">◇ MISSION DEBRIEF ◇</p>
-        <h1 className="logo">RUN COMPLETE</h1>
-        <p className="total">
-          {shownTotal.toLocaleString()} <span className="max">/ {maxTotal.toLocaleString()}</span>
-        </p>
-        <div className="rank-block">
-          <p className="rank">{scoreRank(total)}</p>
-          <p className="rank-flavor">{rankFlavor(total)}</p>
-        </div>
-        {total >= best && total > 0 && <div className="newbest">★ NEW PERSONAL BEST ★</div>}
-        <p className="sign-off">SEE YOU NEXT MISSION</p>
+        <div className="debrief-grid">
+          <div className="debrief-hero">
+            <p className="debrief-kicker">◇ MISSION DEBRIEF ◇</p>
+            <h1 className="logo">RUN COMPLETE</h1>
+            <p className="total">
+              {shownTotal.toLocaleString()} <span className="max">/ {maxTotal.toLocaleString()}</span>
+            </p>
+            <div className="rank-block">
+              <p className="rank">{scoreRank(total)}</p>
+              <p className="rank-flavor">{rankFlavor(total)}</p>
+            </div>
+            {total >= best && total > 0 && <div className="newbest">★ NEW PERSONAL BEST ★</div>}
+            <p className="sign-off">SEE YOU NEXT MISSION</p>
+          </div>
 
-        <ol className="round-list">
-          {results.map((r, i) => {
-            const per = maxForRating(r.rating);
-            const pct = Math.max(0, Math.min(1, r.score / per));
-            const dist = !isFinite(r.distance) ? 'wrong area' : r.distance === 0 ? 'exact!' : `${r.distance.toFixed(1)} cells off`;
-            const rn = roomName(data, r.target);
-            return (
-              <li key={i} className="round-card" style={{ animationDelay: `${i * 0.06}s` }}>
-                <div className="round-head">
-                  <span className="round-info">
-                    <span className="round-idx">{i + 1}.</span> <span className="round-area">{areaName(data, r.target.areaId)}</span> <span className="round-dist">{dist}</span>
-                  </span>
-                  <span className="round-score">{r.score.toLocaleString()}</span>
-                </div>
-                <div className="round-sub">
-                  {rn && <span className="round-room">“{rn}”</span>}
-                  <span className="round-stars" title={`Difficulty ${r.rating}/5`}>
-                    <span className="round-stars-label">DIFFICULTY</span> {'★'.repeat(r.rating)}
-                    {'☆'.repeat(5 - r.rating)}
-                  </span>
-                </div>
-                <div className="bar-track">
-                  <div className="bar-fill" style={{ width: `${pct * 100}%` }} />
-                </div>
-              </li>
-            );
-          })}
-        </ol>
+          <ol className="round-list">
+            {results.map((r, i) => {
+              const per = maxForRating(r.rating);
+              const pct = Math.max(0, Math.min(1, r.score / per));
+              const dist = !isFinite(r.distance) ? 'wrong area' : r.distance === 0 ? 'exact!' : `${r.distance.toFixed(1)} cells off`;
+              const rn = roomName(data, r.target);
+              return (
+                <li key={i} className="round-card" style={{ animationDelay: `${i * 0.06}s` }}>
+                  <div className="round-head">
+                    <span className="round-info">
+                      <span className="round-idx">{i + 1}.</span> <span className="round-area">{areaName(data, r.target.areaId)}</span> <span className="round-dist">{dist}</span>
+                    </span>
+                    <span className="round-score">{r.score.toLocaleString()}</span>
+                  </div>
+                  <div className="round-sub">
+                    {rn && <span className="round-room">“{rn}”</span>}
+                    <span className="round-stars" title={`Difficulty ${r.rating}/5`}>
+                      <span className="round-stars-label">DIFFICULTY</span> {'★'.repeat(r.rating)}
+                      {'☆'.repeat(5 - r.rating)}
+                    </span>
+                  </div>
+                  <div className="bar-track">
+                    <div className="bar-fill" style={{ width: `${pct * 100}%` }} />
+                  </div>
+                </li>
+              );
+            })}
+          </ol>
+        </div>
 
         <p className="summary-note">Tougher screens are worth more — play the hardest difficulty to max out your score.</p>
 
