@@ -5,6 +5,8 @@ import { AboutModal, Credits } from './components/AboutModal';
 import { useCountUp } from './hooks/useCountUp';
 import { GAMES, cellRating, loadGameData, pickTargets, roomName, tileUrl } from './data';
 import { DIFFICULTIES, ROUNDS_PER_RUN, cellDistance, getDifficulty, maxForRating, rankFlavor, revealFlavor, scoreRank, scoreRound } from './scoring';
+import { GAME_URL, buildShareText } from './share';
+import { buildShareImage, downloadBlob } from './shareImage';
 import type { Cell, GameData, RoundResult, RoundTarget } from './types';
 
 type Phase = 'menu' | 'loading' | 'guessing' | 'reveal' | 'summary';
@@ -45,6 +47,8 @@ export default function App() {
   const [hoverTile, setHoverTile] = useState<{ areaId: string; cell: Cell; name?: string } | null>(null);
   const [showAbout, setShowAbout] = useState(false);
   const [cheatEnabled, setCheatEnabled] = useState(() => localStorage.getItem('zg-cheat') === '1');
+  const [copyState, setCopyState] = useState<'idle' | 'copied' | 'error'>('idle');
+  const [imgState, setImgState] = useState<'idle' | 'saved' | 'error'>('idle');
 
   const difficulty = getDifficulty(difficultyId);
   const total = results.reduce((s, r) => s + r.score, 0);
@@ -88,6 +92,42 @@ export default function App() {
       setError(e instanceof Error ? e.message : String(e));
       setPhase('menu');
     }
+  }
+
+  async function onCopyText() {
+    if (!data) return;
+    const text = buildShareText(data, results, total, difficulty);
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopyState('copied');
+    } catch {
+      setCopyState('error'); // clipboard blocked (denied permission / insecure context)
+    }
+    setTimeout(() => setCopyState('idle'), 2000);
+  }
+
+  async function onShareImage() {
+    if (!data) return;
+    const maxTotal = results.reduce((s, r) => s + maxForRating(r.rating), 0);
+    const blob = await buildShareImage({ data, results, total, maxTotal, difficulty });
+    if (!blob) {
+      setImgState('error');
+      setTimeout(() => setImgState('idle'), 2000);
+      return;
+    }
+    const file = new File([blob], 'zebesguessr.png', { type: 'image/png' });
+    try {
+      if (navigator.canShare?.({ files: [file] }) && navigator.share) {
+        await navigator.share({ files: [file], url: GAME_URL });
+        return; // OS share sheet handled it — no toast needed
+      }
+      downloadBlob(blob, 'zebesguessr.png'); // no share sheet → save the PNG
+    } catch (e) {
+      if (e instanceof DOMException && e.name === 'AbortError') return; // user cancelled the sheet
+      downloadBlob(blob, 'zebesguessr.png'); // share failed → fall back to a download
+    }
+    setImgState('saved');
+    setTimeout(() => setImgState('idle'), 2000);
   }
 
   const canSubmit = !!selected && (!viewingAreaId || selected.areaId === viewingAreaId);
@@ -246,6 +286,12 @@ export default function App() {
         <p className="summary-note">Tougher screens are worth more — play the hardest difficulty to max out your score.</p>
 
         <div className="summary-actions">
+          <button className="btn secondary share" onClick={onCopyText}>
+            {copyState === 'copied' ? '✓ COPIED' : copyState === 'error' ? '✗ TRY AGAIN' : '⎘ COPY TEXT'}
+          </button>
+          <button className="btn secondary share" onClick={onShareImage}>
+            {imgState === 'saved' ? '✓ SAVED' : imgState === 'error' ? '✗ TRY AGAIN' : '⇪ SHARE IMAGE'}
+          </button>
           <button className="btn primary" onClick={() => startGame(data.game)}>
             ▶ PLAY AGAIN
           </button>

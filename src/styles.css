@@ -789,6 +789,15 @@ a:hover {
   color: var(--text);
   border-color: var(--cyan);
 }
+/* SHARE reads as the distinct action among the summary buttons. */
+.btn.secondary.share {
+  color: var(--cyan);
+  border-color: var(--cyan);
+}
+.btn.secondary.share:hover {
+  color: var(--bg);
+  background: var(--cyan);
+}
 .btn.toggle {
   padding: 5px 12px;
   font-size: 14px;
@@ -1179,6 +1188,8 @@ a:hover {
 }
 .summary-actions {
   display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 12px;
   margin-top: 18px;
 }
