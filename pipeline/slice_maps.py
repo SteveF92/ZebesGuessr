@@ -123,7 +123,9 @@ def process_game(game_id: str, game: dict) -> None:
 
     out = ROOT / "public" / "data"
     out.mkdir(parents=True, exist_ok=True)
-    (out / f"{game_id}.json").write_text(json.dumps(data))
+    # Indented so Prettier keeps objects expanded, matching committed
+    # formatting; extract_ingame_maps.py rewrites this file the same way.
+    (out / f"{game_id}.json").write_text(json.dumps(data, indent=2))
     print(f"wrote public/data/{game_id}.json")
 
 

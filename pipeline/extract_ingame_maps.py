@@ -384,6 +384,36 @@ def align(map_cells, mcols, mrows, tile_cells, tcols, trows):
     return best[1], best[2], best[0]
 
 
+def load_map_overrides(game_id: str) -> dict:
+    """Hand-tuned map fixes the extractor can't reproduce, authored by hand in
+    mapOverrides.<game>.json and applied on top of extraction (never written by
+    this script — same convention as glyphs/overlays). Keyed by areaId:
+
+        { "<areaId>": { "cells": [{x, y, k, w, [d]}, ...],
+                        "bands": [{"poly": [[x, y], ...]}, ...] } }
+
+    ``cells`` upserts individual pause-map cells by (x, y) — used to reclassify
+    a room as a stair (`diag`) or to add rooms the pixel heuristics miss. These
+    are injected *before* grid alignment, so an added map cell also keeps its
+    matching guess target playable. ``bands`` replaces the area's whole band
+    list (the auto-fitted stair polygons look rough; these are drawn by hand).
+    """
+    f = ROOT / "public" / "data" / f"mapOverrides.{game_id}.json"
+    return json.loads(f.read_text()) if f.exists() else {}
+
+
+def apply_cell_overrides(cells: dict, ov: dict | None) -> int:
+    """Upsert hand-authored map cells into the internal grid (before align)."""
+    if not ov or "cells" not in ov:
+        return 0
+    for c in ov["cells"]:
+        v = {"kind": c["k"], "walls": c["w"]}
+        if "d" in c:
+            v["dir"] = c["d"]
+        cells[(c["x"], c["y"])] = v
+    return len(ov["cells"])
+
+
 def fallback_map(area):
     occ = {(c["x"], c["y"]) for c in area["cells"]}
     cells = []
@@ -400,12 +430,17 @@ def fallback_map(area):
 
 
 def main() -> None:
-    for data_file in (ROOT / "public" / "data").glob("*.json"):
-        if data_file.name.startswith(("glyphs.", "overlays.")):
-            continue  # hand-placed icons / connectors; not touched by extraction
+    for data_file in sorted((ROOT / "public" / "data").glob("*.json")):
         data = json.loads(data_file.read_text())
+        # Sidecar files (glyphs.*, overlays.*, difficulty.*, roomNames.*,
+        # mapOverrides.*) share this directory but aren't baked game data — skip
+        # anything without a game file's top-level shape.
+        if "game" not in data or "areas" not in data:
+            continue
         game_id = data["game"]
+        overrides = load_map_overrides(game_id)
         for area in data["areas"]:
+            ov = overrides.get(area["id"])
             img = ROOT / "Images" / "raw" / game_id / "ingame" / f"{area['id']}.webp"
             if not img.exists():
                 area["map"] = fallback_map(area)
@@ -414,6 +449,9 @@ def main() -> None:
             cols, rows, cells, bands, erased = extract_area(img)
             dropped_labels = drop_label_text(cells)
             closed = close_perimeter(cells)
+            # Hand-authored cell fixes go in before alignment so an added map
+            # cell also keeps its matching guess target playable.
+            overridden = apply_cell_overrides(cells, ov)
             dx, dy, matches = align(cells, cols, rows, area["cells"],
                                     area["cols"], area["rows"])
             occ = set(cells)
@@ -427,7 +465,8 @@ def main() -> None:
                      **({"d": v["dir"]} if "dir" in v else {})}
                     for (x, y), v in sorted(cells.items())],
                 "glyphs": [],
-                "bands": bands,
+                # hand-drawn stair polygons win over the auto-fit ones
+                "bands": ov["bands"] if ov and "bands" in ov else bands,
                 "connectors": [],
                 "source": "ingame",
             }
@@ -435,8 +474,11 @@ def main() -> None:
                   f"{len(bands)} bands, offset ({dx},{dy}), "
                   f"{matches} aligned, {dropped} targets dropped, "
                   f"{erased} annotation px erased, {dropped_labels} label cells removed, "
-                  f"{closed} edges closed")
-        data_file.write_text(json.dumps(data))
+                  f"{closed} edges closed, {overridden} cells overridden")
+        # Indented so Prettier keeps objects expanded (one field per line) —
+        # matches the committed formatting and gives clean per-coordinate diffs.
+        # Still run `npm run format` afterward to normalise the rest.
+        data_file.write_text(json.dumps(data, indent=2))
         print(f"patched {data_file.relative_to(ROOT)}")
 
 
