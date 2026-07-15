@@ -32,12 +32,39 @@ export const DEFAULT_RATING = 3;
 /** Cells rated 6 are never served as round targets in any mode. */
 export const EXCLUDED_RATING = 6;
 
+// ------------------------------------------------------------- scoring knobs
+// Tune the game feel here. All three inputs to a round's score — distance,
+// rating, and same-room — are combined by `scoreRound` below.
+
 /**
- * Score multiplier carried by the tile itself: obscure screens are worth
- * more. Rating 3 (the default) is ×1.0; the 1–5 range spans ×0.75–×1.25.
+ * Per-rating max score: the points an *exact* guess earns on a tile of that
+ * rating. Obscure screens (higher rating) are worth more, topping out at
+ * MAX_SCORE for rating 5, so a perfect run of five rating-5 tiles = 25,000.
+ * Indexed by rating (1–5); index 0 is unused.
  */
-export function tileMult(rating: number): number {
-  return 0.75 + 0.125 * (rating - 1);
+export const RATING_MAX = [0, 4000, 4125, 4500, 4750, 5000];
+
+/** Proximity multiplier at exactly 1 cell off — sets the exact→1-off gap. */
+export const NEAR = 0.7;
+/** Tail fatness of the distance falloff: larger = slower decay toward zero. */
+export const SPREAD = 6;
+/** Proximity bonus for guessing inside the target's actual room (non-exact). */
+export const SAME_ROOM_BONUS = 0.12;
+
+/** The exact-guess score for a tile of the given rating (clamped to 1–5). */
+export function maxForRating(rating: number): number {
+  const r = Math.max(1, Math.min(5, Math.round(rating)));
+  return RATING_MAX[r];
+}
+
+/**
+ * Distance → 0..1 proximity multiplier. Exact is a full 1.0; the first cell
+ * off drops sharply to NEAR, then decays on a slow reciprocal tail so points
+ * trail toward zero gently rather than falling off a cliff.
+ */
+export function proximity(distance: number): number {
+  if (distance <= 0) return 1;
+  return NEAR / (1 + (distance - 1) / SPREAD);
 }
 
 export function getDifficulty(id: string | null): Difficulty {
@@ -52,13 +79,18 @@ export function cellDistance(target: RoundTarget, guess: Guess): number {
 }
 
 /**
- * Exact cell = full score (scaled by the tile's rating). Falls off
- * exponentially with distance (half score at ~4 cells). Wrong area = 0.
+ * Score a round from its three inputs: `distance` (cells; Infinity = wrong
+ * area → 0), the target tile's `rating` (sets the exact-guess ceiling), and
+ * whether the guess landed in the target's actual `sameRoom`. Being in the
+ * right room adds a proximity bonus, so a same-room near miss beats an
+ * equidistant guess in the wrong room. Capped at the exact-guess score.
  */
-export function scoreRound(target: RoundTarget, guess: Guess, rating: number): number {
-  const d = cellDistance(target, guess);
-  if (!isFinite(d)) return 0;
-  return Math.round(MAX_SCORE * tileMult(rating) * Math.exp(-d / 5.77)); // exp(-4/5.77) ≈ 0.5
+export function scoreRound(distance: number, rating: number, sameRoom: boolean): number {
+  if (!isFinite(distance)) return 0;
+  let p = proximity(distance);
+  if (sameRoom && distance > 0) p += SAME_ROOM_BONUS;
+  p = Math.max(0, Math.min(1, p));
+  return Math.round(maxForRating(rating) * p);
 }
 
 export function scoreRank(total: number): string {

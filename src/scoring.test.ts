@@ -6,9 +6,9 @@ import {
   ROUNDS_PER_RUN,
   cellDistance,
   getDifficulty,
+  maxForRating,
   scoreRank,
   scoreRound,
-  tileMult,
 } from "./scoring";
 import type { Guess, RoundTarget } from "./types";
 
@@ -32,52 +32,74 @@ describe("cellDistance", () => {
   });
 });
 
-describe("tileMult", () => {
-  it("maps the 1–5 rating range onto ×0.75–×1.25", () => {
-    expect(tileMult(1)).toBe(0.75);
-    expect(tileMult(2)).toBe(0.875);
-    expect(tileMult(3)).toBe(1.0);
-    expect(tileMult(4)).toBe(1.125);
-    expect(tileMult(5)).toBe(1.25);
+describe("maxForRating", () => {
+  it("maps the 1–5 rating range onto the score table", () => {
+    expect(maxForRating(1)).toBe(4000);
+    expect(maxForRating(2)).toBe(4125);
+    expect(maxForRating(3)).toBe(4500);
+    expect(maxForRating(4)).toBe(4750);
+    expect(maxForRating(5)).toBe(MAX_SCORE);
   });
 
-  it("is neutral for the default rating", () => {
-    expect(tileMult(DEFAULT_RATING)).toBe(1.0);
+  it("caps a rating-5 exact hit at MAX_SCORE", () => {
+    expect(maxForRating(5)).toBe(MAX_SCORE);
+  });
+
+  it("gives the default rating 4500", () => {
+    expect(maxForRating(DEFAULT_RATING)).toBe(4500);
+  });
+
+  it("clamps out-of-range ratings", () => {
+    expect(maxForRating(0)).toBe(maxForRating(1));
+    expect(maxForRating(9)).toBe(maxForRating(5));
   });
 });
 
 describe("scoreRound", () => {
-  it("gives the full score for an exact guess at the default rating", () => {
-    expect(scoreRound(at("brinstar", 5, 5), at("brinstar", 5, 5), DEFAULT_RATING)).toBe(MAX_SCORE);
+  it("gives the full rating score for an exact guess", () => {
+    for (const rating of [1, 2, 3, 4, 5]) {
+      expect(scoreRound(0, rating, true)).toBe(maxForRating(rating));
+    }
   });
 
-  it("gives 0 for a wrong-area guess", () => {
-    expect(scoreRound(at("brinstar", 5, 5), at("norfair", 5, 5), DEFAULT_RATING)).toBe(0);
+  it("gives 0 for a wrong-area guess (infinite distance)", () => {
+    expect(scoreRound(Infinity, DEFAULT_RATING, false)).toBe(0);
+    expect(scoreRound(Infinity, DEFAULT_RATING, true)).toBe(0);
   });
 
-  it("halves the score at roughly 4 cells away", () => {
-    const score = scoreRound(at("brinstar", 0, 0), at("brinstar", 4, 0), DEFAULT_RATING);
-    expect(score).toBeGreaterThan(MAX_SCORE * 0.45);
-    expect(score).toBeLessThan(MAX_SCORE * 0.55);
+  it("has a big gap between exact and one cell off", () => {
+    const exact = scoreRound(0, 5, false);
+    const oneOff = scoreRound(1, 5, false);
+    expect(exact - oneOff).toBeGreaterThan(MAX_SCORE * 0.25);
   });
 
   it("falls off monotonically with distance", () => {
-    const target = at("brinstar", 0, 0);
     let prev = Infinity;
-    for (const x of [1, 2, 5, 10, 30]) {
-      const score = scoreRound(target, at("brinstar", x, 0), DEFAULT_RATING);
+    for (const d of [0, 1, 2, 5, 10, 30]) {
+      const score = scoreRound(d, DEFAULT_RATING, false);
       expect(score).toBeLessThan(prev);
       prev = score;
     }
   });
 
-  it("applies the tile multiplier to an exact guess", () => {
-    const target = at("brinstar", 5, 5);
-    for (const rating of [1, 2, 3, 4, 5]) {
-      expect(scoreRound(target, at("brinstar", 5, 5), rating)).toBe(
-        Math.round(MAX_SCORE * tileMult(rating)),
-      );
+  it("keeps a fat tail — still scores well beyond the halfway distance", () => {
+    // A guess 10 cells off should still earn a meaningful share, not near-zero.
+    expect(scoreRound(10, 5, false)).toBeGreaterThan(MAX_SCORE * 0.2);
+  });
+
+  it("rewards the right room: same-room beats an equidistant wrong-room guess", () => {
+    for (const d of [1, 2, 4, 8]) {
+      expect(scoreRound(d, 5, true)).toBeGreaterThan(scoreRound(d, 5, false));
     }
+  });
+
+  it("lets the right room at 2 off beat the wrong room at 2 off, but never beat exact", () => {
+    expect(scoreRound(2, 5, true)).toBeGreaterThan(scoreRound(2, 5, false));
+    expect(scoreRound(2, 5, true)).toBeLessThan(scoreRound(0, 5, false));
+  });
+
+  it("never lets the same-room bonus apply to an exact hit", () => {
+    expect(scoreRound(0, 5, true)).toBe(scoreRound(0, 5, false));
   });
 });
 

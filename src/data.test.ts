@@ -82,6 +82,30 @@ describe("pickTargets", () => {
     expect(pickTargets(data, 4)).toHaveLength(4);
   });
 
+  it("two-step draw reaches a rare high rating about as often as a common one", () => {
+    // Chozo band is 3–5. Rating 3 has 100 cells, rating 5 has only 4. Uniform
+    // sampling would almost never serve a 5; two-step should serve rating 3 and
+    // rating 5 at roughly equal rates because it picks the level first.
+    const cells = grid(11, 11).slice(0, 104); // 104 cells
+    const ratings: Record<string, number> = {};
+    cells.forEach((c, i) => (ratings[cellKey("norfair", c)] = i < 4 ? 5 : 3));
+    const data = makeData({ norfair: cells }, ratings);
+    const chozo = getDifficulty("chozo");
+
+    let fives = 0;
+    let threes = 0;
+    for (let i = 0; i < 400; i++) {
+      for (const t of pickTargets(data, 1, chozo)) {
+        const r = cellRating(data, t.areaId, t.cell);
+        if (r === 5) fives++;
+        else if (r === 3) threes++;
+      }
+    }
+    // Roughly 50/50 despite the 25:1 pool imbalance — well clear of the ~4%
+    // a uniform draw would give the fives.
+    expect(fives).toBeGreaterThan(threes * 0.5);
+  });
+
   it("falls back to the full pool when the band leaves fewer than n cells", () => {
     // Every cell rated 5 — Recruit's band is empty, so all cells stay in play.
     const cells = grid(3, 3);

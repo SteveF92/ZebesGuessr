@@ -407,6 +407,10 @@ a:hover { color: var(--cyan); text-decoration: underline; }
 .round-score { font-family: var(--font-display); font-size: 18px; color: var(--gold); flex-shrink: 0; }
 .bar-track { margin-top: 8px; height: 5px; border-radius: 3px; background: rgba(160,248,248,.1); overflow: hidden; }
 .bar-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--accent), var(--cyan)); box-shadow: 0 0 10px rgba(77,255,136,.4); transition: width .6s ease; }
+.summary-note {
+  width: 100%; max-width: 500px; margin: 12px auto 0; text-align: center;
+  font-size: 12px; letter-spacing: .04em; color: var(--dim); line-height: 1.5;
+}
 .summary-actions { display: flex; gap: 12px; margin-top: 18px; }
 .sign-off {
   font-family: var(--font-display); font-weight: 400;

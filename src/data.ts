@@ -132,34 +132,70 @@ export function cellRating(data: GameData, areaId: string, cell: Cell): number {
   return data.cellDifficulty?.[cellKey(areaId, cell)] ?? DEFAULT_RATING;
 }
 
-/**
- * Pick n distinct random targets, weighted by area size. With a difficulty,
- * only cells rated inside its band are drawn — unless that leaves fewer than
- * n cells, in which case the full pool is used. Cells rated EXCLUDED_RATING
- * never enter either pool.
- */
-export function pickTargets(data: GameData, n: number, diff?: Difficulty): RoundTarget[] {
-  const all: RoundTarget[] = [];
-  for (const area of data.areas) {
-    for (const cell of area.cells) {
-      if (cellRating(data, area.id, cell) >= EXCLUDED_RATING) continue;
-      all.push({ areaId: area.id, cell });
-    }
-  }
-  let pool = all;
-  if (diff) {
-    const banded = all.filter((t) => {
-      const r = cellRating(data, t.areaId, t.cell);
-      return r >= diff.min && r <= diff.max;
-    });
-    if (banded.length >= n) pool = banded;
-  }
+/** Pick n distinct targets uniformly at random from a flat pool (area-weighted). */
+function sampleUniform(pool: RoundTarget[], n: number): RoundTarget[] {
   const picked: RoundTarget[] = [];
   const used = new Set<string>();
   while (picked.length < Math.min(n, pool.length)) {
     const t = pool[Math.floor(Math.random() * pool.length)];
-    const key = `${t.areaId}:${t.cell.x},${t.cell.y}`;
+    const key = cellKey(t.areaId, t.cell);
     if (used.has(key)) continue;
+    used.add(key);
+    picked.push(t);
+  }
+  return picked;
+}
+
+/**
+ * Pick n distinct random targets. With no difficulty, cells are drawn
+ * uniformly (so larger areas appear more often). With a difficulty, the draw
+ * is two-step: a rating level inside the band is chosen equally, then a room
+ * of that rating — so the band's rarer (harder) ratings show up as often as
+ * its common ones instead of being drowned out. If the band holds fewer than
+ * n cells, the full uniform pool is used as a fallback. Cells rated
+ * EXCLUDED_RATING never enter either pool.
+ */
+export function pickTargets(data: GameData, n: number, diff?: Difficulty): RoundTarget[] {
+  const all: RoundTarget[] = [];
+  const byRating = new Map<number, RoundTarget[]>();
+  for (const area of data.areas) {
+    for (const cell of area.cells) {
+      const r = cellRating(data, area.id, cell);
+      if (r >= EXCLUDED_RATING) continue;
+      const t = { areaId: area.id, cell };
+      all.push(t);
+      (byRating.get(r) ?? byRating.set(r, []).get(r)!).push(t);
+    }
+  }
+
+  if (!diff) return sampleUniform(all, n);
+
+  // The band's rating levels that actually have cells to draw from.
+  const bandRatings: number[] = [];
+  let banded = 0;
+  for (let r = diff.min; r <= diff.max; r++) {
+    const cells = byRating.get(r);
+    if (cells && cells.length) {
+      bandRatings.push(r);
+      banded += cells.length;
+    }
+  }
+  if (banded < n) return sampleUniform(all, n);
+
+  const picked: RoundTarget[] = [];
+  const used = new Set<string>();
+  const active = [...bandRatings];
+  while (picked.length < n && active.length) {
+    const ai = Math.floor(Math.random() * active.length);
+    const cells = byRating.get(active[ai])!;
+    const t = cells[Math.floor(Math.random() * cells.length)];
+    const key = cellKey(t.areaId, t.cell);
+    if (used.has(key)) {
+      // Drop this rating once all its cells are spoken for, so we never spin
+      // forever on an exhausted level while others still have room.
+      if (cells.every((c) => used.has(cellKey(c.areaId, c.cell)))) active.splice(ai, 1);
+      continue;
+    }
     used.add(key);
     picked.push(t);
   }

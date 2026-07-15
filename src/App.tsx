@@ -5,8 +5,8 @@ import { AboutModal, Credits } from "./components/AboutModal";
 import { useCountUp } from "./hooks/useCountUp";
 import { GAMES, cellRating, loadGameData, pickTargets, roomName, tileUrl } from "./data";
 import {
-  DIFFICULTIES, MAX_SCORE, ROUNDS_PER_RUN,
-  cellDistance, getDifficulty, rankFlavor, revealFlavor, scoreRank, scoreRound, tileMult,
+  DIFFICULTIES, ROUNDS_PER_RUN,
+  cellDistance, getDifficulty, maxForRating, rankFlavor, revealFlavor, scoreRank, scoreRound,
 } from "./scoring";
 import type { Cell, GameData, RoundResult, RoundTarget } from "./types";
 
@@ -94,12 +94,15 @@ export default function App() {
     if (!data || !selected) return;
     const target = targets[round];
     const rating = cellRating(data, target.areaId, target.cell);
+    const distance = cellDistance(target, selected);
+    const tn = roomName(data, target);
+    const sameRoom = !!tn && target.areaId === selected.areaId && tn === roomName(data, selected);
     const result: RoundResult = {
       target,
       guess: selected,
       rating,
-      distance: cellDistance(target, selected),
-      score: scoreRound(target, selected, rating),
+      distance,
+      score: scoreRound(distance, rating, sameRoom),
     };
     setResults((r) => [...r, result]);
     setPhase("reveal");
@@ -182,7 +185,7 @@ export default function App() {
 
   // ---------------------------------------------------------------- SUMMARY
   if (phase === "summary" && data) {
-    const maxTotal = results.reduce((s, r) => s + Math.round(MAX_SCORE * tileMult(r.rating)), 0);
+    const maxTotal = results.reduce((s, r) => s + maxForRating(r.rating), 0);
     return (
       <div className="shell menu">
         <BackdropFX />
@@ -200,7 +203,7 @@ export default function App() {
 
         <ol className="round-list">
           {results.map((r, i) => {
-            const per = MAX_SCORE * tileMult(r.rating);
+            const per = maxForRating(r.rating);
             const pct = Math.max(0, Math.min(1, r.score / per));
             const dist = !isFinite(r.distance)
               ? "wrong area"
@@ -224,6 +227,10 @@ export default function App() {
             );
           })}
         </ol>
+
+        <p className="summary-note">
+          Tougher screens are worth more — play the hardest difficulty to max out your score.
+        </p>
 
         <div className="summary-actions">
           <button className="btn primary" onClick={() => startGame(data.game)}>▶ PLAY AGAIN</button>
