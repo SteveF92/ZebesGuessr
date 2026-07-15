@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from 'react';
 
 /**
  * Eased count-up from 0 → `target`. Re-runs whenever `target` (or any extra
@@ -6,11 +6,7 @@ import { useEffect, useRef, useState } from "react";
  *
  *   const shown = Math.round(useCountUp(score, 900, [result]));
  */
-export function useCountUp(
-  target: number,
-  duration = 1000,
-  deps: readonly unknown[] = []
-): number {
+export function useCountUp(target: number, duration = 1000, deps: readonly unknown[] = []): number {
   const [value, setValue] = useState(0);
   const raf = useRef<number | undefined>(undefined);
 

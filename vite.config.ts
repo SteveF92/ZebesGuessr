@@ -1,7 +1,7 @@
-import { defineConfig, type Plugin } from "vite";
-import react from "@vitejs/plugin-react";
-import { writeFile } from "node:fs/promises";
-import { resolve } from "node:path";
+import { defineConfig, type Plugin } from 'vite';
+import react from '@vitejs/plugin-react';
+import { writeFile } from 'node:fs/promises';
+import { resolve } from 'node:path';
 
 // Dev-only endpoint for the in-app icon editor: POST the curated map data and
 // it is written straight into public/data/*.<game>.json, ready to commit —
@@ -10,30 +10,30 @@ import { resolve } from "node:path";
 // difficulty.<game>.json. Not part of the production build.
 function glyphSaver(): Plugin {
   return {
-    name: "zg-glyph-saver",
-    apply: "serve",
+    name: 'zg-glyph-saver',
+    apply: 'serve',
     configureServer(server) {
-      server.middlewares.use("/__save-map", (req, res) => {
-        if (req.method !== "POST") {
+      server.middlewares.use('/__save-map', (req, res) => {
+        if (req.method !== 'POST') {
           res.statusCode = 405;
-          return res.end("POST only");
+          return res.end('POST only');
         }
-        let body = "";
-        req.on("data", (c) => (body += c));
-        req.on("end", async () => {
+        let body = '';
+        req.on('data', (c) => (body += c));
+        req.on('end', async () => {
           try {
             const { game, glyphs, overlays, roomNames, difficulty } = JSON.parse(body);
-            if (!/^[a-z0-9-]+$/.test(game ?? "")) throw new Error("bad game id");
+            if (!/^[a-z0-9-]+$/.test(game ?? '')) throw new Error('bad game id');
             const written: string[] = [];
             const write = async (name: string, data: unknown) => {
-              const file = resolve(__dirname, "public/data", `${name}.${game}.json`);
-              await writeFile(file, JSON.stringify(data, null, 2) + "\n");
+              const file = resolve(__dirname, 'public/data', `${name}.${game}.json`);
+              await writeFile(file, JSON.stringify(data, null, 2) + '\n');
               written.push(file);
             };
-            if (glyphs) await write("glyphs", glyphs);
-            if (overlays) await write("overlays", overlays);
-            if (roomNames) await write("roomNames", roomNames);
-            if (difficulty) await write("difficulty", difficulty);
+            if (glyphs) await write('glyphs', glyphs);
+            if (overlays) await write('overlays', overlays);
+            if (roomNames) await write('roomNames', roomNames);
+            if (difficulty) await write('difficulty', difficulty);
             res.statusCode = 200;
             res.end(JSON.stringify({ ok: true, files: written }));
           } catch (e) {
@@ -42,7 +42,7 @@ function glyphSaver(): Plugin {
           }
         });
       });
-    },
+    }
   };
 }
 
@@ -50,5 +50,5 @@ function glyphSaver(): Plugin {
 // Change or remove if hosting at a root domain.
 export default defineConfig({
   plugins: [react(), glyphSaver()],
-  base: "/ZebesGuessr/",
+  base: '/ZebesGuessr/'
 });

@@ -2,16 +2,16 @@
    If a file is missing the UI falls back to "Press Start 2P". */
 
 @font-face {
-  font-family: "Super Metroid Title";
-  src: url("./super-metroid-title.ttf") format("truetype");
+  font-family: 'Super Metroid Title';
+  src: url('./super-metroid-title.ttf') format('truetype');
   font-weight: normal;
   font-style: normal;
   font-display: swap;
 }
 
 @font-face {
-  font-family: "Super Metroid Large Alt";
-  src: url("./super-metroid-large-alt-snes.ttf") format("truetype");
+  font-family: 'Super Metroid Large Alt';
+  src: url('./super-metroid-large-alt-snes.ttf') format('truetype');
   font-weight: normal;
   font-style: normal;
   font-display: swap;

@@ -3,7 +3,7 @@
 Room names now live in **`public/data/roomNames.<game>.json`** and are authored
 in-app with the **Name** tool in the icon editor (type a name, drag a rectangle
 over a room, **Save to file**). `slice_maps.py`'s `load_room_names` reads that
-public file first and only falls back to a `<game-id>.json` placed *here* if the
+public file first and only falls back to a `<game-id>.json` placed _here_ if the
 public file is absent — so you normally don't need this directory.
 
 Format either way is `<areaId>:<x>,<y>` → name, x/y being cell coordinates from

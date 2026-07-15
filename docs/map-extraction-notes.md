@@ -10,6 +10,7 @@ and are worth re-validating for another game or a re-sourced map.
 ## Phantom rooms (map annotations drawn in room colours)
 
 ### What they were
+
 The recreations annotate area exits in colours the extractor also treats as
 map geometry, which produced four kinds of phantom cells:
 
@@ -27,13 +28,14 @@ map geometry, which produced four kinds of phantom cells:
 - **Dashed cyan decoration rows** (Brinstar) with no pink at all.
 
 ### How it's handled
+
 Two pixel-level rules in `extract_ingame_maps.py`:
 
 1. **`erase_annotations`** — pink 8-connected components with
    `size < ANNOT_MAX_PX (24)` **and** cyan-enclosure `< 0.5` are erased from
    the pink mask. Measured across all six areas: caption letters are 6–16 px
    with enclosure exactly `0.00`, elevator dashes are 1–3 px at `≤ 0.38`,
-   while the smallest *real* geometry (a one-tile room interior) is 26+ px at
+   while the smallest _real_ geometry (a one-tile room interior) is 26+ px at
    enclosure `≥ 0.75`. Elevator-room tiles at the map edge (enclosure
    `0.75–0.88`) are real map in the actual game and survive, correctly.
 2. **Occupancy requires pink** — a cell's `fill` counts pink/ship/green
@@ -44,6 +46,7 @@ Two pixel-level rules in `extract_ingame_maps.py`:
 a cheap backstop; after the pixel-level pass it removes nothing.
 
 ### Closing open room edges
+
 `side_has_wall` needs >=4 cyan px on a boundary, so a room whose source outline
 is thin or anti-aliased can keep an open side facing empty space (13 such edges
 across the six areas). `close_perimeter` runs after `drop_label_text`: for every
@@ -53,6 +56,7 @@ touches shaft/diag cells — so the map perimeter always reads closed while shar
 interior edges stay open. Rerun and it is idempotent.
 
 ### Transit connectors are hand-placed
+
 The pipeline erases elevator/exit channels (above) and Maridia's dashed transit
 lines, and never re-detects them. Both are curated by hand as unified
 **connectors** in the app's icon editor (Connector tool — one axis-aligned
@@ -63,8 +67,9 @@ emits an empty `connectors` array and never writes the overlays file (it is
 skipped by name).
 
 ### Residual difficulties / assumptions
+
 - The 24px / 0.5-enclosure thresholds are empirical, though the observed gap
-  is wide (0.38 vs 0.75). A real pink feature smaller than 24px *without* a
+  is wide (0.38 vs 0.75). A real pink feature smaller than 24px _without_ a
   cyan outline would be wrongly erased; none exist here.
 - Tiny pink "door nub" ticks (1–3 px, enclosure ≥ 0.55) are left in place;
   they never reach the 4px occupancy threshold on their own.
@@ -78,6 +83,7 @@ skipped by name).
 ## Room cells with a baked-in station icon
 
 ### What it was
+
 The source recreations bake the game's own station icons into the map
 pixels: a green map-station letter, a cyan save-station letter, an
 orange/red/yellow ship or boss glyph. A room cell carrying the green "M"
@@ -90,13 +96,15 @@ covering the sliver; it became visible once those hand-placed icons were
 cleared for re-placement.
 
 ### How it's handled
+
 The room-vs-shaft threshold in `extract_area` counts green pixels as fill
 alongside pink and cyan (ship/boss glyphs were already exempted via a
 separate `ship[full].sum() < 3` check). Save-station cyan letters were never
-an issue — cyan already counts toward the sum, so they bias *toward* "room",
+an issue — cyan already counts toward the sum, so they bias _toward_ "room",
 not away from it.
 
 ### Residual difficulties / assumptions
+
 - This assumes every green pixel in the source is a map-station icon, never
   real map geometry. True for Super Metroid (green is used for nothing
   else); would need re-checking for another game.
@@ -104,13 +112,15 @@ not away from it.
 ## Diagonal corridors (stair passages)
 
 ### What they were
+
 The pause map draws diagonal hallways as a smooth **sub-cell pink band edged
-with 1px cyan on both sides** — and *not* at 45°: Crateria's moat descent runs
+with 1px cyan on both sides** — and _not_ at 45°: Crateria's moat descent runs
 ~27°, Norfair's west passage ~26°. Quantized, each band became a ragged
 staircase; rendered as per-cell 45° strokes it read as a hatch of disconnected
 slashes.
 
 ### How it's handled
+
 Per 8-connected chain of `diag`-tagged cells (the per-cell tag still comes
 from the pink x/y correlation heuristic, `|corr| ≥ 0.2`):
 
@@ -127,19 +137,20 @@ from the pink x/y correlation heuristic, `|corr| ≥ 0.2`):
 - **Real vs display-only cells**: chain cells with
   `pink ≥ DIAG_SOLID_PX (24)` stay in `map.cells` as clickable `diag` tiles
   (Crateria 4, Norfair 3 — one per staircase step, like the real game's map
-  tiles). Corner slivers (~12 px) are deleted — including *neighbour* cells
+  tiles). Corner slivers (~12 px) are deleted — including _neighbour_ cells
   whose sub-24px pink lies entirely within the band's perpendicular extent
   (the correlation heuristic misses some corner spills, e.g. Norfair's
   `(8,9)`, which otherwise render as floating shaft stubs).
 - **Renderer** (`GuessMap.drawBand`): each band is one filled pink polygon
-  with a 2px cyan outline, drawn *before* the cells so room fills cover the
+  with a 2px cyan outline, drawn _before_ the cells so room fills cover the
   mitred ends. `diag` cells draw nothing themselves; they exist for
   hover/click/targets.
 
 ### Residual difficulties / assumptions
+
 - A band is fitted per chain of `≥ 2` diag cells; a lone mis-tagged cell gets
   no band and draws nothing. None exist today.
-- The fit assumes one *straight* band per chain. A genuinely bent stair
+- The fit assumes one _straight_ band per chain. A genuinely bent stair
   passage would need the chain split before fitting.
 - The clip box comes from the chain's pink pixels only — if the correlation
   heuristic under-tags a cell that holds real band pixels, those pixels are

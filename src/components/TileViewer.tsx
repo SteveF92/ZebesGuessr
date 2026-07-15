@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState } from 'react';
 
 interface Props {
   tileUrl: string;
@@ -21,13 +21,7 @@ export default function TileViewer({ tileUrl, revealed }: Props) {
         WHERE IS THIS?
       </p>
       <div className="tile-frame">
-        <img
-          src={tileUrl}
-          alt="Where is this?"
-          draggable={false}
-          onLoad={() => setLoaded(true)}
-          style={{ visibility: loaded ? "visible" : "hidden" }}
-        />
+        <img src={tileUrl} alt="Where is this?" draggable={false} onLoad={() => setLoaded(true)} style={{ visibility: loaded ? 'visible' : 'hidden' }} />
         <span className="corner tl" />
         <span className="corner tr" />
         <span className="corner bl" />

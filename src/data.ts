@@ -1,10 +1,10 @@
-import { DEFAULT_RATING, EXCLUDED_RATING, type Difficulty } from "./scoring";
-import type { GameData, MapGlyph, Connector, RoundTarget, Cell } from "./types";
+import { DEFAULT_RATING, EXCLUDED_RATING, type Difficulty } from './scoring';
+import type { GameData, MapGlyph, Connector, RoundTarget, Cell } from './types';
 
 export const GAMES = [
-  { id: "super-metroid", title: "Super Metroid", available: true },
-  { id: "metroid-fusion", title: "Metroid Fusion", available: false },
-  { id: "metroid-zero-mission", title: "Metroid: Zero Mission", available: false },
+  { id: 'super-metroid', title: 'Super Metroid', available: true },
+  { id: 'metroid-fusion', title: 'Metroid Fusion', available: false },
+  { id: 'metroid-zero-mission', title: 'Metroid: Zero Mission', available: false }
 ];
 
 /**
@@ -14,14 +14,14 @@ export const GAMES = [
  * everything.
  */
 const ENABLED_AREAS: Record<string, Record<string, boolean>> = {
-  "super-metroid": {
+  'super-metroid': {
     crateria: true,
     brinstar: true,
     norfair: true,
-    "wrecked-ship": true,
+    'wrecked-ship': true,
     maridia: true,
-    tourian: true,
-  },
+    tourian: true
+  }
 };
 
 /** hand-placed landmark icons, keyed by areaId; overrides pipeline extraction */
@@ -34,7 +34,7 @@ export type GlyphOverrides = Record<string, MapGlyph[]>;
  */
 export type OverlayOverrides = Record<string, LegacyOverlayLayer>;
 
-type LegacyElevator = { x: number; y0: number; y1: number; label?: string; labelPos?: Connector["labelPos"] };
+type LegacyElevator = { x: number; y0: number; y1: number; label?: string; labelPos?: Connector['labelPos'] };
 type LegacyLine = { y: number; x0: number; x1: number };
 type LegacyOverlayLayer = {
   connectors?: Connector[];
@@ -49,9 +49,14 @@ function normalizeConnectors(layer: LegacyOverlayLayer | undefined): Connector[]
   if (!layer.elevators && !layer.lines) return null;
   return [
     ...(layer.elevators ?? []).map((e) => ({
-      x0: e.x, y0: e.y0, x1: e.x, y1: e.y1, label: e.label, labelPos: e.labelPos,
+      x0: e.x,
+      y0: e.y0,
+      x1: e.x,
+      y1: e.y1,
+      label: e.label,
+      labelPos: e.labelPos
     })),
-    ...(layer.lines ?? []).map((l) => ({ x0: l.x0, y0: l.y, x1: l.x1, y1: l.y })),
+    ...(layer.lines ?? []).map((l) => ({ x0: l.x0, y0: l.y, x1: l.x1, y1: l.y }))
   ];
 }
 

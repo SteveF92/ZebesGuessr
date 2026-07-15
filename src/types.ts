@@ -7,7 +7,7 @@ export interface Cell {
   secret?: boolean;
 }
 
-export type MapCellKind = "room" | "vshaft" | "hshaft" | "diag";
+export type MapCellKind = 'room' | 'vshaft' | 'hshaft' | 'diag';
 
 export interface MapCell {
   x: number;
@@ -17,14 +17,14 @@ export interface MapCell {
   /** wall bitmask: N=1 E=2 S=4 W=8 */
   w: number;
   /** diagonal direction for k==="diag": "/" (NE-SW) or "\\" (NW-SE) */
-  d?: "/" | "\\";
+  d?: '/' | '\\';
 }
 
 export interface MapGlyph {
   /** fractional MAP cell coordinates of the glyph centre */
   x: number;
   y: number;
-  t: "save" | "map" | "ship" | "boss" | "item" | "recharge";
+  t: 'save' | 'map' | 'ship' | 'boss' | 'item' | 'recharge';
 }
 
 /**
@@ -48,7 +48,7 @@ export interface Connector {
   label?: string;
   /** which side of the connector the label sits on (default: "below" for
    *  vertical, "right" for horizontal) */
-  labelPos?: "above" | "below" | "left" | "right";
+  labelPos?: 'above' | 'below' | 'left' | 'right';
 }
 
 /**
@@ -76,7 +76,7 @@ export interface AreaMap {
   /** hand-placed transit connectors: elevators + dashed tube runs, either
    *  orientation (overlay only, not guessable) */
   connectors: Connector[];
-  source: "ingame" | "fallback";
+  source: 'ingame' | 'fallback';
 }
 
 export interface AreaData {
