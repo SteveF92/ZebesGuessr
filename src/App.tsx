@@ -133,6 +133,19 @@ export default function App() {
     }
   }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key !== "Enter") return;
+      if (phase === "guessing" && selected) {
+        submitGuess();
+      } else if (phase === "reveal") {
+        nextRound();
+      }
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }); // eslint-disable-line react-hooks/exhaustive-deps
+
   // ---------------------------------------------------------------- MENU
   if (phase === "menu" || phase === "loading") {
     return (
@@ -366,14 +379,14 @@ export default function App() {
               </div>
               <p className="reveal-flavor">{revealFlavor(result.distance)}</p>
               <button className="btn next" onClick={nextRound}>
-                {round + 1 >= targets.length ? "◇ SEE RESULTS" : "NEXT ROUND ▶"}
+                {round + 1 >= targets.length ? "◇ SEE RESULTS ↵" : "NEXT ROUND ▶ ↵"}
               </button>
             </div>
           )}
 
           {phase === "guessing" && (
             <button className="btn confirm" disabled={!selected} onClick={submitGuess}>
-              {selected ? "▶ TRANSMIT GUESS" : "SELECT A LOCATION"}
+              {selected ? "▶ TRANSMIT GUESS ↵" : "SELECT A LOCATION"}
             </button>
           )}
 
