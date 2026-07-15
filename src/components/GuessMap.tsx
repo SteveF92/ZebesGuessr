@@ -184,6 +184,12 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, result
   const [diffRating, setDiffRating] = useState(DEFAULT_RATING);
   // when set, the Diff tint only highlights cells matching diffRating
   const [diffIsolate, setDiffIsolate] = useState(false);
+  // ratings the tint is allowed to show at all — independent of diffRating
+  // (which one paints) and diffIsolate (how the match is highlighted).
+  // hidden ratings get no tint, no outline, nothing.
+  const [diffVisible, setDiffVisible] = useState<Set<number>>(
+    () => new Set([1, 2, 3, 4, 5, 6])
+  );
 
   const occupied = useMemo(() => {
     const m = new Map<string, MapCell>();
@@ -599,6 +605,7 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, result
       const key = cellKey(area.id, c);
       const rated = key in diffEdits;
       const rating = rated ? diffEdits[key] : DEFAULT_RATING;
+      if (!diffVisible.has(rating)) continue;
       if (diffIsolate) {
         if (rating !== diffRating) continue;
         // bright outline instead of a fill so room detail underneath stays visible
@@ -858,6 +865,32 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, result
               >
                 Isolate
               </button>
+              <span className="edit-msg">Show:</span>
+              {[1, 2, 3, 4, 5, 6].map((r) => {
+                const shown = diffVisible.has(r);
+                return (
+                  <button
+                    key={r}
+                    className={`btn tiny ${shown ? "active" : ""}`}
+                    style={{
+                      background: `rgba(${RATING_COLORS[r]}, ${shown ? 0.75 : 0.15})`,
+                      color: r === 6 ? "#eee" : "#111",
+                      opacity: shown ? 1 : 0.5,
+                    }}
+                    title={`${shown ? "hide" : "show"} rating ${r} in the tint`}
+                    onClick={() =>
+                      setDiffVisible((prev) => {
+                        const next = new Set(prev);
+                        if (next.has(r)) next.delete(r);
+                        else next.add(r);
+                        return next;
+                      })
+                    }
+                  >
+                    {r}
+                  </button>
+                );
+              })}
               <span className="edit-msg">
                 {hover && occupied.has(`${hover.x},${hover.y}`)
                   ? `hovered: ${diffEdits[roomKeyAt(hover)] ?? `${DEFAULT_RATING} (unrated)`}`
