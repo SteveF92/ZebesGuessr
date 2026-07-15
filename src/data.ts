@@ -7,6 +7,23 @@ export const GAMES = [
   { id: "metroid-zero-mission", title: "Metroid: Zero Mission", available: false },
 ];
 
+/**
+ * Dev-only testing toggle: set an area to `false` here to exclude it from
+ * target picking (its tiles/rooms just won't show up as guess targets).
+ * Keyed by areaId, per game. Leave a game's entry absent/empty to include
+ * everything.
+ */
+const ENABLED_AREAS: Record<string, Record<string, boolean>> = {
+  "super-metroid": {
+    crateria: true,
+    brinstar: true,
+    norfair: true,
+    "wrecked-ship": true,
+    maridia: true,
+    tourian: true,
+  },
+};
+
 /** hand-placed landmark icons, keyed by areaId; overrides pipeline extraction */
 export type GlyphOverrides = Record<string, MapGlyph[]>;
 
@@ -58,6 +75,12 @@ export async function loadGameData(gameId: string): Promise<GameData> {
   const res = await fetch(`${import.meta.env.BASE_URL}data/${gameId}.json`);
   if (!res.ok) throw new Error(`No data for ${gameId}. Run the pipeline first (see pipeline/README).`);
   const data: GameData = await res.json();
+
+  // Dev-only testing toggle — drop any area flagged `false` in ENABLED_AREAS.
+  const enabled = ENABLED_AREAS[gameId];
+  if (enabled) {
+    data.areas = data.areas.filter((area) => enabled[area.id] !== false);
+  }
 
   // Connectors are hand-placed; ensure the array exists (and fold in any
   // legacy elevators/lines from data baked before the merge).
