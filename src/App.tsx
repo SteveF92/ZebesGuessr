@@ -12,14 +12,19 @@ import type { Cell, GameData, RoundResult, RoundTarget } from "./types";
 
 type Phase = "menu" | "loading" | "guessing" | "reveal" | "summary";
 
-/** fixed background flare: starfield + CRT scanlines + sweep bar */
-function BackdropFX() {
+/** fixed background flare: starfield + CRT scanlines + sweep bar.
+ *  The green haze only shows on the title screen, and cross-fades out when
+ *  leaving it (BackdropFX persists across phases, so the transition fires). */
+function BackdropFX({ phase }: { phase: Phase }) {
+  const hazeOn = phase === "menu" || phase === "loading";
   return (
     <div className="fx-layer">
       <div className="stars" />
       <div className="fx-grid" />
+      <div className={`fx-haze${hazeOn ? " on" : ""}`}>
+        <div className="fx-haze__glow" />
+      </div>
       <div className="fx-scanlines" />
-      <div className="fx-flicker" />
       <div className="fx-scanbar" />
     </div>
   );
@@ -132,7 +137,7 @@ export default function App() {
   if (phase === "menu" || phase === "loading") {
     return (
       <div className="shell menu">
-        <BackdropFX />
+        <BackdropFX phase={phase} />
         <p className="kicker">CHOZO PLANETARY ARCHIVE // SECTOR ZEBES</p>
         <h1 className="logo">ZebesGuessr</h1>
         <p className="tagline">
@@ -198,7 +203,7 @@ export default function App() {
     const maxTotal = results.reduce((s, r) => s + maxForRating(r.rating), 0);
     return (
       <div className="shell menu">
-        <BackdropFX />
+        <BackdropFX phase={phase} />
         <p className="debrief-kicker">◇ MISSION DEBRIEF ◇</p>
         <h1 className="logo">RUN COMPLETE</h1>
         <p className="total">
@@ -264,7 +269,7 @@ export default function App() {
   // ---------------------------------------------------------------- GAME
   return (
     <div className="shell game">
-      <BackdropFX />
+      <BackdropFX phase={phase} />
       <header className="hud">
         <span className="logo small">ZebesGuessr</span>
         <span className="hud-sub">LOCATOR</span>
@@ -332,6 +337,13 @@ export default function App() {
               {roomName(data, result.target) && (
                 <p className="reveal-room">“{roomName(data, result.target)}”</p>
               )}
+              <p className="reveal-rating">
+                DIFFICULTY{" "}
+                <span className="rating-stars">
+                  {"★".repeat(result.rating)}
+                  {"☆".repeat(5 - result.rating)}
+                </span>
+              </p>
               <p className="reveal-dist">
                 {isFinite(result.distance)
                   ? result.distance === 0
