@@ -998,6 +998,63 @@ a:hover {
   cursor: cell;
 }
 
+/* ---- touch pan/zoom map (small screens) ---- */
+/* The .pan class is only applied on small/touch screens (see GuessMap). The
+   map-scroll becomes a fixed-height window; the canvas is absolutely
+   positioned and moved with a CSS transform set inline from the view state. */
+.map-scroll.pan {
+  display: block;
+  position: relative;
+  overflow: hidden;
+  flex: none;
+  /* full width: the canvas is absolutely positioned (out of flow), so without
+     this the container would collapse to nothing under align-items: flex-start */
+  width: 100%;
+  /* fixed viewport into the (zoomable) map — sized so the guessing phase fits
+     the screen without page scroll, while staying usable when zoomed in */
+  height: clamp(220px, 38dvh, 400px);
+  touch-action: none; /* we own the gesture, so the page never pans/zooms */
+}
+.map-canvas.pan {
+  position: absolute;
+  top: 0;
+  left: 0;
+  max-width: none;
+  max-height: none;
+  cursor: default;
+  touch-action: none;
+  will-change: transform;
+}
+/* zoom control cluster, bottom-right of the map window */
+.map-zoom {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.map-zoom-btn {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  line-height: 1;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: rgba(12, 17, 32, 0.85);
+  color: var(--cyan);
+  cursor: pointer;
+  backdrop-filter: blur(2px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+}
+.map-zoom-btn:active {
+  background: rgba(26, 36, 64, 0.9);
+}
+
 /* icon editor toolbar (kept from original, restyled) */
 .icon-editor {
   display: flex;
@@ -1268,8 +1325,13 @@ a:hover {
        and overflows the screen horizontally */
     align-items: stretch;
   }
-  /* center the left column as a uniform-width stack (mystery screen, confirm
-     button, reveal box all line up), shrinking on very narrow phones */
+  /* during reveal the round result card is the focus; hide the map entirely on
+     phones so the result isn't buried below it */
+  .pane.right.map-hidden {
+    display: none;
+  }
+  /* center the left column as a uniform-width stack (confirm button, reveal
+     box all line up), shrinking on very narrow phones */
   .pane.left {
     width: 100%;
     align-items: center;
@@ -1277,10 +1339,17 @@ a:hover {
   .pane.left > * {
     width: min(340px, 100%);
   }
-  /* square mystery screen that shrinks with the column */
+  /* smaller mystery screen: it's just a reference image, so give the reclaimed
+     height to the zoomable map below. Centered in the column. */
+  .tile-viewer {
+    align-items: center;
+  }
+  .signal-label {
+    text-align: center;
+  }
   .tile-frame,
   .tile-frame img {
-    width: 100%;
+    width: min(204px, 52vw);
     height: auto;
     aspect-ratio: 1 / 1;
   }
@@ -1324,7 +1393,9 @@ a:hover {
     padding: 9px 13px 7px;
     font-size: 15px;
   }
+  /* no room for the L/R shoulder flair on phones — tap a tab (or swipe the
+     row) to switch areas instead */
   .area-tabs .shoulder {
-    flex: 0 0 auto;
+    display: none;
   }
 }

@@ -423,7 +423,7 @@ export default function App() {
           )}
         </section>
 
-        <section className="pane right">
+        <section className={`pane right${phase === 'reveal' ? ' map-hidden' : ''}`}>
           <GuessMap
             data={data}
             selected={selected}

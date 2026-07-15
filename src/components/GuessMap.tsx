@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { AreaData, Cell, Connector, DiagBand, GameData, MapCell, MapGlyph, RoundResult } from '../types';
 import { cellKey, tileUrl } from '../data';
 import { DEFAULT_RATING, EXCLUDED_RATING } from '../scoring';
@@ -152,6 +152,94 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
   const [shipLoaded, setShipLoaded] = useState(false);
   const [bossLoaded, setBossLoaded] = useState(false);
   const [hover, setHover] = useState<Cell | null>(null);
+
+  // ---- pan/zoom (touch / small screens only) -----------------------------
+  // The wide pause maps are unusable when squeezed to a phone's width, so on
+  // small screens the map becomes a pinch-zoomable, drag-pannable viewport.
+  // Desktop keeps plain click-to-place (panEnabled stays false there).
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [smallScreen, setSmallScreen] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 800px)');
+    const update = () => setSmallScreen(mq.matches);
+    update();
+    mq.addEventListener('change', update);
+    return () => mq.removeEventListener('change', update);
+  }, []);
+  const panEnabled = smallScreen && !editing; // editing is a desktop-only dev mode
+
+  // canvas' natural CSS size (backing store is 1:1 with CSS px): cols*S*SCALE
+  const W0 = area.map.cols * S * SCALE;
+  const H0 = area.map.rows * S * SCALE;
+
+  // view transform applied to the canvas: displayed = translate(tx,ty) scale(z)
+  const [view, setView] = useState<{ z: number; tx: number; ty: number } | null>(null);
+  const viewRef = useRef(view);
+  viewRef.current = view; // latest view for pointer handlers (no re-binding)
+  // live gesture bookkeeping (refs so pointer handlers don't need re-binding).
+  // pinch* capture the reference spacing/zoom at the moment the 2nd finger lands.
+  const gesture = useRef<{ pointers: Map<number, { x: number; y: number }>; moved: number; multi: boolean; pinchDist: number; pinchZ: number }>({
+    pointers: new Map(),
+    moved: 0,
+    multi: false,
+    pinchDist: 0,
+    pinchZ: 1
+  });
+
+  /** keep the scaled map inside the viewport (centered when smaller than it) */
+  function clampView(v: { z: number; tx: number; ty: number }, vw: number, vh: number) {
+    const sw = W0 * v.z,
+      sh = H0 * v.z;
+    const tx = sw <= vw ? (vw - sw) / 2 : Math.min(0, Math.max(vw - sw, v.tx));
+    const ty = sh <= vh ? (vh - sh) / 2 : Math.min(0, Math.max(vh - sh, v.ty));
+    return { z: v.z, tx, ty };
+  }
+  /** zoom bounds for the current viewport: out to whole-map, in to ~48px cells */
+  function zoomBounds(vw: number, vh: number) {
+    const fitZ = Math.min(vw / W0, vh / H0);
+    return { fitZ, maxZ: Math.max(fitZ, 48 / (S * SCALE)) };
+  }
+  /** reset to whole-area-visible, centered */
+  function fitView() {
+    const el = scrollRef.current;
+    if (!el) return;
+    const vw = el.clientWidth,
+      vh = el.clientHeight;
+    if (!vw || !vh) return;
+    const { fitZ } = zoomBounds(vw, vh);
+    setView(clampView({ z: fitZ, tx: 0, ty: 0 }, vw, vh));
+  }
+  /** zoom by a factor around a focal point (viewport-local px) */
+  function zoomAround(factor: number, fx: number, fy: number) {
+    const el = scrollRef.current;
+    if (!el) return;
+    const vw = el.clientWidth,
+      vh = el.clientHeight;
+    const { fitZ, maxZ } = zoomBounds(vw, vh);
+    setView((v) => {
+      if (!v) return v;
+      const z = Math.min(maxZ, Math.max(fitZ, v.z * factor));
+      const k = z / v.z;
+      return clampView({ z, tx: fx - (fx - v.tx) * k, ty: fy - (fy - v.ty) * k }, vw, vh);
+    });
+  }
+
+  // (re)fit whenever pan turns on, the area changes, or the viewport resizes
+  // (orientation flip). useLayoutEffect + synchronous fit avoids a first-paint
+  // flash of the full-size canvas.
+  useLayoutEffect(() => {
+    if (!panEnabled) {
+      setView(null);
+      return;
+    }
+    fitView();
+    const el = scrollRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => fitView());
+    ro.observe(el);
+    return () => ro.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [panEnabled, area.id]);
 
   // Actual-game-screen overlay (showTiles): cache of the per-cell tile PNGs,
   // keyed by URL. Bumping tileVersion as they stream in triggers a repaint.
@@ -678,14 +766,102 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
     ctx.restore();
   }
 
-  /** returns MAP coordinates */
-  function cellFromEvent(e: React.MouseEvent): Cell | null {
+  /** returns MAP coordinates. Uses the canvas' on-screen rect, so it accounts
+   *  for the pan/zoom CSS transform automatically. */
+  function cellFromPoint(clientX: number, clientY: number): Cell | null {
     const canvas = canvasRef.current!;
     const rect = canvas.getBoundingClientRect();
-    const x = Math.floor(((e.clientX - rect.left) / rect.width) * area.map.cols);
-    const y = Math.floor(((e.clientY - rect.top) / rect.height) * area.map.rows);
+    const x = Math.floor(((clientX - rect.left) / rect.width) * area.map.cols);
+    const y = Math.floor(((clientY - rect.top) / rect.height) * area.map.rows);
     if (x < 0 || y < 0 || x >= area.map.cols || y >= area.map.rows) return null;
     return { x, y };
+  }
+  const cellFromEvent = (e: { clientX: number; clientY: number }) => cellFromPoint(e.clientX, e.clientY);
+
+  /** place a guess at the tapped/clicked point (shared by mouse click + touch
+   *  tap). Converts map -> tile coords for scoring. */
+  function selectAtPoint(clientX: number, clientY: number) {
+    if (result) return;
+    const c = cellFromPoint(clientX, clientY);
+    if (!c || !occupied.has(`${c.x},${c.y}`)) return;
+    onSelect(area.id, { x: c.x - area.map.dx, y: c.y - area.map.dy });
+  }
+
+  const TAP_SLOP = 10; // px of movement below which a touch counts as a tap
+  /** distance between the two active pointers (pinch only) */
+  function pinchSpacing(g: (typeof gesture)['current']) {
+    const [a, b] = [...g.pointers.values()];
+    return Math.hypot(a.x - b.x, a.y - b.y);
+  }
+  function onPointerDown(e: React.PointerEvent) {
+    if (!panEnabled) return;
+    try {
+      canvasRef.current?.setPointerCapture(e.pointerId);
+    } catch {
+      /* no active pointer to capture (e.g. synthetic event) */
+    }
+    const g = gesture.current;
+    g.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (g.pointers.size === 1) {
+      g.moved = 0;
+      g.multi = false;
+    } else if (g.pointers.size === 2) {
+      g.multi = true; // a second finger touched: this gesture is a pinch, never a tap
+      g.pinchDist = pinchSpacing(g); // reference spacing + zoom at pinch start
+      g.pinchZ = viewRef.current?.z ?? 1;
+    }
+  }
+  function onPointerMove(e: React.PointerEvent) {
+    if (!panEnabled) return;
+    const g = gesture.current;
+    const p = g.pointers.get(e.pointerId);
+    if (!p) return;
+    const dx = e.clientX - p.x,
+      dy = e.clientY - p.y;
+    p.x = e.clientX;
+    p.y = e.clientY;
+    if (g.pointers.size >= 2) {
+      // pinch: zoom to (start zoom × spacing ratio) around the current midpoint
+      const pts = [...g.pointers.values()];
+      const el = scrollRef.current;
+      if (!el || !g.pinchDist) return;
+      const rect = el.getBoundingClientRect();
+      const fx = (pts[0].x + pts[1].x) / 2 - rect.left;
+      const fy = (pts[0].y + pts[1].y) / 2 - rect.top;
+      const vw = el.clientWidth,
+        vh = el.clientHeight;
+      const { fitZ, maxZ } = zoomBounds(vw, vh);
+      const z = Math.min(maxZ, Math.max(fitZ, (g.pinchZ * pinchSpacing(g)) / g.pinchDist));
+      setView((v) => {
+        if (!v) return v;
+        const k = z / v.z;
+        return clampView({ z, tx: fx - (fx - v.tx) * k, ty: fy - (fy - v.ty) * k }, vw, vh);
+      });
+    } else {
+      // one finger: pan
+      g.moved += Math.hypot(dx, dy);
+      const el = scrollRef.current;
+      if (!el) return;
+      const vw = el.clientWidth,
+        vh = el.clientHeight;
+      setView((v) => (v ? clampView({ z: v.z, tx: v.tx + dx, ty: v.ty + dy }, vw, vh) : v));
+    }
+  }
+  function onPointerUp(e: React.PointerEvent) {
+    if (!panEnabled) return;
+    const g = gesture.current;
+    if (!g.pointers.has(e.pointerId)) return;
+    g.pointers.delete(e.pointerId);
+    try {
+      canvasRef.current?.releasePointerCapture(e.pointerId);
+    } catch {
+      /* pointer already released */
+    }
+    // a lone finger that barely moved (and never became a pinch) is a tap
+    if (g.pointers.size === 0 && !g.multi && g.moved < TAP_SLOP) {
+      selectAtPoint(e.clientX, e.clientY);
+    }
+    if (g.pointers.size === 0) g.multi = false;
   }
 
   function updateOverlays(fn: (o: Overlays) => Overlays) {
@@ -982,11 +1158,17 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
           {saveMsg && <span className="edit-msg">{saveMsg}</span>}
         </div>
       )}
-      <div className="map-scroll">
+      <div className={`map-scroll${panEnabled ? ' pan' : ''}`} ref={scrollRef}>
         <canvas
           ref={canvasRef}
-          className={`map-canvas${editing ? ' editing' : ''}`}
+          className={`map-canvas${editing ? ' editing' : ''}${panEnabled ? ' pan' : ''}`}
+          style={panEnabled && view ? { transform: `translate(${view.tx}px, ${view.ty}px) scale(${view.z})`, transformOrigin: '0 0' } : undefined}
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={onPointerUp}
+          onPointerCancel={onPointerUp}
           onMouseMove={(e) => {
+            if (panEnabled) return; // touch/small screens use pointer handlers + no hover
             const c = cellFromEvent(e);
             const occ = c !== null && occupied.has(`${c.x},${c.y}`);
             onHoverCell?.(area.id, occ ? { x: c!.x - area.map.dx, y: c!.y - area.map.dy } : null, occ ? roomEdits[roomKeyAt(c!)] : undefined);
@@ -1002,6 +1184,7 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
             onHoverCell?.(area.id, null);
           }}
           onClick={(e) => {
+            if (panEnabled) return; // selection handled by the tap detector in onPointerUp
             const c = cellFromEvent(e);
             if (!c) return;
             if (editing) {
@@ -1014,6 +1197,19 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
             onSelect(area.id, { x: c.x - area.map.dx, y: c.y - area.map.dy });
           }}
         />
+        {panEnabled && view && (
+          <div className="map-zoom">
+            <button className="map-zoom-btn" aria-label="Zoom in" onClick={() => zoomAround(1.5, (scrollRef.current?.clientWidth ?? 0) / 2, (scrollRef.current?.clientHeight ?? 0) / 2)}>
+              +
+            </button>
+            <button className="map-zoom-btn" aria-label="Zoom out" onClick={() => zoomAround(1 / 1.5, (scrollRef.current?.clientWidth ?? 0) / 2, (scrollRef.current?.clientHeight ?? 0) / 2)}>
+              −
+            </button>
+            <button className="map-zoom-btn" aria-label="Fit whole map" onClick={fitView}>
+              ⤢
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
