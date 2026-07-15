@@ -225,6 +225,7 @@ export default function App() {
               : r.distance === 0
                 ? "exact!"
                 : `${r.distance.toFixed(1)} cells off`;
+            const rn = roomName(data, r.target);
             return (
               <li key={i} className="round-card" style={{ animationDelay: `${i * 0.06}s` }}>
                 <div className="round-head">
@@ -234,6 +235,14 @@ export default function App() {
                     <span className="round-dist">{dist}</span>
                   </span>
                   <span className="round-score">{r.score.toLocaleString()}</span>
+                </div>
+                <div className="round-sub">
+                  {rn && <span className="round-room">“{rn}”</span>}
+                  <span className="round-stars" title={`Difficulty ${r.rating}/5`}>
+                    <span className="round-stars-label">DIFFICULTY</span>{" "}
+                    {"★".repeat(r.rating)}
+                    {"☆".repeat(5 - r.rating)}
+                  </span>
                 </div>
                 <div className="bar-track">
                   <div className="bar-fill" style={{ width: `${pct * 100}%` }} />
