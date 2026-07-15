@@ -136,6 +136,23 @@ export default function App() {
 
         <div style={{ width: "100%", maxWidth: 760 }}>
           <p className="loadout-label">◇ CHOOSE YOUR MISSION ◇</p>
+
+          <div className="game-list">
+            {GAMES.map((g) => (
+              <button
+                key={g.id}
+                className="game-btn"
+                disabled={!g.available || phase === "loading"}
+                onClick={() => startGame(g.id)}
+              >
+                <span>{g.title}</span>
+                {!g.available && <span className="standby">STANDBY</span>}
+              </button>
+            ))}
+          </div>
+
+          <p className="loadout-label">◇ CHOOSE YOUR DIFFICULTY ◇</p>
+
           <div className="diff-row">
             {DIFFICULTIES.map((d) => (
               <button
@@ -149,20 +166,6 @@ export default function App() {
               </button>
             ))}
           </div>
-        </div>
-
-        <div className="game-list">
-          {GAMES.map((g) => (
-            <button
-              key={g.id}
-              className="game-btn"
-              disabled={!g.available || phase === "loading"}
-              onClick={() => startGame(g.id)}
-            >
-              <span>{g.title}</span>
-              {!g.available && <span className="standby">STANDBY</span>}
-            </button>
-          ))}
         </div>
 
         {phase === "loading" && (

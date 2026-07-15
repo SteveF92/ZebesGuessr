@@ -152,7 +152,7 @@ a:hover { color: var(--cyan); text-decoration: underline; }
 }
 .diff-hint { font-family: var(--font-display); font-size: 14px; font-weight: 400; letter-spacing: .06em; opacity: .75; }
 
-.game-list { display: flex; flex-direction: column; gap: 8px; width: 100%; max-width: 400px; }
+.game-list { display: flex; flex-direction: column; gap: 8px; width: 100%; max-width: 400px; margin: 0 auto; }
 .game-btn {
   display: flex; align-items: center; justify-content: center; gap: 8px;
   padding: 14px 16px; border-radius: 9px; border: 1px solid var(--line);
