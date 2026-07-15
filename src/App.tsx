@@ -35,7 +35,10 @@ export default function App() {
   const [results, setResults] = useState<RoundResult[]>([]);
   const [best, setBest] = useState<number>(() => Number(localStorage.getItem("zg-best") ?? 0));
   const [difficultyId, setDifficultyId] = useState<string>(
-    () => localStorage.getItem("zg-difficulty") ?? "hunter"
+    () => localStorage.getItem("zg-difficulty") ?? "recruit"
+  );
+  const [selectedGameId, setSelectedGameId] = useState<string>(
+    () => GAMES.find((g) => g.available)?.id ?? GAMES[0].id
   );
   const [debug, setDebug] = useState(false);
   const [editIcons, setEditIcons] = useState(false);
@@ -144,9 +147,9 @@ export default function App() {
             {GAMES.map((g) => (
               <button
                 key={g.id}
-                className="game-btn"
+                className={`game-btn ${g.id === selectedGameId ? "active" : ""}`}
                 disabled={!g.available || phase === "loading"}
-                onClick={() => startGame(g.id)}
+                onClick={() => setSelectedGameId(g.id)}
               >
                 <span>{g.title}</span>
                 {!g.available && <span className="standby">STANDBY</span>}
@@ -174,6 +177,13 @@ export default function App() {
         {phase === "loading" && (
           <p className="init">INITIALIZING ARCHIVE<span className="cursor">_</span></p>
         )}
+        <button
+          className="btn primary start"
+          disabled={phase === "loading"}
+          onClick={() => startGame(selectedGameId)}
+        >
+          ▶ START MISSION
+        </button>
         {best > 0 && <p className="best">◆ PERSONAL BEST&nbsp;&nbsp;{best.toLocaleString()}</p>}
         <Credits onAbout={() => setShowAbout(true)} />
         {showAbout && (

@@ -163,6 +163,10 @@ a:hover { color: var(--cyan); text-decoration: underline; }
 }
 .game-btn:hover:not(:disabled) { border-color: var(--accent); box-shadow: 0 0 22px rgba(77,255,136,.14); }
 .game-btn:disabled { background: var(--panel); color: var(--dim); opacity: .5; cursor: default; box-shadow: none; }
+.game-btn.active {
+  border-color: var(--accent); color: var(--accent);
+  box-shadow: 0 0 20px rgba(77,255,136,.18), inset 0 0 20px rgba(77,255,136,.05);
+}
 .standby { font-family: var(--font-display); font-size: 12px; letter-spacing: .22em; opacity: .6; }
 .init { font-family: var(--font-display); font-size: 14px; color: var(--cyan); letter-spacing: .2em; }
 .init .cursor { animation: zgBlink 1s steps(1) infinite; }
@@ -300,6 +304,13 @@ a:hover { color: var(--cyan); text-decoration: underline; }
   text-shadow: 0 0 12px rgba(77,255,136,.3);
 }
 .btn.next { width: 100%; margin-top: 14px; padding: 15px 13px; font-size: 18px; }
+.btn.start {
+  margin-top: 6px;
+  border-color: #ffe9a0 #7a5200 #7a5200 #ffe9a0;
+  color: var(--gold);
+  background: linear-gradient(rgba(255,210,77,.16), rgba(255,210,77,.03));
+  text-shadow: 0 0 12px rgba(255,210,77,.3);
+}
 .btn.secondary {
   padding: 15px 26px; font-family: var(--font-display); font-size: 16px; letter-spacing: .04em;
   border: 1px solid var(--line); background: var(--panel); color: var(--dim);
