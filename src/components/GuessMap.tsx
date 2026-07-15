@@ -197,6 +197,43 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, result
     return m;
   }, [area]);
 
+  // Room walls a diagonal passage opens through, keyed `x,y,dir`. In-game the
+  // stairs flow straight into the room they meet, so that room draws no wall
+  // on the shared edge. The opening is a band's short "cap" edge (its long
+  // "rail" edges are the real stair walls) — NOT every edge that merely abuts
+  // a diag cell: a room sitting directly under the staircase still keeps its
+  // ceiling. So we walk each band's cap edges and mark the room-side wall of
+  // the cell boundary each one straddles.
+  const openWalls = useMemo(() => {
+    const s = new Set<string>();
+    const RAIL = 0.5; // map cells: rails span several, caps stay well under
+    for (const b of area.map.bands ?? []) {
+      const p = b.poly;
+      for (let i = 0; i < p.length; i++) {
+        const [ax, ay] = p[i];
+        const [bx, by] = p[(i + 1) % p.length];
+        const edx = Math.abs(bx - ax), edy = Math.abs(by - ay);
+        if (edx >= RAIL && edy >= RAIL) continue; // a rail, not a cap
+        if (edx < edy) {
+          // vertical cap: passage opens E/W across a column boundary
+          const col = Math.round((ax + bx) / 2);
+          for (let y = Math.floor(Math.min(ay, by)); y <= Math.floor(Math.max(ay, by)); y++) {
+            s.add(`${col - 1},${y},E`);
+            s.add(`${col},${y},W`);
+          }
+        } else {
+          // horizontal cap: passage opens N/S across a row boundary
+          const row = Math.round((ay + by) / 2);
+          for (let x = Math.floor(Math.min(ax, bx)); x <= Math.floor(Math.max(ax, bx)); x++) {
+            s.add(`${x},${row - 1},SO`);
+            s.add(`${x},${row},N`);
+          }
+        }
+      }
+    }
+    return s;
+  }, [area]);
+
   // playable (guessable) cells in TILE coords — the only cells ratings apply to
   const playableTiles = useMemo(
     () => new Set(area.cells.map((c) => `${c.x},${c.y}`)),
@@ -390,15 +427,14 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, result
     }
     ctx.fillStyle = COL.room;
     ctx.fillRect(x, y, S, S);
-    // cyan walls — but never between a room and an adjacent diagonal passage:
-    // in-game the room opens straight into the stairs with no door/wall.
-    const opensToDiag = (nx: number, ny: number) =>
-      occupied.get(`${nx},${ny}`)?.k === "diag";
+    // cyan walls — skipping any edge a diagonal passage opens through (see
+    // openWalls): there the room flows straight into the stairs, no wall.
+    const open = (dir: string) => openWalls.has(`${c.x},${c.y},${dir}`);
     ctx.fillStyle = COL.wall;
-    if (c.w & N && !opensToDiag(c.x, c.y - 1)) ctx.fillRect(x, y, S, 2);
-    if (c.w & SO && !opensToDiag(c.x, c.y + 1)) ctx.fillRect(x, y + S - 2, S, 2);
-    if (c.w & W && !opensToDiag(c.x - 1, c.y)) ctx.fillRect(x, y, 2, S);
-    if (c.w & E && !opensToDiag(c.x + 1, c.y)) ctx.fillRect(x + S - 2, y, 2, S);
+    if (c.w & N && !open("N")) ctx.fillRect(x, y, S, 2);
+    if (c.w & SO && !open("SO")) ctx.fillRect(x, y + S - 2, S, 2);
+    if (c.w & W && !open("W")) ctx.fillRect(x, y, 2, S);
+    if (c.w & E && !open("E")) ctx.fillRect(x + S - 2, y, 2, S);
   }
 
   function drawGlyph(ctx: CanvasRenderingContext2D, g: MapGlyph) {
