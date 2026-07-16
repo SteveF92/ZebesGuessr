@@ -19,12 +19,12 @@ export interface Difficulty {
 }
 
 export const DIFFICULTIES: Difficulty[] = [
-  { id: 'recruit', label: 'Tallon Overworld', min: 1, max: 3, hint: 'FAMILIAR GROUND' },
-  { id: 'hunter', label: 'Brinstar', min: 2, max: 4, hint: 'OFF THE BEATEN PATH' },
-  { id: 'chozo', label: 'Sanctuary Fortress', min: 3, max: 5, hint: 'DEEP ARCHIVE' }
+  { id: 'tallon', label: 'Tallon Overworld', min: 1, max: 3, hint: 'FAMILIAR GROUND' },
+  { id: 'brinstar', label: 'Brinstar', min: 2, max: 4, hint: 'OFF THE BEATEN PATH' },
+  { id: 'sanctuary', label: 'Sanctuary Fortress', min: 3, max: 5, hint: 'DEEP ARCHIVE' }
 ];
 
-export const DEFAULT_DIFFICULTY = 'hunter';
+export const DEFAULT_DIFFICULTY = 'brinstar';
 
 /** Rating assumed for any cell missing from difficulty.<game>.json. */
 export const DEFAULT_RATING = 3;
@@ -133,12 +133,12 @@ export interface Rank {
  */
 export const RANKS: Rank[] = [
   {
-    minScore: 23750,
+    minScore: 23000,
     name: 'Galactic Cartographer',
     flavor: 'The whole planet is mapped behind your visor.',
     unlocks: ['create']
   },
-  { minScore: 20000, name: 'Chozo Scholar', flavor: 'The statues would approve.', unlocks: ['xray'] },
+  { minScore: 19000, name: 'Chozo Scholar', flavor: 'The statues would approve.', unlocks: ['xray'] },
   {
     minScore: 15000,
     name: 'Seasoned Bounty Hunter',

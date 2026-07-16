@@ -68,7 +68,7 @@ export default function App() {
   const [viewingAreaId, setViewingAreaId] = useState<string | null>(null);
   const [results, setResults] = useState<RoundResult[]>([]);
   const [best, setBest] = useState<number>(() => Number(localStorage.getItem('zg-best') ?? 0));
-  const [difficultyId, setDifficultyId] = useState<string>(() => (loadedSeed ? DIFFICULTIES[loadedSeed.diffIndex]?.id : null) ?? localStorage.getItem('zg-difficulty') ?? 'recruit');
+  const [difficultyId, setDifficultyId] = useState<string>(() => (loadedSeed ? DIFFICULTIES[loadedSeed.diffIndex]?.id : null) ?? localStorage.getItem('zg-difficulty') ?? 'tallon');
   const [selectedGameId, setSelectedGameId] = useState<string>(() => (loadedSeed ? GAMES[loadedSeed.gameIndex]?.id : null) ?? GAMES.find((g) => g.available)?.id ?? GAMES[0].id);
   const [debug, setDebug] = useState(false);
   const [editIcons, setEditIcons] = useState(false);

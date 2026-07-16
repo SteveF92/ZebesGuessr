@@ -76,7 +76,7 @@ const grid = (w: number, h: number): Cell[] => Array.from({ length: w * h }, (_,
 
 describe('pickTargets with a seeded rng is reproducible', () => {
   const data = makeData({ brinstar: grid(8, 8), norfair: grid(6, 6) });
-  const keys = (s: number) => pickTargets(data, 5, getDifficulty('hunter'), mulberry32(s)).map((t) => cellKey(t.areaId, t.cell));
+  const keys = (s: number) => pickTargets(data, 5, getDifficulty('brinstar'), mulberry32(s)).map((t) => cellKey(t.areaId, t.cell));
 
   it('yields identical targets for the same seed', () => {
     expect(keys(777)).toEqual(keys(777));

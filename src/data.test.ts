@@ -64,10 +64,10 @@ describe('pickTargets', () => {
   it("never serves cells rated outside the tier's band", () => {
     // 25 cells: (0,0) and (1,0) rated 5, everything else default (3).
     const data = makeData({ brinstar: grid(5, 5) }, { 'brinstar:0,0': 5, 'brinstar:1,0': 5 });
-    const recruit = getDifficulty('recruit'); // band 1–3
+    const tallon = getDifficulty('tallon'); // band 1–3
     for (let i = 0; i < 50; i++) {
-      for (const t of pickTargets(data, 5, recruit)) {
-        expect(cellRating(data, t.areaId, t.cell)).toBeLessThanOrEqual(recruit.max);
+      for (const t of pickTargets(data, 5, tallon)) {
+        expect(cellRating(data, t.areaId, t.cell)).toBeLessThanOrEqual(tallon.max);
       }
     }
   });
@@ -85,12 +85,12 @@ describe('pickTargets', () => {
     const ratings: Record<string, number> = {};
     cells.forEach((c, i) => (ratings[cellKey('norfair', c)] = i < 4 ? 5 : 3));
     const data = makeData({ norfair: cells }, ratings);
-    const chozo = getDifficulty('chozo');
+    const sanctuary = getDifficulty('sanctuary');
 
     let fives = 0;
     let threes = 0;
     for (let i = 0; i < 400; i++) {
-      for (const t of pickTargets(data, 1, chozo)) {
+      for (const t of pickTargets(data, 1, sanctuary)) {
         const r = cellRating(data, t.areaId, t.cell);
         if (r === 5) fives++;
         else if (r === 3) threes++;
@@ -106,14 +106,14 @@ describe('pickTargets', () => {
     const cells = grid(3, 3);
     const ratings = Object.fromEntries(cells.map((c) => [cellKey('norfair', c), 5]));
     const data = makeData({ norfair: cells }, ratings);
-    expect(pickTargets(data, 5, getDifficulty('recruit'))).toHaveLength(5);
+    expect(pickTargets(data, 5, getDifficulty('tallon'))).toHaveLength(5);
   });
 });
 
 describe('pickTargets rating-6 exclusion', () => {
   it('never serves rating-6 cells on any tier', () => {
     const data = makeData({ brinstar: grid(4, 4) }, { 'brinstar:0,0': 6, 'brinstar:1,0': 6 });
-    for (const id of ['recruit', 'hunter', 'chozo']) {
+    for (const id of ['tallon', 'brinstar', 'sanctuary']) {
       for (let i = 0; i < 30; i++) {
         for (const t of pickTargets(data, 5, getDifficulty(id))) {
           expect(cellRating(data, t.areaId, t.cell)).toBeLessThan(6);
@@ -130,7 +130,7 @@ describe('pickTargets rating-6 exclusion', () => {
     ratings['norfair:0,0'] = 6;
     const data = makeData({ norfair: cells }, ratings);
     for (let i = 0; i < 30; i++) {
-      const targets = pickTargets(data, 8, getDifficulty('recruit'));
+      const targets = pickTargets(data, 8, getDifficulty('tallon'));
       expect(targets).toHaveLength(8);
       for (const t of targets) {
         expect(cellRating(data, t.areaId, t.cell)).toBeLessThan(6);
@@ -184,12 +184,12 @@ describe('deriveDifficultyIndex', () => {
     const cells = grid(3, 2); // 6 cells
     const rated = (rs: number[]) => makeData({ norfair: cells }, Object.fromEntries(cells.map((c, i) => [cellKey('norfair', c), rs[i]])));
     const pick = (d: GameData) => cellPool(d);
-    const low = rated([1, 2, 2, 1, 2, 1]); // mean 1.5 → recruit
-    const mid = rated([3, 3, 3, 3, 3, 3]); // mean 3 → hunter
-    const high = rated([5, 4, 5, 4, 5, 4]); // mean 4.5 → chozo
-    expect(idOf(deriveDifficultyIndex(low, pick(low)))).toBe('recruit');
-    expect(idOf(deriveDifficultyIndex(mid, pick(mid)))).toBe('hunter');
-    expect(idOf(deriveDifficultyIndex(high, pick(high)))).toBe('chozo');
+    const low = rated([1, 2, 2, 1, 2, 1]); // mean 1.5 → tallon
+    const mid = rated([3, 3, 3, 3, 3, 3]); // mean 3 → brinstar
+    const high = rated([5, 4, 5, 4, 5, 4]); // mean 4.5 → sanctuary
+    expect(idOf(deriveDifficultyIndex(low, pick(low)))).toBe('tallon');
+    expect(idOf(deriveDifficultyIndex(mid, pick(mid)))).toBe('brinstar');
+    expect(idOf(deriveDifficultyIndex(high, pick(high)))).toBe('sanctuary');
   });
 });
 

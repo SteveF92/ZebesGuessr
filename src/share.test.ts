@@ -46,7 +46,7 @@ describe('buildShareText', () => {
     round(1, 0, Infinity)
   ];
   const total = results.reduce((s, r) => s + r.score, 0);
-  const text = buildShareText(data, results, total, getDifficulty('hunter'));
+  const text = buildShareText(data, results, total, getDifficulty('brinstar'));
   const lines = text.split('\n');
 
   it('has exactly five lines and no trailing newline', () => {
