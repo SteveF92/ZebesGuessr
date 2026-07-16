@@ -52,9 +52,9 @@ export function CreateSeed({ data, gameId, onExit, onPlay }: Props) {
   }, [data]);
 
   const hasScreen = (areaId: string, cell: Cell) => !!playable.get(areaId)?.has(`${cell.x},${cell.y}`);
-  // A cell is pickable if it's a real screen and not flagged never-serve — the
-  // same universe of tiles a random run draws from.
-  const isPickable = (areaId: string, cell: Cell) => hasScreen(areaId, cell) && cellRating(data, areaId, cell) < EXCLUDED_RATING;
+  // Any real screen is pickable — including ones normally excluded from random
+  // runs (rated EXCLUDED_RATING); those just get a warning on the card.
+  const isPickable = (areaId: string, cell: Cell) => hasScreen(areaId, cell);
   const inPicks = (p: Pick) => picks.some((q) => q.areaId === p.areaId && q.cell.x === p.cell.x && q.cell.y === p.cell.y);
 
   const full = picks.length >= SEED_TILES;
@@ -123,9 +123,15 @@ export function CreateSeed({ data, gameId, onExit, onPlay }: Props) {
   // ------------------------------------------------------------- CREATE VIEW
   const selRating = selected ? cellRating(data, selected.areaId, selected.cell) : 0;
   const selName = selected ? roomName(data, selected) : undefined;
+  const selExcluded = selRating >= EXCLUDED_RATING;
+
+  // Hovered-cell metadata for the scan panel — derived straight from data so it
+  // shows even outside the icon editor (hoverTile.name is editor-only).
+  const hoverName = hoverTile && hoverHasScreen ? roomName(data, hoverTile) : undefined;
+  const hoverRating = hoverTile && hoverHasScreen ? cellRating(data, hoverTile.areaId, hoverTile.cell) : 0;
 
   return (
-    <div className="shell game">
+    <div className="shell game create-mode">
       <header className="hud">
         <span className="logo small">ZebesGuessr</span>
         <span className="hud-sub">SEED FORGE</span>
@@ -155,9 +161,8 @@ export function CreateSeed({ data, gameId, onExit, onPlay }: Props) {
                 <p className="reveal-label">SELECTED SCREEN</p>
                 <p className="reveal-area">{areaName(data, selected.areaId)}</p>
                 {selName && <p className="reveal-room">“{selName}”</p>}
-                <p className="reveal-rating">
-                  DIFFICULTY <Stars rating={selRating} />
-                </p>
+                <p className="reveal-rating">DIFFICULTY {selExcluded ? <span className="excluded-badge">EXCLUDED</span> : <Stars rating={selRating} />}</p>
+                {selExcluded && <p className="pick-warn">⚠ Normally excluded from runs — unusual pick</p>}
                 <button className="btn confirm" disabled={!canLock} onClick={lockIn}>
                   {inPicks(selected) ? 'ALREADY LOCKED IN' : full ? 'FIVE SCREENS — FINALIZE BELOW' : '◈ LOCK IN ↵'}
                 </button>
@@ -202,15 +207,19 @@ export function CreateSeed({ data, gameId, onExit, onPlay }: Props) {
             {hoverTile && hoverHasScreen ? (
               <>
                 <p className="debug-coords">
-                  {areaName(data, hoverTile.areaId)} ({hoverTile.cell.x},{hoverTile.cell.y})
-                  {hoverTile.name ? (
+                  {areaName(data, hoverTile.areaId)}
+                  {hoverName ? (
                     <>
                       {' '}
-                      — <strong>{hoverTile.name}</strong>
+                      — <strong>{hoverName}</strong>
                     </>
                   ) : (
-                    ' — (unnamed)'
-                  )}
+                    <>
+                      {' '}
+                      ({hoverTile.cell.x},{hoverTile.cell.y}) — (unnamed)
+                    </>
+                  )}{' '}
+                  {hoverRating >= EXCLUDED_RATING ? <span className="excluded-badge">EXCLUDED</span> : <Stars rating={hoverRating} />}
                 </p>
                 <img src={tileUrl(data, { areaId: hoverTile.areaId, cell: hoverTile.cell })} alt="hovered screen" />
               </>

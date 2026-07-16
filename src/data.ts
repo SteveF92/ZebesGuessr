@@ -272,7 +272,8 @@ export function indicesFromTargets(pool: RoundTarget[], targets: RoundTarget[]):
  */
 export function deriveDifficultyIndex(data: GameData, targets: RoundTarget[]): number {
   if (!targets.length) return DIFFICULTIES.findIndex((d) => d.id === 'hunter');
-  const mean = targets.reduce((s, t) => s + cellRating(data, t.areaId, t.cell), 0) / targets.length;
+  // Clamp to 5 so a normally-excluded (rating-6) pick doesn't skew the label.
+  const mean = targets.reduce((s, t) => s + Math.min(5, cellRating(data, t.areaId, t.cell)), 0) / targets.length;
   const i = mean < 2.5 ? 0 : mean < 3.5 ? 1 : 2;
   return Math.min(i, DIFFICULTIES.length - 1);
 }

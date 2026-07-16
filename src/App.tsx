@@ -296,7 +296,7 @@ export default function App() {
           </p>
         )}
         <div className="menu-actions">
-          <button className="btn secondary" disabled={phase === 'loading' || !!loadedSeed} onClick={startCreate} title="Hand-pick five screens and share the seed">
+          <button className="btn secondary seed-entry-btn" disabled={phase === 'loading' || !!loadedSeed} onClick={startCreate} title="Hand-pick five screens and share the seed">
             ◈ CREATE SEED
           </button>
           <button className={`btn secondary seed-entry-btn${loadedSeed ? ' locked' : ''}`} onClick={() => setShowSeedEntry(true)}>
