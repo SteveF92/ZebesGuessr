@@ -419,28 +419,38 @@ export default function App() {
           </span>
         </div>
         <div className="hud-right">
+          <div className="hud-tools">
+            {(import.meta.env.DEV || cheatEnabled) && (
+              <button className={`btn hud-tool ${debug ? 'active' : ''}`} onClick={() => setDebug((d) => !d)} title="Show the real screen for hovered map cells">
+                <img className="tool-icon scan" src={`${import.meta.env.BASE_URL}assets/scan-visor.png`} alt="" aria-hidden="true" />
+                <span>Scan Visor</span>
+              </button>
+            )}
+            {import.meta.env.DEV && (
+              <>
+                <button className={`btn hud-tool ${showTiles ? 'active' : ''}`} onClick={() => setShowTiles((t) => !t)} title="Overlay the real game screens on the map (aids the Diff tool)">
+                  <img className="tool-icon xray" src={`${import.meta.env.BASE_URL}assets/xray-visor.png`} alt="" aria-hidden="true" />
+                  <span>X-Ray Visor</span>
+                </button>
+                <button className={`btn hud-tool ${editIcons ? 'active' : ''}`} onClick={() => setEditIcons((e) => !e)} title="Place/erase landmark icons, then Save to file">
+                  <span className="tool-glyph" aria-hidden="true">
+                    ✎
+                  </span>
+                  <span>Icons</span>
+                </button>
+                <button className="btn hud-tool" onClick={() => loadGameData(data.game).then(setData)} title="Re-fetch data/<game>.json without losing round state (for tweaking map data by hand)">
+                  <span className="tool-glyph" aria-hidden="true">
+                    ↻
+                  </span>
+                  <span>Reload</span>
+                </button>
+              </>
+            )}
+          </div>
           <div className="score-readout">
             <div className="score-label">SCORE</div>
             <div className="score-value">{total.toLocaleString()}</div>
           </div>
-          {(import.meta.env.DEV || cheatEnabled) && (
-            <button className={`btn toggle ${debug ? 'active' : ''}`} onClick={() => setDebug((d) => !d)} title="Show the real screen for hovered map cells">
-              debug
-            </button>
-          )}
-          {import.meta.env.DEV && (
-            <>
-              <button className={`btn toggle ${editIcons ? 'active' : ''}`} onClick={() => setEditIcons((e) => !e)} title="Place/erase landmark icons, then Save to file">
-                icons
-              </button>
-              <button className={`btn toggle ${showTiles ? 'active' : ''}`} onClick={() => setShowTiles((t) => !t)} title="Overlay the real game screens on the map (aids the Diff tool)">
-                tiles
-              </button>
-              <button className="btn toggle" onClick={() => loadGameData(data.game).then(setData)} title="Re-fetch data/<game>.json without losing round state (for tweaking map data by hand)">
-                reload
-              </button>
-            </>
-          )}
         </div>
       </header>
 

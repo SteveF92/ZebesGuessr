@@ -946,19 +946,74 @@ a:hover {
   color: var(--bg);
   background: var(--cyan);
 }
-.btn.toggle {
-  padding: 5px 12px;
-  font-size: 14px;
-  border: 1px solid var(--line);
-  color: var(--dim);
-  background: var(--panel);
-  opacity: 0.7;
+/* HUD tool buttons (Scan Visor / X-Ray Visor / Icons / Reload): matching
+   SNES-bevel boxes seated to the left of the score readout. */
+.hud-tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
-.btn.toggle.active {
-  border-color: var(--gold);
+.btn.hud-tool {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 13px 0 8px;
+  /* body (fallback) font — the pixel display font mangles the "X-Ray" hyphen */
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--dim);
+  border: 2px solid;
+  border-color: #ffe9a0 #7a5200 #7a5200 #ffe9a0;
+  border-radius: 3px;
+  background: linear-gradient(#231803, #120c02);
+  opacity: 0.82;
+}
+.btn.hud-tool:hover {
   color: var(--gold);
-  background: rgba(255, 210, 77, 0.06);
   opacity: 1;
+}
+.btn.hud-tool.active {
+  color: var(--gold);
+  opacity: 1;
+  box-shadow:
+    0 0 10px rgba(255, 210, 77, 0.25),
+    inset 0 0 12px rgba(255, 210, 77, 0.12);
+}
+/* Sprite chips: seated on their natural in-game backdrops so the black-outline
+   art reads clearly — Scan Visor on white/grey, X-Ray Visor on blue. */
+.hud-tool .tool-icon {
+  /* Fixed chip so the two differently-sized sprites read as one uniform badge;
+     object-fit keeps each sprite's aspect ratio inside the box. */
+  box-sizing: border-box;
+  width: 34px;
+  height: 26px;
+  object-fit: contain;
+  image-rendering: pixelated;
+  padding: 3px 4px;
+  border-radius: 2px;
+  border: 1px solid rgba(0, 0, 0, 0.35);
+}
+.hud-tool .tool-icon.scan,
+.hud-tool .tool-icon.xray {
+  background: linear-gradient(#eef1f4, #b9c2cb);
+}
+/* The X-Ray sprite is square, so `contain` leaves it small in a landscape chip;
+   trim its padding to let it grow to nearly the full chip height. */
+.hud-tool .tool-icon.xray {
+  padding: 1px 2px;
+}
+.hud-tool .tool-glyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  font-size: 17px;
+  line-height: 1;
+  color: var(--gold);
 }
 
 /* ---------- reveal box ---------- */
