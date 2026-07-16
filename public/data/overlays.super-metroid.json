@@ -94,6 +94,14 @@
         "y1": 20,
         "label": "MARIDIA",
         "labelPos": "below"
+      },
+      {
+        "x0": 37,
+        "y0": 9,
+        "x1": 37,
+        "y1": 9,
+        "label": "MARIDIA",
+        "labelPos": "right"
       }
     ]
   },
