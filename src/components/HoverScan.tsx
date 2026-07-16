@@ -34,7 +34,12 @@ export function HoverScan({ data, hover, className }: Props) {
     <div className={`debug-panel${hover ? ' locked' : ' scanning'}${className ? ' ' + className : ''}`}>
       {hover && hasScreen ? (
         <>
-          <p className="scan-status">▸ TARGET ACQUIRED</p>
+          <p className="scan-status">
+            ▸ SCAN COMPLETE{' '}
+            <span className="scan-coords">
+              ({hover.cell.x},{hover.cell.y})
+            </span>
+          </p>
           <p className="debug-coords">
             {areaName(data, hover.areaId)}
             {name ? (
@@ -43,10 +48,7 @@ export function HoverScan({ data, hover, className }: Props) {
                 — <strong>{name}</strong>
               </>
             ) : (
-              <>
-                {' '}
-                ({hover.cell.x},{hover.cell.y}) — (unnamed)
-              </>
+              <> — (unnamed)</>
             )}{' '}
             {rating >= EXCLUDED_RATING ? <span className="excluded-badge">EXCLUDED</span> : <Stars rating={rating} />}
           </p>
@@ -56,9 +58,15 @@ export function HoverScan({ data, hover, className }: Props) {
         </>
       ) : hover ? (
         <>
-          <p className="scan-status">▸ SIGNAL LOST</p>
+          <p className="scan-idle">
+            SCANNING<span className="scan-dots" aria-hidden="true"></span>
+          </p>
           <p className="debug-coords">
-            {areaName(data, hover.areaId)} ({hover.cell.x},{hover.cell.y}) — no screen for this cell (map-only)
+            {areaName(data, hover.areaId)}{' '}
+            <span className="scan-coords">
+              ({hover.cell.x},{hover.cell.y})
+            </span>{' '}
+            — empty cell, no room here
           </p>
         </>
       ) : (

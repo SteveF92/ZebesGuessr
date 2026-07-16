@@ -1187,6 +1187,12 @@ a:hover {
   color: var(--cyan);
   text-shadow: 0 0 12px rgba(160, 248, 248, 0.4);
 }
+.scan-coords {
+  margin-left: 4px;
+  color: var(--dim);
+  letter-spacing: 0.08em;
+  text-shadow: none;
+}
 .debug-panel.locked .debug-coords {
   color: rgba(214, 240, 240, 0.85);
 }

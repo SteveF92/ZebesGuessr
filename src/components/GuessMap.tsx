@@ -1171,7 +1171,10 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
             if (panEnabled) return; // touch/small screens use pointer handlers + no hover
             const c = cellFromEvent(e);
             const occ = c !== null && occupied.has(`${c.x},${c.y}`);
-            onHoverCell?.(area.id, occ ? { x: c!.x - area.map.dx, y: c!.y - area.map.dy } : null, occ ? roomEdits[roomKeyAt(c!)] : undefined);
+            // Report the pointed-at cell anywhere on the map, not just over drawn
+            // rooms — empty cells still have a real coordinate (the scanner shows
+            // it as "no signal"). null only when the cursor leaves the map.
+            onHoverCell?.(area.id, c ? { x: c.x - area.map.dx, y: c.y - area.map.dy } : null, occ ? roomEdits[roomKeyAt(c!)] : undefined);
             if (editing) {
               setHover(c);
               return;
