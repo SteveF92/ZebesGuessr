@@ -7,9 +7,16 @@ import { GAMES, cellRating, loadGameData, pickTargets, roomName, tileUrl } from 
 import { DIFFICULTIES, ROUNDS_PER_RUN, cellDistance, getDifficulty, maxForRating, rankFlavor, revealFlavor, scoreRank, scoreRound } from './scoring';
 import { GAME_URL, buildShareText } from './share';
 import { buildShareImage, downloadBlob } from './shareImage';
+import { type Seed, decodeSeed, encodeSeed, mulberry32, randomSeed } from './seed';
 import type { Cell, GameData, RoundResult, RoundTarget } from './types';
 
 type Phase = 'menu' | 'loading' | 'guessing' | 'reveal' | 'summary';
+
+/** Read a `?seed=` code from the URL and decode it (null if absent/malformed). */
+function readSeedFromUrl(): Seed | null {
+  const code = new URLSearchParams(window.location.search).get('seed');
+  return code ? decodeSeed(code) : null;
+}
 
 /** fixed background flare: starfield + CRT scanlines + sweep bar.
  *  The green haze only shows on the title screen, and cross-fades out when
@@ -30,6 +37,8 @@ function BackdropFX({ phase }: { phase: Phase }) {
 }
 
 export default function App() {
+  const [loadedSeed, setLoadedSeed] = useState<Seed | null>(readSeedFromUrl);
+  const [activeSeedCode, setActiveSeedCode] = useState<string | null>(null);
   const [phase, setPhase] = useState<Phase>('menu');
   const [data, setData] = useState<GameData | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -39,8 +48,8 @@ export default function App() {
   const [viewingAreaId, setViewingAreaId] = useState<string | null>(null);
   const [results, setResults] = useState<RoundResult[]>([]);
   const [best, setBest] = useState<number>(() => Number(localStorage.getItem('zg-best') ?? 0));
-  const [difficultyId, setDifficultyId] = useState<string>(() => localStorage.getItem('zg-difficulty') ?? 'recruit');
-  const [selectedGameId, setSelectedGameId] = useState<string>(() => GAMES.find((g) => g.available)?.id ?? GAMES[0].id);
+  const [difficultyId, setDifficultyId] = useState<string>(() => (loadedSeed ? DIFFICULTIES[loadedSeed.diffIndex]?.id : null) ?? localStorage.getItem('zg-difficulty') ?? 'recruit');
+  const [selectedGameId, setSelectedGameId] = useState<string>(() => (loadedSeed ? GAMES[loadedSeed.gameIndex]?.id : null) ?? GAMES.find((g) => g.available)?.id ?? GAMES[0].id);
   const [debug, setDebug] = useState(false);
   const [editIcons, setEditIcons] = useState(false);
   const [showTiles, setShowTiles] = useState(false);
@@ -83,7 +92,13 @@ export default function App() {
     try {
       const d = await loadGameData(gameId);
       setData(d);
-      setTargets(pickTargets(d, ROUNDS_PER_RUN, difficulty));
+      // A run's seed is minted here every time (loaded runs reuse the URL's
+      // seed; fresh runs get a new one) and held for sharing at the summary.
+      const prngSeed = loadedSeed ? loadedSeed.prngSeed : randomSeed();
+      const gameIndex = GAMES.findIndex((g) => g.id === gameId);
+      const diffIndex = DIFFICULTIES.findIndex((dd) => dd.id === difficultyId);
+      setActiveSeedCode(encodeSeed({ gameIndex, diffIndex, prngSeed }));
+      setTargets(pickTargets(d, ROUNDS_PER_RUN, difficulty, mulberry32(prngSeed)));
       setRound(0);
       setResults([]);
       setSelected(null);
@@ -94,9 +109,17 @@ export default function App() {
     }
   }
 
+  /** Strip `?seed` from the URL and unlock the menu selectors. */
+  function clearSeed() {
+    window.history.replaceState({}, '', window.location.pathname);
+    setLoadedSeed(null);
+    setPhase('menu');
+  }
+
   async function onCopyText() {
     if (!data) return;
-    const text = buildShareText(data, results, total, difficulty);
+    const url = activeSeedCode ? `${GAME_URL}?seed=${activeSeedCode}` : GAME_URL;
+    const text = buildShareText(data, results, total, difficulty, url);
     try {
       await navigator.clipboard.writeText(text);
       setCopyState('copied');
@@ -197,7 +220,7 @@ export default function App() {
 
           <div className="game-list">
             {GAMES.map((g) => (
-              <button key={g.id} className={`game-btn ${g.id === selectedGameId ? 'active' : ''}`} disabled={!g.available || phase === 'loading'} onClick={() => setSelectedGameId(g.id)}>
+              <button key={g.id} className={`game-btn ${g.id === selectedGameId ? 'active' : ''}`} disabled={!g.available || phase === 'loading' || !!loadedSeed} onClick={() => setSelectedGameId(g.id)}>
                 <span>{g.title}</span>
                 {!g.available && <span className="standby">STANDBY</span>}
               </button>
@@ -211,6 +234,7 @@ export default function App() {
               <button
                 key={d.id}
                 className={`diff-btn ${d.id === difficultyId ? 'active' : ''}`}
+                disabled={!!loadedSeed || phase === 'loading'}
                 onClick={() => pickDifficulty(d.id)}
                 title={`Draws screens rated ${d.min}–${d.max} of 5; obscure screens score more`}
               >
@@ -227,7 +251,15 @@ export default function App() {
           </p>
         )}
         <button className="btn primary start" disabled={phase === 'loading'} onClick={() => startGame(selectedGameId)}>
-          ▶ START MISSION
+          {loadedSeed ? (
+            <>
+              SEED LOCKED<span className="start-sep" aria-hidden="true" />
+              START MISSION
+            </>
+          ) : (
+            'START MISSION'
+          )}{' '}
+          ▶
         </button>
         {best > 0 && <p className="best">◆ PERSONAL BEST&nbsp;&nbsp;{best.toLocaleString()}</p>}
         <Credits onAbout={() => setShowAbout(true)} />
@@ -255,6 +287,7 @@ export default function App() {
             </div>
             {total >= best && total > 0 && <div className="newbest">★ NEW PERSONAL BEST ★</div>}
             <p className="sign-off">SEE YOU NEXT MISSION</p>
+            {activeSeedCode && <p className="seed-line">SEED: {activeSeedCode}</p>}
           </div>
 
           <ol className="round-list">
@@ -296,12 +329,20 @@ export default function App() {
           <button className="btn secondary share" onClick={onShareImage}>
             {imgState === 'saved' ? '✓ SAVED' : imgState === 'error' ? '✗ TRY AGAIN' : '⇪ SHARE IMAGE'}
           </button>
-          <button className="btn primary" onClick={() => startGame(data.game)}>
-            ▶ PLAY AGAIN
-          </button>
-          <button className="btn secondary" onClick={() => setPhase('menu')}>
-            MENU
-          </button>
+          {loadedSeed ? (
+            <button className="btn primary" onClick={clearSeed}>
+              ▶ RETURN TO MENU
+            </button>
+          ) : (
+            <>
+              <button className="btn primary" onClick={() => startGame(data.game)}>
+                ▶ PLAY AGAIN
+              </button>
+              <button className="btn secondary" onClick={() => setPhase('menu')}>
+                MENU
+              </button>
+            </>
+          )}
           <button className="btn secondary" onClick={() => setShowAbout(true)}>
             ABOUT
           </button>

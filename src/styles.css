@@ -318,8 +318,12 @@ a:hover {
     box-shadow 0.15s,
     color 0.15s;
 }
-.diff-btn:hover {
+.diff-btn:hover:not(:disabled) {
   border-color: var(--accent);
+}
+.diff-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
 }
 .diff-btn.active {
   border-color: var(--accent);
@@ -775,6 +779,18 @@ a:hover {
   color: var(--gold);
   background: linear-gradient(rgba(255, 210, 77, 0.16), rgba(255, 210, 77, 0.03));
   text-shadow: 0 0 12px rgba(255, 210, 77, 0.3);
+}
+/* Draw the seed-lock separator as a crisp bar so it centers on the caps text
+   regardless of the display font's dash glyph. */
+.start-sep {
+  display: inline-block;
+  width: 0.8em;
+  height: 3px;
+  margin: 0 0.5em;
+  vertical-align: middle;
+  transform: translateY(-0.05em);
+  background: currentColor;
+  box-shadow: 0 0 12px rgba(255, 210, 77, 0.3);
 }
 .btn.secondary {
   padding: 15px 26px;
@@ -1300,6 +1316,15 @@ a:hover {
   margin: 30px 0 4px;
   text-indent: 0.32em;
   animation: signOffPulse 2.4s ease-in-out infinite;
+}
+.seed-line {
+  font-family: ui-monospace, 'JetBrains Mono', monospace;
+  font-size: 13px;
+  letter-spacing: 0.18em;
+  color: var(--cyan);
+  opacity: 0.85;
+  margin-top: 12px;
+  user-select: all;
 }
 @keyframes signOffPulse {
   0%,

@@ -161,11 +161,11 @@ export function cellRating(data: GameData, areaId: string, cell: Cell): number {
 }
 
 /** Pick n distinct targets uniformly at random from a flat pool (area-weighted). */
-function sampleUniform(pool: RoundTarget[], n: number): RoundTarget[] {
+function sampleUniform(pool: RoundTarget[], n: number, rng: () => number): RoundTarget[] {
   const picked: RoundTarget[] = [];
   const used = new Set<string>();
   while (picked.length < Math.min(n, pool.length)) {
-    const t = pool[Math.floor(Math.random() * pool.length)];
+    const t = pool[Math.floor(rng() * pool.length)];
     const key = cellKey(t.areaId, t.cell);
     if (used.has(key)) continue;
     used.add(key);
@@ -182,8 +182,11 @@ function sampleUniform(pool: RoundTarget[], n: number): RoundTarget[] {
  * its common ones instead of being drowned out. If the band holds fewer than
  * n cells, the full uniform pool is used as a fallback. Cells rated
  * EXCLUDED_RATING never enter either pool.
+ *
+ * `rng` defaults to Math.random; pass a seeded PRNG (see seed.ts) to make a
+ * run reproducible.
  */
-export function pickTargets(data: GameData, n: number, diff?: Difficulty): RoundTarget[] {
+export function pickTargets(data: GameData, n: number, diff?: Difficulty, rng: () => number = Math.random): RoundTarget[] {
   const all: RoundTarget[] = [];
   const byRating = new Map<number, RoundTarget[]>();
   for (const area of data.areas) {
@@ -196,7 +199,7 @@ export function pickTargets(data: GameData, n: number, diff?: Difficulty): Round
     }
   }
 
-  if (!diff) return sampleUniform(all, n);
+  if (!diff) return sampleUniform(all, n, rng);
 
   // The band's rating levels that actually have cells to draw from.
   const bandRatings: number[] = [];
@@ -208,15 +211,15 @@ export function pickTargets(data: GameData, n: number, diff?: Difficulty): Round
       banded += cells.length;
     }
   }
-  if (banded < n) return sampleUniform(all, n);
+  if (banded < n) return sampleUniform(all, n, rng);
 
   const picked: RoundTarget[] = [];
   const used = new Set<string>();
   const active = [...bandRatings];
   while (picked.length < n && active.length) {
-    const ai = Math.floor(Math.random() * active.length);
+    const ai = Math.floor(rng() * active.length);
     const cells = byRating.get(active[ai])!;
-    const t = cells[Math.floor(Math.random() * cells.length)];
+    const t = cells[Math.floor(rng() * cells.length)];
     const key = cellKey(t.areaId, t.cell);
     if (used.has(key)) {
       // Drop this rating once all its cells are spoken for, so we never spin
