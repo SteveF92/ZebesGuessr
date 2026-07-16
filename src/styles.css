@@ -1649,9 +1649,13 @@ a:hover {
        and overflows the screen horizontally */
     align-items: stretch;
   }
-  /* during reveal the round result card is the focus; hide the map entirely on
-     phones so the result isn't buried below it */
-  .pane.right.map-hidden {
+  /* reveal plays as two beats on phones (there isn't room for both at once):
+     first the map alone (.reveal-map) so you see where the room actually was,
+     then the result card alone (.reveal-result). */
+  .game.reveal-map .reveal-box {
+    display: none;
+  }
+  .game.reveal-result .pane.right {
     display: none;
   }
   /* center the left column as a uniform-width stack (confirm button, reveal

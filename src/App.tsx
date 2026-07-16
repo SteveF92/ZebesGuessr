@@ -15,6 +15,12 @@ import type { Cell, GameData, RoundResult, RoundTarget } from './types';
 
 type Phase = 'menu' | 'loading' | 'creating' | 'guessing' | 'reveal' | 'summary';
 
+/** On phones the reveal plays as two beats: first the map (so you see where the
+ *  room actually was), then the result card. Desktop shows both at once and
+ *  ignores this. Time in ms the map beat holds before auto-advancing. */
+const REVEAL_MAP_MS = 2400;
+const isPhone = () => typeof window !== 'undefined' && window.matchMedia('(max-width: 800px)').matches;
+
 /** Read a `?seed=` code from the URL and decode it (null if absent/malformed). */
 function readSeedFromUrl(): Seed | null {
   const code = new URLSearchParams(window.location.search).get('seed');
@@ -62,6 +68,8 @@ export default function App() {
   const [cheatEnabled, setCheatEnabled] = useState(() => localStorage.getItem('zg-cheat') === '1');
   const [copyState, setCopyState] = useState<'idle' | 'copied' | 'error'>('idle');
   const [imgState, setImgState] = useState<'idle' | 'saved' | 'error'>('idle');
+  // Which beat of the reveal we're on (phones only — desktop shows both at once).
+  const [revealStage, setRevealStage] = useState<'map' | 'result'>('result');
 
   const difficulty = getDifficulty(difficultyId);
   const total = results.reduce((s, r) => s + r.score, 0);
@@ -69,7 +77,11 @@ export default function App() {
   // Hooks must run unconditionally (before any early return): pre-compute the
   // reveal result + the two count-ups here.
   const revealResult = phase === 'reveal' ? results[results.length - 1] : null;
-  const shownRoundScore = Math.round(useCountUp(revealResult?.score ?? 0, 900, [revealResult]));
+  // The result card is always visible on desktop; on phones only during the
+  // second reveal beat. Gate the score count-up on that so it animates when the
+  // card actually appears rather than finishing behind the map beat.
+  const cardVisible = phase === 'reveal' && revealStage === 'result';
+  const shownRoundScore = Math.round(useCountUp(cardVisible ? (revealResult?.score ?? 0) : 0, 900, [revealResult, cardVisible]));
   const shownTotal = Math.round(useCountUp(total, 1200, [phase]));
 
   function pickDifficulty(id: string) {
@@ -203,6 +215,9 @@ export default function App() {
       score: scoreRound(distance, rating, sameRoom)
     };
     setResults((r) => [...r, result]);
+    // Phones open the reveal on the map beat; desktop jumps straight to the card
+    // (it shows the map alongside anyway).
+    setRevealStage(isPhone() ? 'map' : 'result');
     setPhase('reveal');
   }
 
@@ -215,6 +230,13 @@ export default function App() {
       setPhase('guessing');
     }
   }
+
+  // Phone reveal: hold on the map beat, then auto-advance to the result card.
+  useEffect(() => {
+    if (phase !== 'reveal' || revealStage !== 'map') return;
+    const t = setTimeout(() => setRevealStage('result'), REVEAL_MAP_MS);
+    return () => clearTimeout(t);
+  }, [phase, revealStage]);
 
   useEffect(() => {
     if (phase === 'summary' && total > best) {
@@ -403,7 +425,7 @@ export default function App() {
 
   // ---------------------------------------------------------------- GAME
   return (
-    <div className="shell game">
+    <div className={`shell game${phase === 'reveal' ? (revealStage === 'map' ? ' reveal-map' : ' reveal-result') : ''}`}>
       <BackdropFX phase={phase} />
       <header className="hud">
         <span className="logo small">ZebesGuessr</span>
@@ -491,7 +513,7 @@ export default function App() {
           {debug && <HoverScan data={data} hover={hoverTile} />}
         </section>
 
-        <section className={`pane right${phase === 'reveal' ? ' map-hidden' : ''}`}>
+        <section className="pane right">
           <GuessMap
             data={data}
             selected={selected}
