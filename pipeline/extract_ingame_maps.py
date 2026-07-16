@@ -402,6 +402,40 @@ def load_map_overrides(game_id: str) -> dict:
     return json.loads(f.read_text()) if f.exists() else {}
 
 
+def load_connector_cells(game_id: str) -> dict:
+    """Map cells covered by the hand-placed transit connectors, keyed by areaId.
+
+    Connectors (elevator shafts, Maridia's tube runs) are overlay-only: their
+    rails are cyan, and ``extract_area`` deliberately keeps cyan from making a
+    cell, so they never become map cells and would be filtered out of the
+    playable list. But the source area map does draw a real screen for many of
+    them, so they make perfectly good tiles — the X-Ray overlay can then show
+    the actual shaft instead of just our connector glyph. ``main`` exempts them
+    from the playable filter for exactly that reason; they stay out of
+    ``map.cells``, so the map still draws the connector, not a room box, and
+    they can't be clicked as a guess. Rate them difficulty 6 to keep them out
+    of the guess pool (cells whose source art is blank — an exit arrow and a
+    caption, no room — never reach here: they fall under slice_maps' fill
+    threshold, so they aren't in ``area.cells`` to begin with).
+    """
+    f = ROOT / "public" / "data" / f"overlays.{game_id}.json"
+    if not f.exists():
+        return {}
+    out = {}
+    for area_id, layer in json.loads(f.read_text()).items():
+        cells = set()
+        for c in layer.get("connectors", []):
+            x0, y0, x1, y1 = c["x0"], c["y0"], c["x1"], c["y1"]
+            if x0 == x1:
+                for y in range(min(y0, y1), max(y0, y1) + 1):
+                    cells.add((x0, y))
+            else:
+                for x in range(min(x0, x1), max(x0, x1) + 1):
+                    cells.add((x, y0))
+        out[area_id] = cells
+    return out
+
+
 def apply_cell_overrides(cells: dict, ov: dict | None) -> int:
     """Upsert hand-authored map cells into the internal grid (before align)."""
     if not ov or "cells" not in ov:
@@ -439,6 +473,7 @@ def main() -> None:
             continue
         game_id = data["game"]
         overrides = load_map_overrides(game_id)
+        connectors = load_connector_cells(game_id)
         for area in data["areas"]:
             ov = overrides.get(area["id"])
             img = ROOT / "Images" / "raw" / game_id / "ingame" / f"{area['id']}.webp"
@@ -455,7 +490,12 @@ def main() -> None:
             dx, dy, matches = align(cells, cols, rows, area["cells"],
                                     area["cols"], area["rows"])
             occ = set(cells)
-            playable = [c for c in area["cells"] if (c["x"] + dx, c["y"] + dy) in occ]
+            # Connector cells aren't map cells but are still real screens —
+            # keep them as tiles (see load_connector_cells).
+            conn = connectors.get(area["id"], set())
+            keep = occ | conn
+            playable = [c for c in area["cells"] if (c["x"] + dx, c["y"] + dy) in keep]
+            kept_conn = sum(1 for c in playable if (c["x"] + dx, c["y"] + dy) in conn - occ)
             dropped = len(area["cells"]) - len(playable)
             area["cells"] = playable
             area["map"] = {
@@ -474,7 +514,8 @@ def main() -> None:
                   f"{len(bands)} bands, offset ({dx},{dy}), "
                   f"{matches} aligned, {dropped} targets dropped, "
                   f"{erased} annotation px erased, {dropped_labels} label cells removed, "
-                  f"{closed} edges closed, {overridden} cells overridden")
+                  f"{closed} edges closed, {overridden} cells overridden, "
+                  f"{kept_conn} connector tiles kept")
         # Indented so Prettier keeps objects expanded (one field per line) —
         # matches the committed formatting and gives clean per-coordinate diffs.
         # Still run `npm run format` afterward to normalise the rest.
