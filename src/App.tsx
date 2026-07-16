@@ -292,11 +292,11 @@ export default function App() {
           <button className="btn secondary seed-entry-btn" disabled={phase === 'loading' || !!loadedSeed} onClick={startCreate} title="Hand-pick five screens and share the seed">
             ◈ CREATE SEED
           </button>
-          <button className={`btn secondary seed-entry-btn${loadedSeed ? ' locked' : ''}`} onClick={() => setShowSeedEntry(true)}>
-            {loadedSeed ? '◈ SEED LOCKED' : '◈ SEED ENTRY'}
-          </button>
           <button className="btn primary start" disabled={phase === 'loading'} onClick={() => startGame(selectedGameId)}>
             START MISSION ▶
+          </button>
+          <button className={`btn secondary seed-entry-btn${loadedSeed ? ' locked' : ''}`} onClick={() => setShowSeedEntry(true)}>
+            {loadedSeed ? '◈ SEED LOCKED' : '◈ SEED ENTRY'}
           </button>
         </div>
         {best > 0 && <p className="best">◆ PERSONAL BEST&nbsp;&nbsp;{best.toLocaleString()}</p>}
