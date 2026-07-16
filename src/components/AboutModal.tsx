@@ -1,5 +1,4 @@
-import { useEffect, useState } from 'react';
-import type { FormEvent } from 'react';
+import { useEffect } from 'react';
 
 export function Credits({ onAbout }: { onAbout: () => void }) {
   return (
@@ -18,10 +17,7 @@ export function Credits({ onAbout }: { onAbout: () => void }) {
   );
 }
 
-export function AboutModal({ onClose, onUnlockCheat }: { onClose: () => void; onUnlockCheat: () => void }) {
-  const [cheat, setCheat] = useState('');
-  const [cheatMsg, setCheatMsg] = useState<string | null>(null);
-
+export function AboutModal({ onClose }: { onClose: () => void }) {
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key === 'Escape') onClose();
@@ -29,15 +25,6 @@ export function AboutModal({ onClose, onUnlockCheat }: { onClose: () => void; on
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
-
-  function submitCheat(e: FormEvent) {
-    e.preventDefault();
-    if (cheat.trim().toUpperCase() === 'JUSTIN BAILEY') {
-      onUnlockCheat();
-      setCheatMsg('▶ DEBUG SCAN UNLOCKED');
-    }
-    setCheat('');
-  }
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
@@ -63,21 +50,6 @@ export function AboutModal({ onClose, onUnlockCheat }: { onClose: () => void; on
           Made by Steve Fallon, who also builds <a href="https://www.fantasycritic.games">Fantasy Critic</a>, a fantasy league game for video games. The code for this site is available on{' '}
           <a href="https://github.com/SteveF92/zebesguessr">Github</a>.
         </p>
-        <form className="cheat-form" onSubmit={submitCheat}>
-          <label htmlFor="cheat-input">CHEATS</label>
-          <input
-            id="cheat-input"
-            className="cheat-input edit-name"
-            value={cheat}
-            onChange={(e) => {
-              setCheat(e.target.value);
-              setCheatMsg(null);
-            }}
-            autoComplete="off"
-            spellCheck={false}
-          />
-          {cheatMsg && <span className="cheat-msg">{cheatMsg}</span>}
-        </form>
       </div>
     </div>
   );

@@ -9,6 +9,8 @@ export interface ShareImageOpts {
   total: number;
   maxTotal: number;
   difficulty: Difficulty;
+  /** The run's replayable seed code, drawn under the header. */
+  seedCode?: string;
   /** Draw the row of mystery-screen thumbnails. Default true. */
   includeThumbnails?: boolean;
 }
@@ -31,14 +33,14 @@ const MONO = 'ui-monospace, "JetBrains Mono", monospace';
 // Logical layout constants (pre-DPR).
 const W = 560;
 const PAD = 28;
-const HEADER_H = 172;
+const HEADER_H = 194; // room for the RUN COMPLETE / score / rank / difficulty + seed lines
 const ROW_H = 52;
 const STRIP_GAP = 10;
 const STRIP_H = 150;
 
 /** Draw the scorecard and resolve to a PNG Blob (or null if rendering failed). */
 export async function buildShareImage(opts: ShareImageOpts): Promise<Blob | null> {
-  const { data, results, total, maxTotal, difficulty, includeThumbnails = true } = opts;
+  const { data, results, total, maxTotal, difficulty, seedCode, includeThumbnails = true } = opts;
   try {
     const H = PAD + HEADER_H + results.length * ROW_H + (includeThumbnails ? STRIP_GAP + STRIP_H : 0) + PAD;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -91,6 +93,12 @@ export async function buildShareImage(opts: ShareImageOpts): Promise<Blob | null
     ctx.fillStyle = COL.dim;
     ctx.font = `500 13px ${MONO}`;
     ctx.fillText(`Difficulty: ${difficulty.label}`, W / 2, y + 12);
+
+    if (seedCode) {
+      ctx.fillStyle = COL.cyan;
+      ctx.font = `500 14px ${MONO}`;
+      ctx.fillText(`SEED: ${seedCode}`, W / 2, y + 34);
+    }
 
     // ---- per-round rows ----
     y = PAD + HEADER_H;

@@ -402,6 +402,50 @@ a:hover {
   animation: zgBlink 1s steps(1) infinite;
 }
 
+/* START + SEED ENTRY sit side by side, matched in height. */
+.menu-actions {
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.menu-actions .btn {
+  /* Both stretch to the taller START button, so center their labels in the
+     extra height rather than letting the text ride to the top. A fixed
+     line-height keeps the ▶/◈ glyphs from inflating one button's line box and
+     dropping its baseline, so the two labels sit at the same height. */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.1;
+}
+.menu-actions .btn.start {
+  margin-top: 0; /* drop the stacked-layout top margin so both buttons align */
+}
+/* SEED ENTRY reads as an active cyan secondary — not the dim/standby look.
+   Selectors carry .secondary so they outrank the base .btn.secondary rule. */
+.btn.secondary.seed-entry-btn {
+  /* Match START MISSION's type size so the pixel-font glyphs sit at the same
+     height — hierarchy comes from color, not size. */
+  font-size: 20px;
+  letter-spacing: 0.07em;
+  color: var(--cyan);
+  border-color: rgba(160, 248, 248, 0.4);
+}
+.btn.secondary.seed-entry-btn:hover {
+  color: var(--text);
+  border-color: var(--cyan);
+}
+.btn.secondary.seed-entry-btn.locked {
+  color: var(--gold);
+  border-color: rgba(255, 210, 77, 0.55);
+  text-shadow: 0 0 12px rgba(255, 210, 77, 0.3);
+}
+.btn.secondary.seed-entry-btn.locked:hover {
+  color: var(--gold);
+  border-color: var(--gold);
+}
 .best {
   font-family: var(--font-display);
   font-size: 15px;
@@ -493,31 +537,119 @@ a:hover {
 .modal-close:hover {
   color: var(--cyan);
 }
-.cheat-form {
+/* ---- Seed Entry (NES password-screen flavored) ---- */
+.seed-modal {
+  max-width: 468px;
+  text-align: center;
+  background: linear-gradient(var(--bg), #02030a);
+}
+.seed-title {
+  text-align: center;
+  letter-spacing: 0.22em;
+}
+.seed-boxes {
   display: flex;
   align-items: center;
-  gap: 10px;
+  justify-content: center;
+  gap: 8px;
   flex-wrap: wrap;
-  margin-top: 16px;
-  padding-top: 14px;
-  border-top: 1px solid var(--line);
+  margin: 6px 0 4px;
 }
-.cheat-form label {
+.seed-box {
+  width: 34px;
+  height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-family: var(--font-mono);
-  font-size: 12px;
-  letter-spacing: 0.28em;
-  color: var(--dim);
+  font-size: 22px;
+  line-height: 1;
+  color: var(--accent);
+  background: rgba(77, 255, 136, 0.04);
+  border: 2px solid var(--line);
+  border-radius: 4px;
+  text-shadow: 0 0 10px rgba(77, 255, 136, 0.35);
 }
-.cheat-input {
-  font-family: var(--font-mono);
-  font-size: 15px;
-  width: 200px;
+.seed-box.filled {
+  border-color: rgba(77, 255, 136, 0.55);
 }
-.cheat-msg {
+.seed-box.active {
+  border-color: var(--cyan);
+  box-shadow: 0 0 12px rgba(160, 248, 248, 0.35);
+}
+/* Full-width line break so the second half of the code (e.g. "BAILEY") wraps
+   onto its own row instead of trailing after the first. */
+.seed-gap {
+  flex-basis: 100%;
+  width: 0;
+  height: 0;
+}
+.seed-msg {
+  min-height: 1.2em;
+  margin: 8px 0 4px;
   font-family: var(--font-mono);
   font-size: 13px;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.16em;
+  color: transparent;
+}
+.seed-msg.ok {
   color: var(--gold);
+}
+.seed-msg.err {
+  color: #ff6b6b;
+}
+.seed-keys {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 5px;
+  max-width: 400px;
+  margin: 4px auto 12px;
+}
+.seed-key {
+  min-width: 26px;
+  padding: 6px 0;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  color: var(--dim);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  cursor: pointer;
+  transition:
+    color 0.12s,
+    border-color 0.12s;
+}
+.seed-key:hover {
+  color: var(--cyan);
+  border-color: var(--cyan);
+}
+.seed-key:active {
+  transform: scale(0.94);
+}
+.seed-key.wide {
+  min-width: 52px;
+  padding-left: 10px;
+  padding-right: 10px;
+}
+.seed-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+.btn.primary.seed-enter {
+  padding: 9px 20px;
+  font-size: 16px;
+}
+.seed-hint {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  letter-spacing: 0.06em;
+  color: var(--dim);
+  opacity: 0.75;
+  margin: 8px 0 0;
 }
 
 /* ============================================================

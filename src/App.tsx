@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import GuessMap from './components/GuessMap';
 import TileViewer from './components/TileViewer';
 import { AboutModal, Credits } from './components/AboutModal';
+import { SeedEntryModal } from './components/SeedEntryModal';
 import { useCountUp } from './hooks/useCountUp';
 import { GAMES, cellRating, loadGameData, pickTargets, roomName, tileUrl } from './data';
 import { DIFFICULTIES, ROUNDS_PER_RUN, cellDistance, getDifficulty, maxForRating, rankFlavor, revealFlavor, scoreRank, scoreRound } from './scoring';
@@ -55,6 +56,7 @@ export default function App() {
   const [showTiles, setShowTiles] = useState(false);
   const [hoverTile, setHoverTile] = useState<{ areaId: string; cell: Cell; name?: string } | null>(null);
   const [showAbout, setShowAbout] = useState(false);
+  const [showSeedEntry, setShowSeedEntry] = useState(false);
   const [cheatEnabled, setCheatEnabled] = useState(() => localStorage.getItem('zg-cheat') === '1');
   const [copyState, setCopyState] = useState<'idle' | 'copied' | 'error'>('idle');
   const [imgState, setImgState] = useState<'idle' | 'saved' | 'error'>('idle');
@@ -109,6 +111,16 @@ export default function App() {
     }
   }
 
+  /** Apply a manually entered seed: lock the menu to it, just like a URL seed. */
+  function applySeed(seed: Seed) {
+    setLoadedSeed(seed);
+    setSelectedGameId(GAMES[seed.gameIndex].id);
+    setDifficultyId(DIFFICULTIES[seed.diffIndex].id);
+    // Reflect it in the address bar so refresh preserves it and clearSeed can strip it.
+    window.history.replaceState({}, '', '?seed=' + encodeSeed(seed));
+    setShowSeedEntry(false);
+  }
+
   /** Strip `?seed` from the URL and unlock the menu selectors. */
   function clearSeed() {
     window.history.replaceState({}, '', window.location.pathname);
@@ -132,7 +144,7 @@ export default function App() {
   async function onShareImage() {
     if (!data) return;
     const maxTotal = results.reduce((s, r) => s + maxForRating(r.rating), 0);
-    const blob = await buildShareImage({ data, results, total, maxTotal, difficulty });
+    const blob = await buildShareImage({ data, results, total, maxTotal, difficulty, seedCode: activeSeedCode ?? undefined });
     if (!blob) {
       setImgState('error');
       setTimeout(() => setImgState('idle'), 2000);
@@ -220,7 +232,12 @@ export default function App() {
 
           <div className="game-list">
             {GAMES.map((g) => (
-              <button key={g.id} className={`game-btn ${g.id === selectedGameId ? 'active' : ''}`} disabled={!g.available || phase === 'loading' || !!loadedSeed} onClick={() => setSelectedGameId(g.id)}>
+              <button
+                key={g.id}
+                className={`game-btn ${g.id === selectedGameId ? 'active' : ''}`}
+                disabled={!g.available || phase === 'loading' || !!loadedSeed}
+                onClick={() => setSelectedGameId(g.id)}
+              >
                 <span>{g.title}</span>
                 {!g.available && <span className="standby">STANDBY</span>}
               </button>
@@ -250,20 +267,18 @@ export default function App() {
             INITIALIZING ARCHIVE<span className="cursor">_</span>
           </p>
         )}
-        <button className="btn primary start" disabled={phase === 'loading'} onClick={() => startGame(selectedGameId)}>
-          {loadedSeed ? (
-            <>
-              SEED LOCKED<span className="start-sep" aria-hidden="true" />
-              START MISSION
-            </>
-          ) : (
-            'START MISSION'
-          )}{' '}
-          ▶
-        </button>
+        <div className="menu-actions">
+          <button className={`btn secondary seed-entry-btn${loadedSeed ? ' locked' : ''}`} onClick={() => setShowSeedEntry(true)}>
+            {loadedSeed ? '◈ SEED LOCKED' : '◈ SEED ENTRY'}
+          </button>
+          <button className="btn primary start" disabled={phase === 'loading'} onClick={() => startGame(selectedGameId)}>
+            START MISSION ▶
+          </button>
+        </div>
         {best > 0 && <p className="best">◆ PERSONAL BEST&nbsp;&nbsp;{best.toLocaleString()}</p>}
         <Credits onAbout={() => setShowAbout(true)} />
-        {showAbout && <AboutModal onClose={() => setShowAbout(false)} onUnlockCheat={unlockCheat} />}
+        {showAbout && <AboutModal onClose={() => setShowAbout(false)} />}
+        {showSeedEntry && <SeedEntryModal onClose={() => setShowSeedEntry(false)} onSubmitSeed={applySeed} onUnlockCheat={unlockCheat} />}
       </div>
     );
   }
@@ -348,7 +363,7 @@ export default function App() {
           </button>
         </div>
         <Credits onAbout={() => setShowAbout(true)} />
-        {showAbout && <AboutModal onClose={() => setShowAbout(false)} onUnlockCheat={unlockCheat} />}
+        {showAbout && <AboutModal onClose={() => setShowAbout(false)} />}
       </div>
     );
   }
