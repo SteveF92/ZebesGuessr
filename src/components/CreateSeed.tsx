@@ -1,10 +1,10 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import GuessMap from './GuessMap';
 import TileViewer from './TileViewer';
 import { HoverScan } from './HoverScan';
 import { Stars } from './Stars';
 import { GAMES, areaName, cellKey, cellPool, cellRating, deriveDifficultyIndex, indicesFromTargets, roomName, tileUrl } from '../data';
-import { EXCLUDED_RATING } from '../scoring';
+import { DIFFICULTIES, EXCLUDED_RATING } from '../scoring';
 import { SEED_TILES, encodeSeed } from '../seed';
 import { GAME_URL } from '../share';
 import type { Cell, GameData, RoundTarget } from '../types';
@@ -50,6 +50,9 @@ export function CreateSeed({ data, gameId, onExit, onPlay }: Props) {
   const full = picks.length >= SEED_TILES;
   const canLock = !!selected && isPickable(selected.areaId, selected.cell) && !inPicks(selected) && !full;
 
+  const avgRating = full ? picks.reduce((s, p) => s + Math.min(5, cellRating(data, p.areaId, p.cell)), 0) / picks.length : 0;
+  const avgDifficulty = full ? DIFFICULTIES[deriveDifficultyIndex(data, picks as RoundTarget[])] : null;
+
   function lockIn() {
     if (!selected || !canLock) return;
     setPicks((p) => [...p, selected]);
@@ -59,6 +62,16 @@ export function CreateSeed({ data, gameId, onExit, onPlay }: Props) {
   function removePick(i: number) {
     setPicks((p) => p.filter((_, j) => j !== i));
   }
+
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key !== 'Enter') return;
+      if (canLock) lockIn();
+      else if (full) finalize();
+    }
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }); // eslint-disable-line react-hooks/exhaustive-deps
 
   function finalize() {
     const indices = indicesFromTargets(cellPool(data), picks as RoundTarget[]);
@@ -125,7 +138,7 @@ export function CreateSeed({ data, gameId, onExit, onPlay }: Props) {
             ))}
           </div>
           <span className="round-label">
-            {picks.length}/{SEED_TILES} LOCKED IN
+            {picks.length}/{SEED_TILES} CHOSEN
           </span>
         </div>
         <div className="hud-right">
@@ -154,14 +167,24 @@ export function CreateSeed({ data, gameId, onExit, onPlay }: Props) {
                 </button>
               </div>
             </>
+          ) : full ? (
+            <div className="create-hint-card create-summary">
+              <p className="create-summary-msg">◈ ALL FIVE SCREENS CHOSEN</p>
+              <p className="reveal-rating create-summary-diff">
+                <span>AVG DIFFICULTY</span>
+                <Stars rating={avgRating} />
+                <span>{avgDifficulty?.label.toUpperCase()}</span>
+              </p>
+              <p className="create-hint">Remove a screen to swap it, or finalize below to mint the seed.</p>
+            </div>
           ) : (
             <div className="create-hint-card">
               <p className="signal-label">
-                {full ? 'FIVE SCREENS SET' : 'PICK A SCREEN'}
+                PICK A SCREEN
                 <br />
-                {full ? 'FINALIZE BELOW' : 'CLICK THE MAP'}
+                CLICK THE MAP
               </p>
-              {!full && <p className="create-hint">Choose the five screens for your custom run. Hover any room to preview its screen.</p>}
+              <p className="create-hint">Choose the five screens for your custom run. Hover any room to preview its screen.</p>
             </div>
           )}
 
@@ -173,6 +196,9 @@ export function CreateSeed({ data, gameId, onExit, onPlay }: Props) {
                   <span className="pick-meta">
                     <span className="pick-idx">{i + 1}.</span> {areaName(data, p.areaId)}
                     {roomName(data, p) ? <span className="pick-room"> “{roomName(data, p)}”</span> : null}
+                  </span>
+                  <span className="pick-rating">
+                    <Stars rating={cellRating(data, p.areaId, p.cell)} />
                   </span>
                   <button className="pick-remove" onClick={() => removePick(i)} aria-label="Remove screen" title="Remove">
                     ✕
@@ -198,7 +224,7 @@ export function CreateSeed({ data, gameId, onExit, onPlay }: Props) {
             data={data}
             selected={selected}
             onSelect={(areaId, cell) => {
-              if (isPickable(areaId, cell)) setSelected({ areaId, cell });
+              if (!full && isPickable(areaId, cell)) setSelected({ areaId, cell });
             }}
             onHoverCell={(areaId, cell, name) => setHoverTile(cell ? { areaId, cell, name } : null)}
             result={null}

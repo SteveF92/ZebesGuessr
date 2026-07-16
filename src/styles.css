@@ -1575,6 +1575,25 @@ a:hover {
   color: rgba(214, 240, 240, 0.7);
 }
 
+/* Recap shown once all five screens are chosen — replaces the pick prompt. */
+.create-summary {
+  border-color: rgba(255, 213, 128, 0.3);
+}
+.create-summary-msg {
+  font-family: var(--font-display);
+  font-size: 15px;
+  letter-spacing: 0.08em;
+  color: var(--gold);
+}
+.create-summary .reveal-rating {
+  margin: 0;
+}
+.create-summary-diff {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
 /* Running list of locked-in picks. */
 .pick-strip {
   display: flex;
@@ -1616,6 +1635,10 @@ a:hover {
 }
 .pick-room {
   color: var(--gold);
+}
+.pick-rating {
+  flex: 0 0 auto;
+  font-size: 10px;
 }
 .pick-remove {
   flex: 0 0 auto;
