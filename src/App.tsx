@@ -8,6 +8,17 @@ import { HoverScan } from './components/HoverScan';
 import { useCountUp } from './hooks/useCountUp';
 import { GAMES, areaName, cellPool, cellRating, indicesFromTargets, loadGameData, pickTargets, roomName, targetsFromIndices, tileUrl } from './data';
 import { DIFFICULTIES, ROUNDS_PER_RUN, cellDistance, computeUnlocks, getDifficulty, maxForRating, rankFlavor, revealFlavor, scoreRank, scoreRound } from './scoring';
+import type { Unlocks } from './scoring';
+
+// Display labels for the acquired banner, in progression order. The Prime-style
+// banner reads "<label> ACQUIRED", so these name the feature, not its gate.
+const UNLOCK_LABELS: Record<keyof Unlocks, string> = {
+  enterSeed: 'Enter Seed',
+  scan: 'Scan Visor',
+  xray: 'X-Ray Visor',
+  create: 'Create Seed'
+};
+const UNLOCK_ORDER: (keyof Unlocks)[] = ['enterSeed', 'scan', 'xray', 'create'];
 import { GAME_URL, buildShareText } from './share';
 import { buildShareImage, downloadBlob } from './shareImage';
 import { type Seed, decodeSeed, encodeSeed } from './seed';
@@ -74,6 +85,9 @@ export default function App() {
   const [visorsUsed, setVisorsUsed] = useState(false);
   const [copyState, setCopyState] = useState<'idle' | 'copied' | 'error'>('idle');
   const [imgState, setImgState] = useState<'idle' | 'saved' | 'error'>('idle');
+  // Features whose gate this run just crossed — drives the Prime-style acquired
+  // banner on the summary. Populated once when we bump the PB; cleared per run.
+  const [justUnlocked, setJustUnlocked] = useState<(keyof Unlocks)[]>([]);
   // Which beat of the reveal we're on (phones only — desktop shows both at once).
   const [revealStage, setRevealStage] = useState<'map' | 'result'>('result');
 
@@ -127,6 +141,7 @@ export default function App() {
       setResults([]);
       setSelected(null);
       setVisorsUsed(false);
+      setJustUnlocked([]);
       setPhase('guessing');
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -262,6 +277,11 @@ export default function App() {
 
   useEffect(() => {
     if (phase === 'summary' && !visorsUsed && total > best) {
+      // Diff the unlock set at the old PB against the new one so the banner
+      // announces only the gates this run actually pushed past.
+      const before = computeUnlocks(best, { jb: cheatJB, narpas: cheatNarpas });
+      const after = computeUnlocks(total, { jb: cheatJB, narpas: cheatNarpas });
+      setJustUnlocked(UNLOCK_ORDER.filter((k) => after[k] && !before[k]));
       setBest(total);
       localStorage.setItem('zg-best', String(total));
     }
@@ -381,6 +401,20 @@ export default function App() {
               <p className="rank-flavor">{rankFlavor(total)}</p>
             </div>
             {visorsUsed ? <div className="practice-note">◈ PRACTICE RUN — visors used, score not recorded</div> : total >= best && total > 0 && <div className="newbest">★ NEW PERSONAL BEST ★</div>}
+            {justUnlocked.length > 0 && (
+              <div className="unlock-banners">
+                {justUnlocked.map((k, i) => (
+                  <div key={k} className="unlock-banner" style={{ animationDelay: `${0.5 + i * 0.7}s` }}>
+                    <span className="unlock-banner-corner tl" />
+                    <span className="unlock-banner-corner tr" />
+                    <span className="unlock-banner-corner bl" />
+                    <span className="unlock-banner-corner br" />
+                    <span className="unlock-banner-kicker">◆ UNLOCKED ◆</span>
+                    <span className="unlock-banner-label">{UNLOCK_LABELS[k]}</span>
+                  </div>
+                ))}
+              </div>
+            )}
             <p className="sign-off">SEE YOU NEXT MISSION</p>
             {activeSeedCode && <p className="seed-line">SEED: {activeSeedCode}</p>}
           </div>

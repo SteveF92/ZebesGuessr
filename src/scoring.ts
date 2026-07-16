@@ -93,43 +93,6 @@ export function scoreRound(distance: number, rating: number, sameRoom: boolean):
   return Math.round(maxForRating(rating) * p);
 }
 
-export function scoreRank(total: number): string {
-  const max = MAX_SCORE * ROUNDS_PER_RUN;
-  const pct = total / max;
-  if (pct >= 0.95) return 'Galactic Cartographer';
-  if (pct >= 0.8) return 'Chozo Scholar';
-  if (pct >= 0.6) return 'Seasoned Bounty Hunter';
-  if (pct >= 0.4) return 'Rookie Explorer';
-  if (pct >= 0.2) return 'Lost in Maridia';
-  return 'Space Pirate Cannon Fodder';
-}
-
-/** Flavour line shown under the rank on the summary screen. */
-export function rankFlavor(total: number): string {
-  const pct = total / (MAX_SCORE * ROUNDS_PER_RUN);
-  if (pct >= 0.95) return 'The whole planet is mapped behind your visor.';
-  if (pct >= 0.8) return 'The statues would approve.';
-  if (pct >= 0.6) return 'The Federation pays well for eyes like yours.';
-  if (pct >= 0.4) return "You'll find your way. Eventually.";
-  if (pct >= 0.2) return 'The current keeps pulling you back under.';
-  return 'Ridley barely noticed you.';
-}
-
-/**
- * Progression gates. Each of the four unlockables is earned by pushing your
- * sticky personal best (best single run, out of MAX_SCORE * ROUNDS_PER_RUN =
- * 25,000) past a threshold — or handed over by a cheat code. The thresholds are
- * rank-aligned so the summary screen's rank name doubles as the unlock notice:
- * Scan = Seasoned Bounty Hunter (60%), X-Ray = Chozo Scholar (80%), Create Seed
- * = Galactic Cartographer (95%). Because `best` only ratchets up and cheats are
- * permanent, unlocks are monotonic — nothing ever re-locks. Runs played with a
- * visor active don't set a PB (see App's visor-taint guard), so the ladder
- * can't be cheesed by the very toys it hands out.
- */
-export const UNLOCK_SCAN = 15000; // 60% — Seasoned Bounty Hunter
-export const UNLOCK_XRAY = 20000; // 80% — Chozo Scholar
-export const UNLOCK_CREATE = 23750; // 95% — Galactic Cartographer
-
 export interface Unlocks {
   /** Manual seed entry (URL seeds bypass this). */
   enterSeed: boolean;
@@ -141,15 +104,88 @@ export interface Unlocks {
   create: boolean;
 }
 
+/**
+ * One rung of the summary-screen rank ladder. `minScore` is the absolute run
+ * total (out of MAX_SCORE * ROUNDS_PER_RUN = 25,000) needed to reach this rank;
+ * the first tier a score clears, scanning high → low, wins. `unlocks` lists the
+ * progression toys earned on reaching that rank via your sticky personal best.
+ * Edit this one array to retune ranks, flavour, and gates together — everything
+ * below is derived from it.
+ */
+export interface Rank {
+  minScore: number;
+  name: string;
+  /** Flavour line shown under the rank on the summary screen. */
+  flavor: string;
+  /** Unlockables this rank grants (best-run gated). `enterSeed` is not here —
+   *  it's earned by completing any run at all (see `computeUnlocks`). */
+  unlocks?: (keyof Unlocks)[];
+}
+
+/**
+ * The rank ladder, high → low. The three rank-aligned unlocks make the rank
+ * name double as the unlock notice: Scan = Seasoned Bounty Hunter (15,000),
+ * X-Ray = Chozo Scholar (20,000), Create Seed = Galactic Cartographer (23,750).
+ * Because `best` only ratchets up and cheats are permanent, unlocks are
+ * monotonic — nothing ever re-locks. Runs played with a visor active don't set
+ * a PB (see App's visor-taint guard), so the ladder can't be cheesed by the
+ * very toys it hands out.
+ */
+export const RANKS: Rank[] = [
+  {
+    minScore: 23750,
+    name: 'Galactic Cartographer',
+    flavor: 'The whole planet is mapped behind your visor.',
+    unlocks: ['create']
+  },
+  { minScore: 20000, name: 'Chozo Scholar', flavor: 'The statues would approve.', unlocks: ['xray'] },
+  {
+    minScore: 15000,
+    name: 'Seasoned Bounty Hunter',
+    flavor: 'The Federation pays well for eyes like yours.',
+    unlocks: ['scan']
+  },
+  { minScore: 10000, name: 'Rookie Explorer', flavor: "You'll find your way. Eventually." },
+  { minScore: 5000, name: 'Lost in Maridia', flavor: 'The current keeps pulling you back under.' },
+  { minScore: 0, name: 'Space Pirate Cannon Fodder', flavor: 'Ridley barely noticed you.' }
+];
+
+/** The rank tier a run total lands in (first cleared, scanning high → low). */
+export function rankFor(total: number): Rank {
+  return RANKS.find((r) => total >= r.minScore) ?? RANKS[RANKS.length - 1];
+}
+
+export function scoreRank(total: number): string {
+  return rankFor(total).name;
+}
+
+/** Flavour line shown under the rank on the summary screen. */
+export function rankFlavor(total: number): string {
+  return rankFor(total).flavor;
+}
+
+/** Absolute PB score that first grants an unlock, derived from its rank tier. */
+function unlockThreshold(k: keyof Unlocks): number {
+  const tier = RANKS.find((r) => r.unlocks?.includes(k));
+  return tier?.minScore ?? 0;
+}
+
+export const UNLOCK_SCAN = unlockThreshold('scan'); // 15,000 — Seasoned Bounty Hunter
+export const UNLOCK_XRAY = unlockThreshold('xray'); // 20,000 — Chozo Scholar
+export const UNLOCK_CREATE = unlockThreshold('create'); // 23,750 — Galactic Cartographer
+
 /** Derive what's unlocked from the sticky PB plus the two cheat flags.
  *  JUSTIN BAILEY grants both visors; NARPAS SWORD grants Create Seed. */
 export function computeUnlocks(best: number, cheats: { jb: boolean; narpas: boolean }): Unlocks {
-  return {
-    enterSeed: best > 0,
-    scan: best >= UNLOCK_SCAN || cheats.jb,
-    xray: best >= UNLOCK_XRAY || cheats.jb,
-    create: best >= UNLOCK_CREATE || cheats.narpas
-  };
+  const unlocks: Unlocks = { enterSeed: best > 0, scan: false, xray: false, create: false };
+  for (const rank of RANKS) {
+    if (best >= rank.minScore && rank.unlocks) {
+      for (const k of rank.unlocks) unlocks[k] = true;
+    }
+  }
+  if (cheats.jb) unlocks.scan = unlocks.xray = true;
+  if (cheats.narpas) unlocks.create = true;
+  return unlocks;
 }
 
 /** One-liner shown on the reveal card, keyed off how close the guess landed. */
