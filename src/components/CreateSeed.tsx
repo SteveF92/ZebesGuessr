@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react';
 import GuessMap from './GuessMap';
 import TileViewer from './TileViewer';
+import { HoverScan } from './HoverScan';
+import { Stars } from './Stars';
 import { GAMES, areaName, cellKey, cellPool, cellRating, deriveDifficultyIndex, indicesFromTargets, roomName, tileUrl } from '../data';
 import { EXCLUDED_RATING } from '../scoring';
 import { SEED_TILES, encodeSeed } from '../seed';
@@ -15,18 +17,6 @@ interface Props {
 }
 
 type Pick = { areaId: string; cell: Cell };
-
-/** Stars for a tile's difficulty rating, matching the reveal card. Clamped to
- *  1–5 so an off-band rating can never throw on `String.repeat`. */
-function Stars({ rating }: { rating: number }) {
-  const r = Math.max(0, Math.min(5, Math.round(rating)));
-  return (
-    <span className="rating-stars">
-      {'★'.repeat(r)}
-      {'☆'.repeat(5 - r)}
-    </span>
-  );
-}
 
 /**
  * Create Seed screen: hand-pick five screens instead of getting random ones.
@@ -89,8 +79,6 @@ export function CreateSeed({ data, gameId, onExit, onPlay }: Props) {
     setTimeout(() => setCopyState('idle'), 2000);
   }
 
-  const hoverHasScreen = hoverTile && hasScreen(hoverTile.areaId, hoverTile.cell);
-
   // ------------------------------------------------------------- RESULT VIEW
   if (done) {
     return (
@@ -124,11 +112,6 @@ export function CreateSeed({ data, gameId, onExit, onPlay }: Props) {
   const selRating = selected ? cellRating(data, selected.areaId, selected.cell) : 0;
   const selName = selected ? roomName(data, selected) : undefined;
   const selExcluded = selRating >= EXCLUDED_RATING;
-
-  // Hovered-cell metadata for the scan panel — derived straight from data so it
-  // shows even outside the icon editor (hoverTile.name is editor-only).
-  const hoverName = hoverTile && hoverHasScreen ? roomName(data, hoverTile) : undefined;
-  const hoverRating = hoverTile && hoverHasScreen ? cellRating(data, hoverTile.areaId, hoverTile.cell) : 0;
 
   return (
     <div className="shell game create-mode">
@@ -166,16 +149,19 @@ export function CreateSeed({ data, gameId, onExit, onPlay }: Props) {
                 <button className="btn confirm" disabled={!canLock} onClick={lockIn}>
                   {inPicks(selected) ? 'ALREADY LOCKED IN' : full ? 'FIVE SCREENS — FINALIZE BELOW' : '◈ LOCK IN ↵'}
                 </button>
+                <button className="btn secondary pick-another" onClick={() => setSelected(null)}>
+                  ◇ CHOOSE ANOTHER SCREEN
+                </button>
               </div>
             </>
           ) : (
             <div className="create-hint-card">
               <p className="signal-label">
-                PICK A SCREEN
+                {full ? 'FIVE SCREENS SET' : 'PICK A SCREEN'}
                 <br />
-                CLICK THE MAP
+                {full ? 'FINALIZE BELOW' : 'CLICK THE MAP'}
               </p>
-              <p className="create-hint">Choose the five screens for your custom run. Hover any room to preview its screen.</p>
+              {!full && <p className="create-hint">Choose the five screens for your custom run. Hover any room to preview its screen.</p>}
             </div>
           )}
 
@@ -202,31 +188,9 @@ export function CreateSeed({ data, gameId, onExit, onPlay }: Props) {
             </button>
           )}
 
-          <div className="debug-panel create-scan">
-            <p className="debug-title">scan: hovered cell</p>
-            {hoverTile && hoverHasScreen ? (
-              <>
-                <p className="debug-coords">
-                  {areaName(data, hoverTile.areaId)}
-                  {hoverName ? (
-                    <>
-                      {' '}
-                      — <strong>{hoverName}</strong>
-                    </>
-                  ) : (
-                    <>
-                      {' '}
-                      ({hoverTile.cell.x},{hoverTile.cell.y}) — (unnamed)
-                    </>
-                  )}{' '}
-                  {hoverRating >= EXCLUDED_RATING ? <span className="excluded-badge">EXCLUDED</span> : <Stars rating={hoverRating} />}
-                </p>
-                <img src={tileUrl(data, { areaId: hoverTile.areaId, cell: hoverTile.cell })} alt="hovered screen" />
-              </>
-            ) : (
-              <p className="debug-coords">hover the map…</p>
-            )}
-          </div>
+          {/* Scanner only while actively choosing — hidden with a screen
+              selected or on the finalize step, so hovering can't jitter the layout. */}
+          {!selected && !full && <HoverScan data={data} hover={hoverTile} title="scan: hovered cell" className="create-scan" />}
         </section>
 
         <section className="pane right">

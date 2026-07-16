@@ -1680,6 +1680,13 @@ a:hover {
   color: #ff8a7a;
 }
 
+/* Secondary "choose another screen" action under LOCK IN. */
+.btn.secondary.pick-another {
+  margin-top: 8px;
+  width: 100%;
+  font-size: 13px;
+}
+
 /* ---- Sidebar compression: scoped to the Create Seed screen only, so the
    normal game view keeps its full-size mystery visor. ---- */
 /* This is a chosen screen, not a mystery — drop the "UNKNOWN SIGNAL" label. */

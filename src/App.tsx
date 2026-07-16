@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import GuessMap from './components/GuessMap';
 import TileViewer from './components/TileViewer';
 import { AboutModal, Credits } from './components/AboutModal';
 import { SeedEntryModal } from './components/SeedEntryModal';
 import { CreateSeed } from './components/CreateSeed';
+import { HoverScan } from './components/HoverScan';
 import { useCountUp } from './hooks/useCountUp';
 import { GAMES, areaName, cellPool, cellRating, indicesFromTargets, loadGameData, pickTargets, roomName, targetsFromIndices, tileUrl } from './data';
 import { DIFFICULTIES, ROUNDS_PER_RUN, cellDistance, getDifficulty, maxForRating, rankFlavor, revealFlavor, scoreRank, scoreRound } from './scoring';
@@ -70,14 +71,6 @@ export default function App() {
   const revealResult = phase === 'reveal' ? results[results.length - 1] : null;
   const shownRoundScore = Math.round(useCountUp(revealResult?.score ?? 0, 900, [revealResult]));
   const shownTotal = Math.round(useCountUp(total, 1200, [phase]));
-
-  const playable = useMemo(() => {
-    const m = new Map<string, Set<string>>();
-    for (const a of data?.areas ?? []) {
-      m.set(a.id, new Set(a.cells.map((c) => `${c.x},${c.y}`)));
-    }
-    return m;
-  }, [data]);
 
   function pickDifficulty(id: string) {
     setDifficultyId(id);
@@ -407,7 +400,6 @@ export default function App() {
   if (!data) return null;
   const target = targets[round];
   const result = revealResult;
-  const hoverHasTile = hoverTile && playable.get(hoverTile.areaId)?.has(`${hoverTile.cell.x},${hoverTile.cell.y}`);
 
   // ---------------------------------------------------------------- GAME
   return (
@@ -486,33 +478,7 @@ export default function App() {
             </button>
           )}
 
-          {debug && (
-            <div className="debug-panel">
-              <p className="debug-title">debug: hovered cell</p>
-              {hoverTile && hoverHasTile ? (
-                <>
-                  <p className="debug-coords">
-                    {areaName(data, hoverTile.areaId)} ({hoverTile.cell.x},{hoverTile.cell.y})
-                    {hoverTile.name ? (
-                      <>
-                        {' '}
-                        — <strong>{hoverTile.name}</strong>
-                      </>
-                    ) : (
-                      ' — (unnamed)'
-                    )}
-                  </p>
-                  <img src={tileUrl(data, { areaId: hoverTile.areaId, cell: hoverTile.cell })} alt="hovered screen" />
-                </>
-              ) : hoverTile ? (
-                <p className="debug-coords">
-                  {areaName(data, hoverTile.areaId)} ({hoverTile.cell.x},{hoverTile.cell.y}) — no screen for this cell (map-only)
-                </p>
-              ) : (
-                <p className="debug-coords">hover the map…</p>
-              )}
-            </div>
-          )}
+          {debug && <HoverScan data={data} hover={hoverTile} title="debug: hovered cell" />}
         </section>
 
         <section className={`pane right${phase === 'reveal' ? ' map-hidden' : ''}`}>
