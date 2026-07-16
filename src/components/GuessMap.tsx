@@ -784,7 +784,11 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
     if (result) return;
     const c = cellFromPoint(clientX, clientY);
     if (!c || !occupied.has(`${c.x},${c.y}`)) return;
-    onSelect(area.id, { x: c.x - area.map.dx, y: c.y - area.map.dy });
+    const tileCell = { x: c.x - area.map.dx, y: c.y - area.map.dy };
+    onSelect(area.id, tileCell);
+    // Touch has no hover, so a tap doubles as the Scan Visor probe: report the
+    // tapped cell so the scan panel shows its real screen (mirrors desktop hover).
+    onHoverCell?.(area.id, tileCell, roomEdits[roomKeyAt(c)]);
   }
 
   const TAP_SLOP = 10; // px of movement below which a touch counts as a tap

@@ -1835,10 +1835,26 @@ a:hover {
     flex-wrap: wrap;
     justify-content: flex-end;
   }
-  /* Scan/X-Ray Visor are hover-driven debug/dev tools with no touch
-     equivalent, so hide them on phones rather than cram them in */
+  /* Visor chips go icon-only on phones — the sprite carries the meaning, and
+     dropping the labels keeps them on the score row instead of sprawling */
   .hud-tools {
+    gap: 6px;
+  }
+  .btn.hud-tool {
+    height: 34px;
+    padding: 0 7px;
+    gap: 0;
+  }
+  /* the text label, but not the ✎/↻ glyphs that stand in for a sprite */
+  .hud-tool span:not(.tool-glyph) {
     display: none;
+  }
+  .hud-tool .tool-icon {
+    width: 30px;
+    height: 22px;
+  }
+  .hud-tool .tool-glyph {
+    width: 20px;
   }
 
   /* area tabs: one swipeable row instead of wrapping into three */
