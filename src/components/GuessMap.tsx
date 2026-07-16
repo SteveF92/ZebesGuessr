@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import type { AreaData, Cell, Connector, DiagBand, GameData, MapCell, MapGlyph, RoundResult } from '../types';
+import type { AreaCell, AreaData, Cell, Connector, DiagBand, GameData, MapGlyph, RoundResult } from '../types';
 import { cellKey, tileUrl } from '../data';
 import { DEFAULT_RATING, EXCLUDED_RATING } from '../scoring';
 
@@ -262,7 +262,7 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
     for (const a of data.areas) m[a.id] = { connectors: a.map.connectors.map((c) => ({ ...c })) };
     return m;
   });
-  // two-click placement anchor (map coords) and the selected connector (for naming)
+  // two-click placement anchor and the selected connector (for naming)
   const [anchor, setAnchor] = useState<Cell | null>(null);
   const [selConn, setSelConn] = useState<number | null>(null);
   const overlays = overlayEdits[area.id] ?? { connectors: area.map.connectors };
@@ -287,20 +287,8 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
   // hidden ratings get no tint, no outline, nothing.
   const [diffVisible, setDiffVisible] = useState<Set<number>>(() => new Set([1, 2, 3, 4, 5, 6]));
 
-  /**
-   * Cells the pointer can act on (hover outline, selection, rating), in MAP
-   * coordinates: every drawn map cell, plus the guessable tiles that aren't
-   * drawn. Connector cells — elevator shafts and Maridia's tube runs — are
-   * overlay-only so they never enter `map.cells` (the map draws the connector,
-   * not a room box), but they are real tiles, so they must still be pointable.
-   */
-  const selectable = useMemo(() => {
-    const s = new Set<string>();
-    for (const c of area.map.cells) s.add(`${c.x},${c.y}`);
-    const { dx, dy } = area.map;
-    for (const c of area.cells) s.add(`${c.x + dx},${c.y + dy}`);
-    return s;
-  }, [area]);
+  /** every cell of the area, for pointer hit-testing (tile coords) */
+  const selectable = useMemo(() => new Set(area.cells.map((c) => `${c.x},${c.y}`)), [area]);
 
   // Room walls a diagonal passage opens through, keyed `x,y,dir`. In-game the
   // stairs flow straight into the room they meet, so that room draws no wall
@@ -311,7 +299,7 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
   // the cell boundary each one straddles.
   const openWalls = useMemo(() => {
     const s = new Set<string>();
-    const RAIL = 0.5; // map cells: rails span several, caps stay well under
+    const RAIL = 0.5; // cells: rails span several, caps stay well under
     for (const b of area.map.bands ?? []) {
       const p = b.poly;
       for (let i = 0; i < p.length; i++) {
@@ -339,9 +327,6 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
     }
     return s;
   }, [area]);
-
-  // playable (guessable) cells in TILE coords — the only cells ratings apply to
-  const playableTiles = useMemo(() => new Set(area.cells.map((c) => `${c.x},${c.y}`)), [area]);
 
   // Jump to the target's area when a round ends.
   useEffect(() => {
@@ -424,9 +409,15 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
       }
     }
 
+    // The tile grid sits at (dx,dy) on the map canvas. Translate once here and
+    // every draw below is plain tile coordinates — the only place the two
+    // grids meet (its mirror is `cellFromPoint`).
+    ctx.save();
+    ctx.translate(dx * S, dy * S);
+
     // stair passages go first so room cells drawn after cover the band ends
     for (const b of area.map.bands ?? []) drawBand(ctx, b);
-    for (const c of area.map.cells) drawCell(ctx, c);
+    for (const c of area.cells) drawCell(ctx, c);
     for (const c of overlays.connectors) drawConnector(ctx, c, false);
     if (editing) drawOverlayEditing(ctx);
     for (const g of glyphs) drawGlyph(ctx, g);
@@ -434,8 +425,8 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
     if (editing) (tool === 'difficulty' ? drawDiffTint : drawRoomTint)(ctx);
 
     const box = (tile: Cell, color: string, outlineColor: string | null, lw: number) => {
-      const x = (tile.x + dx) * S + 1;
-      const y = (tile.y + dy) * S + 1;
+      const x = tile.x * S + 1;
+      const y = tile.y * S + 1;
       const size = S - 2;
       if (outlineColor) {
         ctx.strokeStyle = outlineColor;
@@ -448,14 +439,14 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
     };
 
     if (!result) {
-      if (hover) box({ x: hover.x - dx, y: hover.y - dy }, COL.hover, null, 1.5);
+      if (hover) box(hover, COL.hover, null, 1.5);
       if (selected && selected.areaId === area.id) box(selected.cell, COL.selected, null, 2.5);
     } else {
       if (result.guess.areaId === area.id) box(result.guess.cell, COL.guess, COL.guessOutline, 3.5);
       if (result.target.areaId === area.id) box(result.target.cell, COL.target, COL.targetOutline, 3.5);
       if (result.target.areaId === area.id && revealPulse < 1) {
-        const cx = (result.target.cell.x + dx + 0.5) * S;
-        const cy = (result.target.cell.y + dy + 0.5) * S;
+        const cx = (result.target.cell.x + 0.5) * S;
+        const cy = (result.target.cell.y + 0.5) * S;
         ctx.strokeStyle = COL.target;
         ctx.globalAlpha = 1 - revealPulse;
         ctx.lineWidth = 2;
@@ -469,12 +460,13 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
         ctx.lineWidth = 2.5;
         ctx.setLineDash([6, 4]);
         ctx.beginPath();
-        ctx.moveTo((result.guess.cell.x + dx + 0.5) * S, (result.guess.cell.y + dy + 0.5) * S);
-        ctx.lineTo((result.target.cell.x + dx + 0.5) * S, (result.target.cell.y + dy + 0.5) * S);
+        ctx.moveTo((result.guess.cell.x + 0.5) * S, (result.guess.cell.y + 0.5) * S);
+        ctx.lineTo((result.target.cell.x + 0.5) * S, (result.target.cell.y + 0.5) * S);
         ctx.stroke();
         ctx.setLineDash([]);
       }
     }
+    ctx.restore();
   }
 
   /**
@@ -511,7 +503,7 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
     ctx.lineWidth = 2;
     ctx.lineJoin = 'round';
     ctx.lineCap = 'round';
-    const RAIL = 0.5; // map cells: rails span several, caps stay well under
+    const RAIL = 0.5; // cells: rails span several, caps stay well under
     for (let i = 0; i < b.poly.length; i++) {
       const [ax, ay] = b.poly[i];
       const [bx, by] = b.poly[(i + 1) % b.poly.length];
@@ -524,9 +516,10 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
     ctx.lineCap = 'butt';
   }
 
-  function drawCell(ctx: CanvasRenderingContext2D, c: MapCell) {
+  function drawCell(ctx: CanvasRenderingContext2D, c: AreaCell) {
     const x = c.x * S,
       y = c.y * S;
+    if (!c.k) return; // a real tile the pause map doesn't chart (see AreaCell)
     if (c.k === 'diag') return; // covered by its band
     if (c.k === 'vshaft') {
       ctx.fillStyle = COL.room;
@@ -717,14 +710,13 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
    *  glance. The actual name is read off the debug panel on hover (labels drawn
    *  on the small map are too cramped to read). Not drawn during play. */
   function drawRoomTint(ctx: CanvasRenderingContext2D) {
-    const { dx, dy } = area.map;
     const prefix = `${area.id}:`;
     ctx.save();
     ctx.fillStyle = 'rgba(255, 210, 77, 0.28)'; // soft yellow tint over named cells
     for (const [key, name] of Object.entries(roomEdits)) {
       if (!name || !key.startsWith(prefix)) continue;
       const [tx, ty] = key.slice(prefix.length).split(',').map(Number);
-      ctx.fillRect((tx + dx) * S, (ty + dy) * S, S, S);
+      ctx.fillRect(tx * S, ty * S, S, S);
     }
     ctx.restore();
   }
@@ -735,13 +727,12 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
    *  whose PNG hasn't loaded yet keep the recreation fill until it arrives.
    *  Drawn under the Diff tint (which stays translucent) and the markers. */
   function drawTiles(ctx: CanvasRenderingContext2D) {
-    const { dx, dy } = area.map;
     ctx.save();
     ctx.imageSmoothingEnabled = false;
     for (const c of area.cells) {
       const img = tileCache.current.get(tileUrl(data, { areaId: area.id, cell: c }));
       if (!img || !img.complete || img.naturalWidth === 0) continue;
-      ctx.drawImage(img, (c.x + dx) * S, (c.y + dy) * S, S, S);
+      ctx.drawImage(img, c.x * S, c.y * S, S, S);
     }
     ctx.restore();
   }
@@ -750,7 +741,6 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
    *  red, 6 = blacked out). Cells with no explicit rating show the default's
    *  color at lower alpha so unrated coverage is visible at a glance. */
   function drawDiffTint(ctx: CanvasRenderingContext2D) {
-    const { dx, dy } = area.map;
     ctx.save();
     for (const c of area.cells) {
       const key = cellKey(area.id, c);
@@ -760,44 +750,42 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
       if (diffIsolate) {
         if (rating !== diffRating) continue;
         // bright outline instead of a fill so room detail underneath stays visible
-        const x = (c.x + dx) * S + 1.5;
-        const y = (c.y + dy) * S + 1.5;
         ctx.strokeStyle = ISOLATE_HIGHLIGHT;
         ctx.lineWidth = 3;
-        ctx.strokeRect(x, y, S - 3, S - 3);
+        ctx.strokeRect(c.x * S + 1.5, c.y * S + 1.5, S - 3, S - 3);
         continue;
       }
       const rgb = RATING_COLORS[rating] ?? RATING_COLORS[DEFAULT_RATING];
       const alpha = rating === EXCLUDED_RATING ? 0.8 : rated ? 0.55 : 0.25;
       ctx.fillStyle = `rgba(${rgb}, ${alpha})`;
-      ctx.fillRect((c.x + dx) * S, (c.y + dy) * S, S, S);
+      ctx.fillRect(c.x * S, c.y * S, S, S);
     }
     ctx.restore();
   }
 
-  /** returns MAP coordinates. Uses the canvas' on-screen rect, so it accounts
-   *  for the pan/zoom CSS transform automatically. */
+  /** Returns TILE coordinates — the mirror of the translate in `draw`, and the
+   *  only other place the map canvas' own grid is acknowledged. Uses the
+   *  canvas' on-screen rect, so it accounts for the pan/zoom CSS transform. */
   function cellFromPoint(clientX: number, clientY: number): Cell | null {
     const canvas = canvasRef.current!;
     const rect = canvas.getBoundingClientRect();
     const x = Math.floor(((clientX - rect.left) / rect.width) * area.map.cols);
     const y = Math.floor(((clientY - rect.top) / rect.height) * area.map.rows);
     if (x < 0 || y < 0 || x >= area.map.cols || y >= area.map.rows) return null;
-    return { x, y };
+    return { x: x - area.map.dx, y: y - area.map.dy };
   }
   const cellFromEvent = (e: { clientX: number; clientY: number }) => cellFromPoint(e.clientX, e.clientY);
 
   /** place a guess at the tapped/clicked point (shared by mouse click + touch
-   *  tap). Converts map -> tile coords for scoring. */
+   *  tap) */
   function selectAtPoint(clientX: number, clientY: number) {
     if (result) return;
     const c = cellFromPoint(clientX, clientY);
     if (!c || !selectable.has(`${c.x},${c.y}`)) return;
-    const tileCell = { x: c.x - area.map.dx, y: c.y - area.map.dy };
-    onSelect(area.id, tileCell);
+    onSelect(area.id, c);
     // Touch has no hover, so a tap doubles as the Scan Visor probe: report the
     // tapped cell so the scan panel shows its real screen (mirrors desktop hover).
-    onHoverCell?.(area.id, tileCell, roomEdits[roomKeyAt(c)]);
+    onHoverCell?.(area.id, c, roomEdits[roomKeyAt(c)]);
   }
 
   const TAP_SLOP = 10; // px of movement below which a touch counts as a tap
@@ -893,9 +881,9 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
     });
   }
 
-  /** the "areaId:tileX,tileY" key for a map-coord cell (map -> tile: -dx/-dy) */
+  /** the "areaId:x,y" key for a cell */
   function roomKeyAt(c: Cell): string {
-    return cellKey(area.id, { x: c.x - area.map.dx, y: c.y - area.map.dy });
+    return cellKey(area.id, c);
   }
 
   /** erase whatever overlay sits at map cell c (glyph, connector span, or name) */
@@ -989,9 +977,8 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
 
   /** set the clicked cell's rating to the toolbar's selected value */
   function paintDiff(c: Cell) {
-    const tile = { x: c.x - area.map.dx, y: c.y - area.map.dy };
-    if (!playableTiles.has(`${tile.x},${tile.y}`)) return; // ratings only apply to guessable cells
-    setDiffEdits((prev) => ({ ...prev, [cellKey(area.id, tile)]: diffRating }));
+    if (!selectable.has(`${c.x},${c.y}`)) return; // ratings only apply to real cells
+    setDiffEdits((prev) => ({ ...prev, [cellKey(area.id, c)]: diffRating }));
   }
 
   async function saveMap() {
@@ -1187,7 +1174,7 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
             // Report the pointed-at cell anywhere on the map, not just over drawn
             // rooms — empty cells still have a real coordinate (the scanner shows
             // it as "no signal"). null only when the cursor leaves the map.
-            onHoverCell?.(area.id, c ? { x: c.x - area.map.dx, y: c.y - area.map.dy } : null, occ ? roomEdits[roomKeyAt(c!)] : undefined);
+            onHoverCell?.(area.id, c, occ ? roomEdits[roomKeyAt(c!)] : undefined);
             if (editing) {
               setHover(c);
               return;
@@ -1209,8 +1196,7 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
             }
             if (result) return;
             if (!selectable.has(`${c.x},${c.y}`)) return;
-            // convert map -> tile coordinates for scoring
-            onSelect(area.id, { x: c.x - area.map.dx, y: c.y - area.map.dy });
+            onSelect(area.id, c);
           }}
         />
         {panEnabled && view && (

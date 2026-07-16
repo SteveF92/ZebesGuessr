@@ -387,80 +387,84 @@ def align(map_cells, mcols, mrows, tile_cells, tcols, trows):
 def load_map_overrides(game_id: str) -> dict:
     """Hand-tuned map fixes the extractor can't reproduce, authored by hand in
     mapOverrides.<game>.json and applied on top of extraction (never written by
-    this script — same convention as glyphs/overlays). Keyed by areaId:
+    this script — same convention as glyphs/overlays). Tile coordinates, keyed
+    by areaId:
 
         { "<areaId>": { "cells": [{x, y, k, w, [d]}, ...],
                         "bands": [{"poly": [[x, y], ...]}, ...] } }
 
-    ``cells`` upserts individual pause-map cells by (x, y) — used to reclassify
-    a room as a stair (`diag`) or to add rooms the pixel heuristics miss. These
-    are injected *before* grid alignment, so an added map cell also keeps its
-    matching guess target playable. ``bands`` replaces the area's whole band
-    list (the auto-fitted stair polygons look rough; these are drawn by hand).
+    ``cells`` upserts a cell's draw data by (x, y) — used to reclassify a room
+    as a stair (`diag`) or to draw rooms the pixel heuristics miss. ``bands``
+    replaces the area's whole band list (the auto-fitted stair polygons look
+    rough; these are drawn by hand). Both are applied after alignment, so they
+    are expressed in the same tile coordinates as everything else.
     """
     f = ROOT / "public" / "data" / f"mapOverrides.{game_id}.json"
     return json.loads(f.read_text()) if f.exists() else {}
 
 
-def load_connector_cells(game_id: str) -> dict:
-    """Map cells covered by the hand-placed transit connectors, keyed by areaId.
-
-    Connectors (elevator shafts, Maridia's tube runs) are overlay-only: their
-    rails are cyan, and ``extract_area`` deliberately keeps cyan from making a
-    cell, so they never become map cells and would be filtered out of the
-    playable list. But the source area map does draw a real screen for many of
-    them, so they make perfectly good tiles — the X-Ray overlay can then show
-    the actual shaft instead of just our connector glyph. ``main`` exempts them
-    from the playable filter for exactly that reason; they stay out of
-    ``map.cells``, so the map still draws the connector, not a room box, and
-    they can't be clicked as a guess. Rate them difficulty 6 to keep them out
-    of the guess pool (cells whose source art is blank — an exit arrow and a
-    caption, no room — never reach here: they fall under slice_maps' fill
-    threshold, so they aren't in ``area.cells`` to begin with).
-    """
-    f = ROOT / "public" / "data" / f"overlays.{game_id}.json"
-    if not f.exists():
-        return {}
-    out = {}
-    for area_id, layer in json.loads(f.read_text()).items():
-        cells = set()
-        for c in layer.get("connectors", []):
-            x0, y0, x1, y1 = c["x0"], c["y0"], c["x1"], c["y1"]
-            if x0 == x1:
-                for y in range(min(y0, y1), max(y0, y1) + 1):
-                    cells.add((x0, y))
-            else:
-                for x in range(min(x0, x1), max(x0, x1) + 1):
-                    cells.add((x, y0))
-        out[area_id] = cells
-    return out
-
-
-def apply_cell_overrides(cells: dict, ov: dict | None) -> int:
-    """Upsert hand-authored map cells into the internal grid (before align)."""
+def apply_cell_overrides(drawn: dict, ov: dict | None) -> int:
+    """Upsert hand-authored draw data into the tile-keyed grid."""
     if not ov or "cells" not in ov:
         return 0
     for c in ov["cells"]:
         v = {"kind": c["k"], "walls": c["w"]}
         if "d" in c:
             v["dir"] = c["d"]
-        cells[(c["x"], c["y"])] = v
+        drawn[(c["x"], c["y"])] = v
     return len(ov["cells"])
 
 
-def fallback_map(area):
+def merge_cells(tiles: list, drawn: dict) -> tuple[list, list]:
+    """Fold the extraction's draw data onto the sliced tile list.
+
+    One cell list per area, in tile coordinates. Every tile is a cell; a cell
+    that the pause map draws also carries `k`/`w`(/`d`), and one it doesn't —
+    an elevator shaft or tube run, whose rails are cyan-only and so never
+    become geometry — carries no draw data and simply isn't drawn. That's the
+    whole distinction: "what to draw, if anything". Whether a cell is *served*
+    as a target is difficulty's job, not this list's.
+
+    Returns (cells, undrawn_but_drawn_by_map): the second is cells the pause
+    map draws that have no tile behind them. That should always be empty — it
+    means the sliced map has a hole the pause map doesn't (a dark room under
+    the fill threshold, usually). They're kept so the map still renders, but
+    they'd be tile-less targets, so the caller warns: fix with `includeCells`.
+    """
+    have = {(c["x"], c["y"]) for c in tiles}
+    out = []
+    for c in tiles:
+        cell = {"x": c["x"], "y": c["y"]}
+        v = drawn.get((c["x"], c["y"]))
+        if v:
+            cell["k"] = v["kind"]
+            cell["w"] = v["walls"]
+            if "dir" in v:
+                cell["d"] = v["dir"]
+        out.append(cell)
+    tileless = sorted(set(drawn) - have)
+    for (x, y) in tileless:
+        v = drawn[(x, y)]
+        cell = {"x": x, "y": y, "k": v["kind"], "w": v["walls"]}
+        if "dir" in v:
+            cell["d"] = v["dir"]
+        out.append(cell)
+    out.sort(key=lambda c: (c["y"], c["x"]))  # row-major, matching slice_maps
+    return out, tileless
+
+
+def fallback_cells(area):
+    """No pause-map image: synthesize draw data from the tile grid itself."""
     occ = {(c["x"], c["y"]) for c in area["cells"]}
     cells = []
-    for (x, y) in occ:
+    for (x, y) in sorted(occ, key=lambda t: (t[1], t[0])):
         walls = 0
         if (x, y - 1) not in occ: walls |= N
         if (x + 1, y) not in occ: walls |= E
         if (x, y + 1) not in occ: walls |= S
         if (x - 1, y) not in occ: walls |= W
         cells.append({"x": x, "y": y, "k": "room", "w": walls})
-    return {"cols": area["cols"], "rows": area["rows"], "dx": 0, "dy": 0,
-            "cells": cells, "glyphs": [], "bands": [],
-            "connectors": [], "source": "fallback"}
+    return cells
 
 
 def main() -> None:
@@ -473,49 +477,51 @@ def main() -> None:
             continue
         game_id = data["game"]
         overrides = load_map_overrides(game_id)
-        connectors = load_connector_cells(game_id)
         for area in data["areas"]:
             ov = overrides.get(area["id"])
+            # Only the coordinates matter here: re-running must ignore the draw
+            # data a previous run folded in, and re-derive it from the image.
+            tiles = [{"x": c["x"], "y": c["y"]} for c in area["cells"]]
             img = ROOT / "Images" / "raw" / game_id / "ingame" / f"{area['id']}.webp"
             if not img.exists():
-                area["map"] = fallback_map(area)
+                area["cells"] = fallback_cells(area)
+                area["map"] = {"cols": area["cols"], "rows": area["rows"],
+                               "dx": 0, "dy": 0, "glyphs": [], "bands": [],
+                               "connectors": [], "source": "fallback"}
                 print(f"  {area['id']}: no in-game image, using fallback grid")
                 continue
             cols, rows, cells, bands, erased = extract_area(img)
             dropped_labels = drop_label_text(cells)
             closed = close_perimeter(cells)
-            # Hand-authored cell fixes go in before alignment so an added map
-            # cell also keeps its matching guess target playable.
-            overridden = apply_cell_overrides(cells, ov)
-            dx, dy, matches = align(cells, cols, rows, area["cells"],
+            dx, dy, matches = align(cells, cols, rows, tiles,
                                     area["cols"], area["rows"])
-            occ = set(cells)
-            # Connector cells aren't map cells but are still real screens —
-            # keep them as tiles (see load_connector_cells).
-            conn = connectors.get(area["id"], set())
-            keep = occ | conn
-            playable = [c for c in area["cells"] if (c["x"] + dx, c["y"] + dy) in keep]
-            kept_conn = sum(1 for c in playable if (c["x"] + dx, c["y"] + dy) in conn - occ)
-            dropped = len(area["cells"]) - len(playable)
-            area["cells"] = playable
+            # Everything downstream is tile coordinates; the pause-map grid only
+            # survives as the render viewport (cols/rows/dx/dy).
+            drawn = {(x - dx, y - dy): v for (x, y), v in cells.items()}
+            bands = [{"poly": [[round(px - dx, 3), round(py - dy, 3)]
+                               for px, py in b["poly"]]} for b in bands]
+            overridden = apply_cell_overrides(drawn, ov)
+            if ov and "bands" in ov:
+                bands = ov["bands"]  # hand-drawn stairs win over the auto-fit
+            area["cells"], tileless = merge_cells(tiles, drawn)
+            undrawn = sum(1 for c in area["cells"] if "k" not in c)
             area["map"] = {
                 "cols": cols, "rows": rows, "dx": dx, "dy": dy,
-                "cells": [
-                    {"x": x, "y": y, "k": v["kind"], "w": v["walls"],
-                     **({"d": v["dir"]} if "dir" in v else {})}
-                    for (x, y), v in sorted(cells.items())],
                 "glyphs": [],
-                # hand-drawn stair polygons win over the auto-fit ones
-                "bands": ov["bands"] if ov and "bands" in ov else bands,
+                "bands": bands,
                 "connectors": [],
                 "source": "ingame",
             }
-            print(f"  {area['id']}: {cols}x{rows} map, {len(cells)} cells, "
-                  f"{len(bands)} bands, offset ({dx},{dy}), "
-                  f"{matches} aligned, {dropped} targets dropped, "
+            print(f"  {area['id']}: {cols}x{rows} map, {len(area['cells'])} cells "
+                  f"({undrawn} undrawn), {len(bands)} bands, offset ({dx},{dy}), "
+                  f"{matches} aligned, "
                   f"{erased} annotation px erased, {dropped_labels} label cells removed, "
-                  f"{closed} edges closed, {overridden} cells overridden, "
-                  f"{kept_conn} connector tiles kept")
+                  f"{closed} edges closed, {overridden} cells overridden")
+            if tileless:
+                print(f"    WARNING: {len(tileless)} cell(s) drawn by the pause map "
+                      f"have no tile behind them: {tileless}\n"
+                      f"    They'd be tile-less targets — add them to includeCells "
+                      f"in maps.config.json.")
         # Indented so Prettier keeps objects expanded (one field per line) —
         # matches the committed formatting and gives clean per-coordinate diffs.
         # Still run `npm run format` afterward to normalise the rest.

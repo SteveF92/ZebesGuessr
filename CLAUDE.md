@@ -31,18 +31,24 @@ python pipeline/slice_maps.py          # slice 256px tiles, write base public/da
 python pipeline/extract_ingame_maps.py # patch that JSON with per-area "map" objects
 ```
 
-Order matters: `slice_maps.py` writes the base JSON, `extract_ingame_maps.py` patches it in place (adds `map`, filters playable cells). `pipeline/debug/` gets grid-overlay images for checking alignment; fix misalignment via per-area `offsetX`/`offsetY` in `pipeline/maps.config.json`.
+Order matters: `slice_maps.py` writes the base JSON (the tile list — one entry per sliced screen), `extract_ingame_maps.py` patches it in place (folds each cell's draw data onto that list and adds the `map` viewport). `pipeline/debug/` gets grid-overlay images for checking alignment; fix misalignment via per-area `offsetX`/`offsetY` in `pipeline/maps.config.json`.
+
+The extractor never drops a cell. If the pause map draws something the sliced map has no tile for, it keeps it and prints a **WARNING** naming the cells — fix it by adding them to `includeCells` in `maps.config.json` (a dark room under `slice_maps.py`'s fill threshold, usually). It should always be zero; the old behaviour was to silently delete those targets, which cost a long line of "recover room X as a valid tile" commits.
 
 The pipeline is reproducible: rerunning it (then `npm run format`) reproduces the committed `<game>.json` — no hand-edits live in that file. Both scripts write `json.dumps(..., indent=2)` so Prettier keeps objects expanded (one field per line); the extractor bakes in `mapOverrides.<game>.json` (see below) so the diagonals it can't fit stay correct. `extract_ingame_maps.py` globs `public/data/*.json` and skips any file lacking a top-level `game`/`areas` key, so the sidecar files (`glyphs.*`, `overlays.*`, `difficulty.*`, `roomNames.*`, `mapOverrides.*`) are left untouched.
 
-## The two coordinate systems (main trap)
+## One cell list, one coordinate system
 
-Every cell lives in two grids:
+**Everything is tile coordinates** — `area.cells`, glyphs, bands, connectors, room names, difficulty keys, tile URLs (`tiles/<game>/<area>/cell_<x>_<y>.png`), scoring, `App` state. Don't reintroduce a second space.
 
-- **Tile grid** — 256px screen cells from the sliced source maps. Used for playable cells (`area.cells`), scoring, and tile URLs (`tiles/<game>/<area>/cell_<x>_<y>.png`).
-- **Map grid** — 8px cells of the in-game pause map, which has its own origin. Used for everything drawn in `GuessMap` (`area.map.cells`, glyphs, bands).
+`area.cells` is the single source of truth: **every cell of the area, drawn or not.** A cell carries optional draw data answering the only question the pause map adds — _what to draw, if anything_:
 
-Conversion: `map (x,y) = tile (x+dx, y+dy)` with `dx`/`dy` on `area.map`. `GuessMap` renders and hit-tests in map coordinates but reports selections/hovers in tile coordinates (converts at the click/hover boundary). Scoring and `App` state are tile-coordinate only.
+- `k` (kind) + `w` (walls), plus `d` for stairs — the pause map charts this cell.
+- **no `k`** — it doesn't (elevator shafts and Maridia's tube runs, whose cyan-only rails are drawn as overlay `connectors` instead). Still a real tile, still pointable.
+
+Draw data is all-or-nothing, and `AreaCell`'s union type enforces it: `if (!c.k) return;` narrows `c.w` to a number. Whether a cell is _served_ as a target is difficulty's job (`EXCLUDED_RATING` = 6, never served) — not this list's. There is no "secret"/excluded cell flag; don't add one.
+
+The pause-map canvas is bigger than the tile grid and has its own origin (Wrecked Ship's 12×10 grid sits inside a 31×19 canvas at `(10,4)`), so `area.map.{cols,rows,dx,dy}` survives as a **render viewport only**. `dx`/`dy` appear in exactly two places, and must stay that way: `GuessMap.draw`'s single `ctx.translate(dx*S, dy*S)` (after which all draw math is plain tile coords) and its mirror `cellFromPoint` (which subtracts them). If you find yourself adding `+dx` inside a draw call, you're re-creating the trap this replaced.
 
 ## Architecture
 
@@ -59,19 +65,21 @@ Asset URLs must be prefixed with `import.meta.env.BASE_URL` — Vite `base` is `
 Three files hold data the pipeline can't reliably extract, all edited via the in-app editor (**icons** toggle in the round header) and applied by `loadGameData` as overrides on top of extraction:
 
 - `public/data/glyphs.<game>.json` — Save/Map/Ship/Boss landmark icons.
-- `public/data/overlays.<game>.json` — transit **connectors** (elevator shafts and dashed tube runs, unified), keyed `{ areaId: { connectors } }`. Each connector is axis-aligned between two whole map cells (`{ x0, y0, x1, y1 }` — `x0===x1` vertical, `y0===y1` horizontal), rendered with twin cyan rails + a dashed pink core, with an optional `label` on any side (`labelPos: "above" | "below" | "left" | "right"`). `loadGameData` also folds any legacy pre-merge `elevators`/`lines` fields into `connectors`.
-- `public/data/roomNames.<game>.json` — flat `{ "areaId:tileX,tileY": name }` (tile coords), shown at reveal/summary via `roomName()`. `loadGameData` merges it over the baked `GameData.roomNames` key by key. Note the two coordinate systems: the **Name** tool takes clicks in map coords and converts to tile coords (`-dx/-dy`) before keying, so its cells line up with guess targets and glyph/connector cells do **not** (those stay in map coords).
+- `public/data/overlays.<game>.json` — transit **connectors** (elevator shafts and dashed tube runs, unified), keyed `{ areaId: { connectors } }`. Each connector is axis-aligned between two whole cells (`{ x0, y0, x1, y1 }` — `x0===x1` vertical, `y0===y1` horizontal), rendered with twin cyan rails + a dashed pink core, with an optional `label` on any side (`labelPos: "above" | "below" | "left" | "right"`). `loadGameData` also folds any legacy pre-merge `elevators`/`lines` fields into `connectors`.
+- `public/data/roomNames.<game>.json` — flat `{ "areaId:x,y": name }`, shown at reveal/summary via `roomName()`. `loadGameData` merges it over the baked `GameData.roomNames` key by key.
 
 The editor's tools stamp glyphs, place connectors (two clicks: the drag's dominant axis picks horizontal vs vertical; name via the toolbar field, cycle the label side with the **Label** button), and paint room names (**Name** tool: type a name, click one corner then the opposite corner to fill every playable cell in the rectangle; click a named cell with an empty field to load its name; named cells are tinted in edit mode, and the **debug** panel shows the hovered cell's current name). **Erase** removes any of them. **Save to file** POSTs all three to `/__save-map`, a dev-only Vite middleware (`glyphSaver` in `vite.config.ts`) that writes the JSON directly for committing. The pipeline never overwrites these files (`extract_ingame_maps.py` skips any sidecar lacking a top-level `game` key; `slice_maps.py`'s `load_room_names` reads `roomNames.<game>.json` rather than writing it).
 
-Connectors and room names are overlay-only — never in `area.map.cells`, so the map draws the connector rather than a room box and they can't be clicked as a guess. Connector cells **are** kept in `area.cells` when the source art has a real screen for them, though: `extract_ingame_maps.py`'s `load_connector_cells` exempts them from the playable filter so the X-Ray overlay (`showTiles`) paints the actual elevator shaft / tube instead of just our glyph. That makes them guessable, so rate them **difficulty 6**. Connectors whose art is only an exit arrow + caption (all of Crateria's and Wrecked Ship's) never reach that path — they fall under `slice_maps.py`'s fill threshold, so they're not in `area.cells` at all.
+A connector is only _how a run gets drawn_; the cells under it are ordinary `area.cells` entries that simply carry no draw data (no `k`), so the map draws the connector rather than a room box. They're real tiles, so the X-Ray overlay (`showTiles`) paints the actual elevator shaft / tube there — which means they're guessable, so rate them **difficulty 6**. Connectors whose source art is only an exit arrow + caption (all of Crateria's and Wrecked Ship's) have no tile at all — they fall under `slice_maps.py`'s fill threshold, so no cell exists and nothing is drawn but the connector.
 
 ### `mapOverrides.<game>.json` — pipeline-applied (not a runtime overlay)
 
 Unlike the four files above (merged at runtime by `loadGameData`), `mapOverrides.<game>.json` is consumed by `extract_ingame_maps.py` and **baked into `<game>.json`** — so the extraction stays reproducible while the map data the pixel heuristics can't nail stays hand-perfect. It's hand-edited JSON (no editor tool), keyed by areaId:
 
-- `cells` — upserts individual pause-map cells by `(x, y)`, in map coords, each `{ x, y, k, w, [d] }` (same shape as `area.map.cells`). Used to reclassify a room as a stair (`k: "diag"`) or to add real rooms the heuristics miss. Applied **before** grid alignment, so an added map cell also keeps its matching guess target playable (that target would otherwise be filtered out — this is how Wrecked Ship's `(9,9)` and six Norfair rooms survive).
-- `bands` — replaces the area's whole `map.bands` list. The auto-fitted stair polygons (`extract_diag_bands`) overshoot and look rough; these are clean hand-drawn ones (fractional map coords). The extractor still runs its own fit first (its sliver-deletion side effect is kept), then this array wins.
+- `cells` — upserts a cell's draw data by `(x, y)`, each `{ x, y, k, w, [d] }`. Used to reclassify a room as a stair (`k: "diag"`) or to draw rooms the heuristics miss (Wrecked Ship's `(9,9)`, six Norfair rooms).
+- `bands` — replaces the area's whole `map.bands` list. The auto-fitted stair polygons (`extract_diag_bands`) overshoot and look rough; these are clean hand-drawn ones (fractional cells). The extractor still runs its own fit first (its sliver-deletion side effect is kept), then this array wins.
+
+Both are tile coords and applied **after** alignment, like everything else.
 
 When you re-perfect a diagonal, edit this file — not `<game>.json` — then rerun `extract_ingame_maps.py` + `npm run format`.
 

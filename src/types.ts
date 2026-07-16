@@ -1,17 +1,24 @@
+/** A cell coordinate. Everything in this file is in TILE coordinates. */
 export interface Cell {
   x: number;
   y: number;
-  /** a real, guessable room the in-game pause map never charts (e.g. Lower
-   *  Norfair Fireflea Room's hidden east half). Kept out of `AreaMap.cells`
-   *  so it isn't drawn or clickable; still a valid target (guessed blind). */
-  secret?: boolean;
 }
 
 export type MapCellKind = 'room' | 'vshaft' | 'hshaft' | 'diag';
 
-export interface MapCell {
-  x: number;
-  y: number;
+/**
+ * One cell of an area — the single source of truth for "this screen exists".
+ * Every cell has a tile PNG behind it and so can be a guess target; whether
+ * it's actually served is difficulty's job (`EXCLUDED_RATING` = never), not
+ * this list's.
+ *
+ * The draw data is optional, and answers the only question the pause map adds:
+ * *what to draw, if anything*. A cell the map charts carries `k`/`w` (plus `d`
+ * for stairs); one it doesn't — an elevator shaft or tube run, whose cyan-only
+ * rails are drawn as an overlay `Connector` instead — carries none and simply
+ * isn't drawn.
+ */
+export interface CellDraw {
   /** kind */
   k: MapCellKind;
   /** wall bitmask: N=1 E=2 S=4 W=8 */
@@ -20,8 +27,11 @@ export interface MapCell {
   d?: '/' | '\\';
 }
 
+/** Draw data is all-or-nothing, so `if (!c.k)` narrows `c.w` to a number. */
+export type AreaCell = Cell & (CellDraw | { k?: undefined });
+
 export interface MapGlyph {
-  /** fractional MAP cell coordinates of the glyph centre */
+  /** fractional tile-cell coordinates of the glyph centre */
   x: number;
   y: number;
   t: 'save' | 'map' | 'ship' | 'boss' | 'item' | 'recharge';
@@ -30,19 +40,20 @@ export interface MapGlyph {
 /**
  * A transit connector on the pause map (twin cyan rails + a dashed pink core):
  * elevator shafts and dashed tube runs alike. Hand placed in the icon editor;
- * the pipeline erases these as annotations. Axis-aligned between two whole MAP
+ * the pipeline erases these as annotations. Axis-aligned between two whole
  * cells — `x0===x1` is vertical, `y0===y1` is horizontal. `label` names the
- * destination area, drawn beside the connector on the chosen side. Overlay
- * only, never a guess target.
+ * destination area, drawn beside the connector on the chosen side. This is how
+ * such a run gets *drawn*; the cells under it are ordinary `AreaCell`s with no
+ * draw data (see `AreaCell`), and are real tiles.
  */
 export interface Connector {
-  /** first endpoint map-cell column */
+  /** first endpoint cell column */
   x0: number;
-  /** first endpoint map-cell row */
+  /** first endpoint cell row */
   y0: number;
-  /** second endpoint map-cell column (inclusive) */
+  /** second endpoint cell column (inclusive) */
   x1: number;
-  /** second endpoint map-cell row (inclusive) */
+  /** second endpoint cell row (inclusive) */
   y1: number;
   /** destination area name, shown beside the connector */
   label?: string;
@@ -56,7 +67,7 @@ export interface Connector {
  * pixels (the in-game map draws these sub-cell and not at 45°) and clipped to
  * their true bounding box so the ends mitre flush into the corridors it
  * joins instead of a rotated rectangle's corners poking past them.
- * Coordinates are fractional MAP cells. Drawn under the room cells so the
+ * Coordinates are fractional tile cells. Drawn under the room cells so the
  * junctions merge.
  */
 export interface DiagBand {
@@ -64,17 +75,24 @@ export interface DiagBand {
   poly: [number, number][];
 }
 
+/**
+ * How the pause map is drawn: a viewport plus the overlays that aren't cells.
+ * The canvas is `cols`×`rows` cells and the area's tile grid sits at (`dx`,
+ * `dy`) within it — the recreation image is larger than the area map and has
+ * its own origin (Wrecked Ship's 12×10 grid sits inside a 31×19 canvas at
+ * (10,4)). That offset is the *only* thing left of the old map-coordinate
+ * space: `GuessMap` translates by it once, and every coordinate in this file
+ * — cells, glyphs, bands, connectors — is tile coordinates.
+ */
 export interface AreaMap {
   cols: number;
   rows: number;
-  /** tile grid -> map grid offset: map (x,y) = tile (x+dx, y+dy) */
+  /** where the tile grid sits on the map canvas; a draw-time translate only */
   dx: number;
   dy: number;
-  cells: MapCell[];
   glyphs: MapGlyph[];
   bands: DiagBand[];
-  /** hand-placed transit connectors: elevators + dashed tube runs, either
-   *  orientation (overlay only, not guessable) */
+  /** hand-placed transit connectors: elevators + dashed tube runs */
   connectors: Connector[];
   source: 'ingame' | 'fallback';
 }
@@ -82,14 +100,14 @@ export interface AreaMap {
 export interface AreaData {
   id: string;
   name: string;
-  /** grid dimensions in map cells */
+  /** tile-grid dimensions */
   cols: number;
   rows: number;
   /** downscaled guess-map image, relative to BASE_URL (legacy, unused) */
   mapImage: string;
-  /** playable (non-empty) cells */
-  cells: Cell[];
-  /** in-game pause-map recreation data */
+  /** every cell of the area; `k` present = the pause map draws it */
+  cells: AreaCell[];
+  /** pause-map render viewport + overlays */
   map: AreaMap;
 }
 

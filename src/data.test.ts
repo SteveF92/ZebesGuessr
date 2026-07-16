@@ -18,7 +18,7 @@ function makeData(areas: Record<string, Cell[]>, cellDifficulty?: Record<string,
       rows: 10,
       mapImage: '',
       cells,
-      map: { cols: 10, rows: 10, dx: 0, dy: 0, cells: [], glyphs: [], bands: [], connectors: [], source: 'fallback' }
+      map: { cols: 10, rows: 10, dx: 0, dy: 0, glyphs: [], bands: [], connectors: [], source: 'fallback' }
     })),
     cellDifficulty
   };
