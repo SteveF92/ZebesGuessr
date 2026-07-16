@@ -334,7 +334,7 @@ export default function App() {
         )}
         <div className="menu-actions">
           {(import.meta.env.DEV || unlocks.create) && (
-            <button className="btn secondary seed-entry-btn" disabled={phase === 'loading' || !!loadedSeed} onClick={startCreate} title="Hand-pick five screens and share the seed">
+            <button className="btn secondary seed-entry-btn menu-btn-create" disabled={phase === 'loading' || !!loadedSeed} onClick={startCreate} title="Hand-pick five screens and share the seed">
               ◈ CREATE SEED
             </button>
           )}
@@ -342,7 +342,10 @@ export default function App() {
             START MISSION ▶
           </button>
           {(import.meta.env.DEV || unlocks.enterSeed) && (
-            <button className={`btn secondary seed-entry-btn${loadedSeed ? ' locked' : ''}`} onClick={() => setShowSeedEntry(true)}>
+            <button
+              className={`btn secondary seed-entry-btn menu-btn-seed${import.meta.env.DEV || unlocks.create ? '' : ' seed-solo'}${loadedSeed ? ' locked' : ''}`}
+              onClick={() => setShowSeedEntry(true)}
+            >
               {loadedSeed ? '◈ SEED LOCKED' : '◈ SEED ENTRY'}
             </button>
           )}
