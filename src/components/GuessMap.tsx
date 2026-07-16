@@ -287,10 +287,19 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
   // hidden ratings get no tint, no outline, nothing.
   const [diffVisible, setDiffVisible] = useState<Set<number>>(() => new Set([1, 2, 3, 4, 5, 6]));
 
-  const occupied = useMemo(() => {
-    const m = new Map<string, MapCell>();
-    for (const c of area.map.cells) m.set(`${c.x},${c.y}`, c);
-    return m;
+  /**
+   * Cells the pointer can act on (hover outline, selection, rating), in MAP
+   * coordinates: every drawn map cell, plus the guessable tiles that aren't
+   * drawn. Connector cells — elevator shafts and Maridia's tube runs — are
+   * overlay-only so they never enter `map.cells` (the map draws the connector,
+   * not a room box), but they are real tiles, so they must still be pointable.
+   */
+  const selectable = useMemo(() => {
+    const s = new Set<string>();
+    for (const c of area.map.cells) s.add(`${c.x},${c.y}`);
+    const { dx, dy } = area.map;
+    for (const c of area.cells) s.add(`${c.x + dx},${c.y + dy}`);
+    return s;
   }, [area]);
 
   // Room walls a diagonal passage opens through, keyed `x,y,dir`. In-game the
@@ -783,7 +792,7 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
   function selectAtPoint(clientX: number, clientY: number) {
     if (result) return;
     const c = cellFromPoint(clientX, clientY);
-    if (!c || !occupied.has(`${c.x},${c.y}`)) return;
+    if (!c || !selectable.has(`${c.x},${c.y}`)) return;
     const tileCell = { x: c.x - area.map.dx, y: c.y - area.map.dy };
     onSelect(area.id, tileCell);
     // Touch has no hover, so a tap doubles as the Scan Visor probe: report the
@@ -937,7 +946,7 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
       const next = { ...prev };
       for (let y = minY; y <= maxY; y++) {
         for (let x = minX; x <= maxX; x++) {
-          if (!occupied.has(`${x},${y}`)) continue;
+          if (!selectable.has(`${x},${y}`)) continue;
           const key = roomKeyAt({ x, y });
           if (name) next[key] = name;
           else delete next[key];
@@ -1121,7 +1130,7 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
                 );
               })}
               <span className="edit-msg">
-                {hover && occupied.has(`${hover.x},${hover.y}`) ? `hovered: ${diffEdits[roomKeyAt(hover)] ?? `${DEFAULT_RATING} (unrated)`}` : 'click a cell to rate it'}
+                {hover && selectable.has(`${hover.x},${hover.y}`) ? `hovered: ${diffEdits[roomKeyAt(hover)] ?? `${DEFAULT_RATING} (unrated)`}` : 'click a cell to rate it'}
               </span>
             </>
           )}
@@ -1174,7 +1183,7 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
           onMouseMove={(e) => {
             if (panEnabled) return; // touch/small screens use pointer handlers + no hover
             const c = cellFromEvent(e);
-            const occ = c !== null && occupied.has(`${c.x},${c.y}`);
+            const occ = c !== null && selectable.has(`${c.x},${c.y}`);
             // Report the pointed-at cell anywhere on the map, not just over drawn
             // rooms — empty cells still have a real coordinate (the scanner shows
             // it as "no signal"). null only when the cursor leaves the map.
@@ -1199,7 +1208,7 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
               return;
             }
             if (result) return;
-            if (!occupied.has(`${c.x},${c.y}`)) return;
+            if (!selectable.has(`${c.x},${c.y}`)) return;
             // convert map -> tile coordinates for scoring
             onSelect(area.id, { x: c.x - area.map.dx, y: c.y - area.map.dy });
           }}
