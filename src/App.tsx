@@ -488,7 +488,7 @@ export default function App() {
             </button>
           )}
 
-          {debug && <HoverScan data={data} hover={hoverTile} title="debug: hovered cell" />}
+          {debug && <HoverScan data={data} hover={hoverTile} />}
         </section>
 
         <section className={`pane right${phase === 'reveal' ? ' map-hidden' : ''}`}>

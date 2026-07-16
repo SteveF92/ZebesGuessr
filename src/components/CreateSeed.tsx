@@ -216,7 +216,7 @@ export function CreateSeed({ data, gameId, onExit, onPlay }: Props) {
 
           {/* Scanner only while actively choosing — hidden with a screen
               selected or on the finalize step, so hovering can't jitter the layout. */}
-          {!selected && !full && <HoverScan data={data} hover={hoverTile} title="scan: hovered cell" className="create-scan" />}
+          {!selected && !full && <HoverScan data={data} hover={hoverTile} className="create-scan" />}
         </section>
 
         <section className="pane right">
