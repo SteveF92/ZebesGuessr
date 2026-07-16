@@ -1727,6 +1727,19 @@ a:hover {
   .area-tabs .shoulder {
     display: none;
   }
+
+  /* Menu actions stack into one column on phones. DOM order (Create Seed,
+     Start Mission, Seed Entry) puts START in the center for the one-row
+     desktop layout, but stacked it should anchor the bottom instead. */
+  .menu-actions {
+    flex-direction: column;
+  }
+  .menu-actions .btn:nth-child(2) {
+    order: 3;
+  }
+  .menu-actions .btn:nth-child(3) {
+    order: 2;
+  }
 }
 
 /* ------------------------------------------------------------ Create Seed */
