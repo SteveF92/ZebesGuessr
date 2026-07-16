@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import GuessMap from './components/GuessMap';
 import TileViewer from './components/TileViewer';
 import { AboutModal, Credits } from './components/AboutModal';
@@ -7,7 +7,7 @@ import { CreateSeed } from './components/CreateSeed';
 import { HoverScan } from './components/HoverScan';
 import { useCountUp } from './hooks/useCountUp';
 import { GAMES, areaName, cellPool, cellRating, indicesFromTargets, loadGameData, pickTargets, roomName, targetsFromIndices, tileUrl } from './data';
-import { DIFFICULTIES, ROUNDS_PER_RUN, cellDistance, getDifficulty, maxForRating, rankFlavor, revealFlavor, scoreRank, scoreRound } from './scoring';
+import { DIFFICULTIES, ROUNDS_PER_RUN, cellDistance, computeUnlocks, getDifficulty, maxForRating, rankFlavor, revealFlavor, scoreRank, scoreRound } from './scoring';
 import { GAME_URL, buildShareText } from './share';
 import { buildShareImage, downloadBlob } from './shareImage';
 import { type Seed, decodeSeed, encodeSeed } from './seed';
@@ -65,7 +65,13 @@ export default function App() {
   const [hoverTile, setHoverTile] = useState<{ areaId: string; cell: Cell; name?: string } | null>(null);
   const [showAbout, setShowAbout] = useState(false);
   const [showSeedEntry, setShowSeedEntry] = useState(false);
-  const [cheatEnabled, setCheatEnabled] = useState(() => localStorage.getItem('zg-cheat') === '1');
+  // Two cheat codes, each a permanent unlock. The legacy `zg-cheat` flag only
+  // ever unlocked the scan, so fold it into JUSTIN BAILEY (both visors).
+  const [cheatJB, setCheatJB] = useState(() => localStorage.getItem('zg-cheat-jb') === '1' || localStorage.getItem('zg-cheat') === '1');
+  const [cheatNarpas, setCheatNarpas] = useState(() => localStorage.getItem('zg-cheat-narpas') === '1');
+  // Latches true the moment a visor is switched on during a run, so the run
+  // can't set a personal best. Reset at the start of each run.
+  const [visorsUsed, setVisorsUsed] = useState(false);
   const [copyState, setCopyState] = useState<'idle' | 'copied' | 'error'>('idle');
   const [imgState, setImgState] = useState<'idle' | 'saved' | 'error'>('idle');
   // Which beat of the reveal we're on (phones only — desktop shows both at once).
@@ -73,6 +79,9 @@ export default function App() {
 
   const difficulty = getDifficulty(difficultyId);
   const total = results.reduce((s, r) => s + r.score, 0);
+  // What the player has earned: the four unlockables, off the sticky PB plus the
+  // two cheat flags. DEV keeps everything on so the editor/dev tools stay handy.
+  const unlocks = useMemo(() => computeUnlocks(best, { jb: cheatJB, narpas: cheatNarpas }), [best, cheatJB, cheatNarpas]);
 
   // Hooks must run unconditionally (before any early return): pre-compute the
   // reveal result + the two count-ups here.
@@ -89,9 +98,14 @@ export default function App() {
     localStorage.setItem('zg-difficulty', id);
   }
 
-  function unlockCheat() {
-    setCheatEnabled(true);
-    localStorage.setItem('zg-cheat', '1');
+  function unlockCheat(which: 'jb' | 'narpas') {
+    if (which === 'jb') {
+      setCheatJB(true);
+      localStorage.setItem('zg-cheat-jb', '1');
+    } else {
+      setCheatNarpas(true);
+      localStorage.setItem('zg-cheat-narpas', '1');
+    }
   }
 
   async function startGame(gameId: string, runSeed: Seed | null = loadedSeed) {
@@ -112,6 +126,7 @@ export default function App() {
       setRound(0);
       setResults([]);
       setSelected(null);
+      setVisorsUsed(false);
       setPhase('guessing');
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -238,8 +253,15 @@ export default function App() {
     return () => clearTimeout(t);
   }, [phase, revealStage]);
 
+  // Flipping on either visor (Scan = debug, X-Ray = showTiles) taints the run so
+  // it can't set a PB — the ladder mustn't be climbable with the toys it hands
+  // out. Latches; only startGame clears it.
   useEffect(() => {
-    if (phase === 'summary' && total > best) {
+    if (debug || showTiles) setVisorsUsed(true);
+  }, [debug, showTiles]);
+
+  useEffect(() => {
+    if (phase === 'summary' && !visorsUsed && total > best) {
       setBest(total);
       localStorage.setItem('zg-best', String(total));
     }
@@ -311,15 +333,19 @@ export default function App() {
           </p>
         )}
         <div className="menu-actions">
-          <button className="btn secondary seed-entry-btn" disabled={phase === 'loading' || !!loadedSeed} onClick={startCreate} title="Hand-pick five screens and share the seed">
-            ◈ CREATE SEED
-          </button>
+          {(import.meta.env.DEV || unlocks.create) && (
+            <button className="btn secondary seed-entry-btn" disabled={phase === 'loading' || !!loadedSeed} onClick={startCreate} title="Hand-pick five screens and share the seed">
+              ◈ CREATE SEED
+            </button>
+          )}
           <button className="btn primary start" disabled={phase === 'loading'} onClick={() => startGame(selectedGameId)}>
             START MISSION ▶
           </button>
-          <button className={`btn secondary seed-entry-btn${loadedSeed ? ' locked' : ''}`} onClick={() => setShowSeedEntry(true)}>
-            {loadedSeed ? '◈ SEED LOCKED' : '◈ SEED ENTRY'}
-          </button>
+          {(import.meta.env.DEV || unlocks.enterSeed) && (
+            <button className={`btn secondary seed-entry-btn${loadedSeed ? ' locked' : ''}`} onClick={() => setShowSeedEntry(true)}>
+              {loadedSeed ? '◈ SEED LOCKED' : '◈ SEED ENTRY'}
+            </button>
+          )}
         </div>
         {best > 0 && <p className="best">◆ PERSONAL BEST&nbsp;&nbsp;{best.toLocaleString()}</p>}
         <Credits onAbout={() => setShowAbout(true)} />
@@ -351,7 +377,7 @@ export default function App() {
               <p className="rank">{scoreRank(total)}</p>
               <p className="rank-flavor">{rankFlavor(total)}</p>
             </div>
-            {total >= best && total > 0 && <div className="newbest">★ NEW PERSONAL BEST ★</div>}
+            {visorsUsed ? <div className="practice-note">◈ PRACTICE RUN — visors used, score not recorded</div> : total >= best && total > 0 && <div className="newbest">★ NEW PERSONAL BEST ★</div>}
             <p className="sign-off">SEE YOU NEXT MISSION</p>
             {activeSeedCode && <p className="seed-line">SEED: {activeSeedCode}</p>}
           </div>
@@ -442,18 +468,20 @@ export default function App() {
         </div>
         <div className="hud-right">
           <div className="hud-tools">
-            {(import.meta.env.DEV || cheatEnabled) && (
+            {(import.meta.env.DEV || unlocks.scan) && (
               <button className={`btn hud-tool ${debug ? 'active' : ''}`} onClick={() => setDebug((d) => !d)} title="Show the real screen for hovered map cells">
                 <img className="tool-icon scan" src={`${import.meta.env.BASE_URL}assets/scan-visor.png`} alt="" aria-hidden="true" />
                 <span>Scan Visor</span>
               </button>
             )}
+            {(import.meta.env.DEV || unlocks.xray) && (
+              <button className={`btn hud-tool ${showTiles ? 'active' : ''}`} onClick={() => setShowTiles((t) => !t)} title="Overlay the real game screens on the map (aids the Diff tool)">
+                <img className="tool-icon xray" src={`${import.meta.env.BASE_URL}assets/xray-visor.png`} alt="" aria-hidden="true" />
+                <span>X-Ray Visor</span>
+              </button>
+            )}
             {import.meta.env.DEV && (
               <>
-                <button className={`btn hud-tool ${showTiles ? 'active' : ''}`} onClick={() => setShowTiles((t) => !t)} title="Overlay the real game screens on the map (aids the Diff tool)">
-                  <img className="tool-icon xray" src={`${import.meta.env.BASE_URL}assets/xray-visor.png`} alt="" aria-hidden="true" />
-                  <span>X-Ray Visor</span>
-                </button>
                 <button className={`btn hud-tool ${editIcons ? 'active' : ''}`} onClick={() => setEditIcons((e) => !e)} title="Place/erase landmark icons, then Save to file">
                   <span className="tool-glyph" aria-hidden="true">
                     ✎

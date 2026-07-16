@@ -1,5 +1,19 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_RATING, DIFFICULTIES, MAX_SCORE, ROUNDS_PER_RUN, cellDistance, getDifficulty, maxForRating, scoreRank, scoreRound } from './scoring';
+import {
+  DEFAULT_RATING,
+  DIFFICULTIES,
+  MAX_SCORE,
+  ROUNDS_PER_RUN,
+  UNLOCK_CREATE,
+  UNLOCK_SCAN,
+  UNLOCK_XRAY,
+  cellDistance,
+  computeUnlocks,
+  getDifficulty,
+  maxForRating,
+  scoreRank,
+  scoreRound
+} from './scoring';
 import type { Guess, RoundTarget } from './types';
 
 const at = (areaId: string, x: number, y: number): RoundTarget & Guess => ({
@@ -120,6 +134,46 @@ describe('DIFFICULTIES', () => {
       expect(diff.min).toBeLessThanOrEqual(DEFAULT_RATING);
       expect(diff.max).toBeGreaterThanOrEqual(DEFAULT_RATING);
     }
+  });
+});
+
+describe('computeUnlocks', () => {
+  const none = { jb: false, narpas: false };
+
+  it('unlocks nothing at a zero PB and no cheats', () => {
+    expect(computeUnlocks(0, none)).toEqual({ enterSeed: false, scan: false, xray: false, create: false });
+  });
+
+  it('unlocks Enter Seed the moment any run is completed', () => {
+    expect(computeUnlocks(1, none).enterSeed).toBe(true);
+  });
+
+  it('gates the visors and Create Seed at their thresholds, inclusive', () => {
+    expect(computeUnlocks(UNLOCK_SCAN - 1, none).scan).toBe(false);
+    expect(computeUnlocks(UNLOCK_SCAN, none).scan).toBe(true);
+    expect(computeUnlocks(UNLOCK_XRAY - 1, none).xray).toBe(false);
+    expect(computeUnlocks(UNLOCK_XRAY, none).xray).toBe(true);
+    expect(computeUnlocks(UNLOCK_CREATE - 1, none).create).toBe(false);
+    expect(computeUnlocks(UNLOCK_CREATE, none).create).toBe(true);
+  });
+
+  it('escalates in order — Scan before X-Ray before Create', () => {
+    expect(UNLOCK_SCAN).toBeLessThan(UNLOCK_XRAY);
+    expect(UNLOCK_XRAY).toBeLessThan(UNLOCK_CREATE);
+  });
+
+  it('JUSTIN BAILEY grants both visors but never Create Seed', () => {
+    const u = computeUnlocks(0, { jb: true, narpas: false });
+    expect(u.scan).toBe(true);
+    expect(u.xray).toBe(true);
+    expect(u.create).toBe(false);
+  });
+
+  it('NARPAS SWORD grants Create Seed without touching the visors', () => {
+    const u = computeUnlocks(0, { jb: false, narpas: true });
+    expect(u.create).toBe(true);
+    expect(u.scan).toBe(false);
+    expect(u.xray).toBe(false);
   });
 });
 

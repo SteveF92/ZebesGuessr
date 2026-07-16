@@ -115,6 +115,43 @@ export function rankFlavor(total: number): string {
   return 'Ridley barely noticed you.';
 }
 
+/**
+ * Progression gates. Each of the four unlockables is earned by pushing your
+ * sticky personal best (best single run, out of MAX_SCORE * ROUNDS_PER_RUN =
+ * 25,000) past a threshold — or handed over by a cheat code. The thresholds are
+ * rank-aligned so the summary screen's rank name doubles as the unlock notice:
+ * Scan = Seasoned Bounty Hunter (60%), X-Ray = Chozo Scholar (80%), Create Seed
+ * = Galactic Cartographer (95%). Because `best` only ratchets up and cheats are
+ * permanent, unlocks are monotonic — nothing ever re-locks. Runs played with a
+ * visor active don't set a PB (see App's visor-taint guard), so the ladder
+ * can't be cheesed by the very toys it hands out.
+ */
+export const UNLOCK_SCAN = 15000; // 60% — Seasoned Bounty Hunter
+export const UNLOCK_XRAY = 20000; // 80% — Chozo Scholar
+export const UNLOCK_CREATE = 23750; // 95% — Galactic Cartographer
+
+export interface Unlocks {
+  /** Manual seed entry (URL seeds bypass this). */
+  enterSeed: boolean;
+  /** Scan Visor: surgical per-cell screen probe. */
+  scan: boolean;
+  /** X-Ray Visor: full screen overlay on the map. */
+  xray: boolean;
+  /** Create Seed: hand-pick and share a run — the grail. */
+  create: boolean;
+}
+
+/** Derive what's unlocked from the sticky PB plus the two cheat flags.
+ *  JUSTIN BAILEY grants both visors; NARPAS SWORD grants Create Seed. */
+export function computeUnlocks(best: number, cheats: { jb: boolean; narpas: boolean }): Unlocks {
+  return {
+    enterSeed: best > 0,
+    scan: best >= UNLOCK_SCAN || cheats.jb,
+    xray: best >= UNLOCK_XRAY || cheats.jb,
+    create: best >= UNLOCK_CREATE || cheats.narpas
+  };
+}
+
 /** One-liner shown on the reveal card, keyed off how close the guess landed. */
 export function revealFlavor(distance: number): string {
   if (!isFinite(distance)) return 'The map betrayed you.';

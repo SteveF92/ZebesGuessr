@@ -3,18 +3,29 @@ import { GAMES } from '../data';
 import { DIFFICULTIES } from '../scoring';
 import { type Seed, SEED_ALPHABET, SEED_LENGTH, decodeSeed } from '../seed';
 
-/** The classic password, minus its space — 12 chars, exactly one seed's worth,
- *  so it fills the field's two groups of six perfectly. */
-const CHEAT = 'JUSTINBAILEY';
+/** The two famous Metroid passwords, minus their spaces — the field strips
+ *  non-alphabet chars, so the space types away on its own. JUSTINBAILEY is a
+ *  full 12 chars (one seed's worth); NARPASSWORD is 11, so decodeSeed (which
+ *  needs exactly 12) can never mistake it for a seed. */
+const CHEATS: Record<string, 'jb' | 'narpas'> = {
+  JUSTINBAILEY: 'jb',
+  NARPASSWORD: 'narpas'
+};
+/** Confirmation line shown when a cheat lands, keyed by which. */
+const CHEAT_MSG: Record<'jb' | 'narpas', string> = {
+  jb: '▶ VISORS ONLINE',
+  narpas: '▶ SEED FORGE UNLOCKED'
+};
 /** The cosmetic gap splits the 12-box field into two groups of six. */
 const SPACE_AT = SEED_LENGTH / 2;
 
 /**
  * NES password-screen-flavored seed entry. Type or click a 12-char seed code to
- * jump into a locked run — the field reads as two groups of six. Typing the
- * classic "JUSTINBAILEY" instead unlocks the debug scan.
+ * jump into a locked run — the field reads as two groups of six. Typing a
+ * classic Metroid password instead grants an unlockable: JUSTINBAILEY hands over
+ * both visors, NARPASSWORD unlocks Create Seed.
  */
-export function SeedEntryModal({ onClose, onSubmitSeed, onUnlockCheat }: { onClose: () => void; onSubmitSeed: (seed: Seed) => void; onUnlockCheat: () => void }) {
+export function SeedEntryModal({ onClose, onSubmitSeed, onUnlockCheat }: { onClose: () => void; onSubmitSeed: (seed: Seed) => void; onUnlockCheat: (which: 'jb' | 'narpas') => void }) {
   const [code, setCode] = useState('');
   const [msg, setMsg] = useState<string | null>(null);
 
@@ -32,9 +43,10 @@ export function SeedEntryModal({ onClose, onSubmitSeed, onUnlockCheat }: { onClo
   }
 
   function submit() {
-    if (code.toUpperCase() === CHEAT) {
-      onUnlockCheat();
-      setMsg('▶ DEBUG SCAN UNLOCKED');
+    const cheat = CHEATS[code.toUpperCase()];
+    if (cheat) {
+      onUnlockCheat(cheat);
+      setMsg(CHEAT_MSG[cheat]);
       setCode('');
       return;
     }
