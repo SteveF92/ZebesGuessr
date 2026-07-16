@@ -19,9 +19,9 @@ export interface Difficulty {
 }
 
 export const DIFFICULTIES: Difficulty[] = [
-  { id: 'tallon', label: 'Tallon Overworld', min: 1, max: 3, hint: 'FAMILIAR GROUND' },
+  { id: 'tallon', label: 'Tallon Overworld', min: 1, max: 2, hint: 'FAMILIAR GROUND' },
   { id: 'brinstar', label: 'Brinstar', min: 2, max: 4, hint: 'OFF THE BEATEN PATH' },
-  { id: 'sanctuary', label: 'Sanctuary Fortress', min: 3, max: 5, hint: 'DEEP ARCHIVE' }
+  { id: 'sanctuary', label: 'Sanctuary Fortress', min: 4, max: 5, hint: 'DEEP ARCHIVE' }
 ];
 
 export const DEFAULT_DIFFICULTY = 'brinstar';
