@@ -3,34 +3,26 @@ import { GAMES } from '../data';
 import { DIFFICULTIES } from '../scoring';
 import { type Seed, SEED_ALPHABET, SEED_LENGTH, decodeSeed } from '../seed';
 
-const JUSTIN = 'JUSTIN'; // 6 chars — the same length as a seed code, on purpose
-const CHEAT = 'JUSTIN BAILEY';
-const CHEAT_MAX = CHEAT.length; // 13, including the space
-const SPACE_AT = JUSTIN.length; // the gap sits between box 6 and 7
+/** The classic password, minus its space — 12 chars, exactly one seed's worth,
+ *  so it fills the field's two groups of six perfectly. */
+const CHEAT = 'JUSTINBAILEY';
+/** The cosmetic gap splits the 12-box field into two groups of six. */
+const SPACE_AT = SEED_LENGTH / 2;
 
 /**
- * NES password-screen-flavored seed entry. Type or click a 6-char seed code to
- * jump into a locked run. The field looks like it only takes 6 characters — but
- * typing exactly "JUSTIN" and pressing space extends it so the classic
- * "JUSTIN BAILEY" password still fits and unlocks the debug scan.
+ * NES password-screen-flavored seed entry. Type or click a 12-char seed code to
+ * jump into a locked run — the field reads as two groups of six. Typing the
+ * classic "JUSTINBAILEY" instead unlocks the debug scan.
  */
 export function SeedEntryModal({ onClose, onSubmitSeed, onUnlockCheat }: { onClose: () => void; onSubmitSeed: (seed: Seed) => void; onUnlockCheat: () => void }) {
   const [code, setCode] = useState('');
   const [msg, setMsg] = useState<string | null>(null);
 
-  const extended = code.includes(' '); // the JUSTIN + space easter egg opened the longer field
-  const boxCount = extended ? CHEAT_MAX : SEED_LENGTH;
-
   function append(ch: string) {
     setMsg(null);
     setCode((cur) => {
-      if (ch === ' ') {
-        // Space only does anything as the JUSTIN → BAILEY bridge.
-        return cur.toUpperCase() === JUSTIN ? cur + ' ' : cur;
-      }
       if (!SEED_ALPHABET.includes(ch)) return cur;
-      const max = cur.includes(' ') ? CHEAT_MAX : SEED_LENGTH;
-      return cur.length >= max ? cur : cur + ch;
+      return cur.length >= SEED_LENGTH ? cur : cur + ch;
     });
   }
 
@@ -40,7 +32,7 @@ export function SeedEntryModal({ onClose, onSubmitSeed, onUnlockCheat }: { onClo
   }
 
   function submit() {
-    if (code.trim().toUpperCase() === CHEAT) {
+    if (code.toUpperCase() === CHEAT) {
       onUnlockCheat();
       setMsg('▶ DEBUG SCAN UNLOCKED');
       setCode('');
@@ -66,10 +58,6 @@ export function SeedEntryModal({ onClose, onSubmitSeed, onUnlockCheat }: { onClo
         e.preventDefault();
         return backspace();
       }
-      if (e.key === ' ') {
-        e.preventDefault();
-        return append(' ');
-      }
       if (e.key.length === 1) append(e.key);
     }
     window.addEventListener('keydown', onKey);
@@ -85,18 +73,17 @@ export function SeedEntryModal({ onClose, onSubmitSeed, onUnlockCheat }: { onClo
         <h2 className="seed-title">SEED PLEASE</h2>
 
         <div className="seed-boxes" role="textbox" aria-label="Seed code">
-          {Array.from({ length: boxCount }).map((_, i) => {
-            if (extended && i === SPACE_AT) return <span key="gap" className="seed-gap" aria-hidden="true" />;
-            const ch = code[i] && code[i] !== ' ' ? code[i] : '';
-            return (
-              <div key={i} className={`seed-box${ch ? ' filled' : ''}${i === code.length ? ' active' : ''}`}>
-                {ch}
+          {Array.from({ length: SEED_LENGTH }).flatMap((_, i) => {
+            const box = (
+              <div key={i} className={`seed-box${code[i] ? ' filled' : ''}${i === code.length ? ' active' : ''}`}>
+                {code[i] ?? ''}
               </div>
             );
+            return i === SPACE_AT ? [<span key="gap" className="seed-gap" aria-hidden="true" />, box] : [box];
           })}
         </div>
 
-        <p className={`seed-msg${msg ? (msg.startsWith('▶') ? ' ok' : ' err') : ''}`}>{msg ?? ' '}</p>
+        <p className={`seed-msg${msg ? (msg.startsWith('▶') ? ' ok' : ' err') : ''}`}>{msg ?? ' '}</p>
 
         <div className="seed-keys">
           {[...SEED_ALPHABET].map((ch) => (
@@ -107,9 +94,6 @@ export function SeedEntryModal({ onClose, onSubmitSeed, onUnlockCheat }: { onClo
         </div>
 
         <div className="seed-controls">
-          <button className="seed-key wide" onClick={() => append(' ')} title="Space">
-            ␣
-          </button>
           <button className="seed-key wide" onClick={backspace} title="Delete">
             DEL
           </button>

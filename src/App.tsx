@@ -3,15 +3,16 @@ import GuessMap from './components/GuessMap';
 import TileViewer from './components/TileViewer';
 import { AboutModal, Credits } from './components/AboutModal';
 import { SeedEntryModal } from './components/SeedEntryModal';
+import { CreateSeed } from './components/CreateSeed';
 import { useCountUp } from './hooks/useCountUp';
-import { GAMES, cellRating, loadGameData, pickTargets, roomName, tileUrl } from './data';
+import { GAMES, areaName, cellPool, cellRating, indicesFromTargets, loadGameData, pickTargets, roomName, targetsFromIndices, tileUrl } from './data';
 import { DIFFICULTIES, ROUNDS_PER_RUN, cellDistance, getDifficulty, maxForRating, rankFlavor, revealFlavor, scoreRank, scoreRound } from './scoring';
 import { GAME_URL, buildShareText } from './share';
 import { buildShareImage, downloadBlob } from './shareImage';
-import { type Seed, decodeSeed, encodeSeed, mulberry32, randomSeed } from './seed';
+import { type Seed, decodeSeed, encodeSeed } from './seed';
 import type { Cell, GameData, RoundResult, RoundTarget } from './types';
 
-type Phase = 'menu' | 'loading' | 'guessing' | 'reveal' | 'summary';
+type Phase = 'menu' | 'loading' | 'creating' | 'guessing' | 'reveal' | 'summary';
 
 /** Read a `?seed=` code from the URL and decode it (null if absent/malformed). */
 function readSeedFromUrl(): Seed | null {
@@ -88,19 +89,21 @@ export default function App() {
     localStorage.setItem('zg-cheat', '1');
   }
 
-  async function startGame(gameId: string) {
+  async function startGame(gameId: string, runSeed: Seed | null = loadedSeed) {
     setPhase('loading');
     setError(null);
     try {
       const d = await loadGameData(gameId);
       setData(d);
-      // A run's seed is minted here every time (loaded runs reuse the URL's
-      // seed; fresh runs get a new one) and held for sharing at the summary.
-      const prngSeed = loadedSeed ? loadedSeed.prngSeed : randomSeed();
+      // Every run is an explicit five-tile list. A loaded seed replays its
+      // tiles; a fresh run lets pickTargets choose, then encodes those tiles —
+      // so the code held for sharing at the summary always round-trips.
       const gameIndex = GAMES.findIndex((g) => g.id === gameId);
-      const diffIndex = DIFFICULTIES.findIndex((dd) => dd.id === difficultyId);
-      setActiveSeedCode(encodeSeed({ gameIndex, diffIndex, prngSeed }));
-      setTargets(pickTargets(d, ROUNDS_PER_RUN, difficulty, mulberry32(prngSeed)));
+      const targets = runSeed ? targetsFromIndices(d, runSeed.indices) : pickTargets(d, ROUNDS_PER_RUN, difficulty, Math.random);
+      const indices = runSeed ? runSeed.indices : indicesFromTargets(cellPool(d), targets);
+      const diffIndex = runSeed ? runSeed.diffIndex : DIFFICULTIES.findIndex((dd) => dd.id === difficultyId);
+      setActiveSeedCode(encodeSeed({ gameIndex, diffIndex, indices }));
+      setTargets(targets);
       setRound(0);
       setResults([]);
       setSelected(null);
@@ -109,6 +112,31 @@ export default function App() {
       setError(e instanceof Error ? e.message : String(e));
       setPhase('menu');
     }
+  }
+
+  /** Load map data, then drop into the hand-pick Create Seed screen. */
+  async function startCreate() {
+    setPhase('loading');
+    setError(null);
+    try {
+      const d = await loadGameData(selectedGameId);
+      setData(d);
+      setPhase('creating');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+      setPhase('menu');
+    }
+  }
+
+  /** Play a hand-picked run: lock the menu to its seed, mirror it into the URL,
+   *  and launch — passing the seed explicitly so startGame doesn't race state. */
+  function playIndices(indices: number[], diffIndex: number) {
+    const gameIndex = GAMES.findIndex((g) => g.id === selectedGameId);
+    const seed: Seed = { gameIndex, diffIndex, indices };
+    setLoadedSeed(seed);
+    setDifficultyId(DIFFICULTIES[diffIndex]?.id ?? difficultyId);
+    window.history.replaceState({}, '', '?seed=' + encodeSeed(seed));
+    startGame(selectedGameId, seed);
   }
 
   /** Apply a manually entered seed: lock the menu to it, just like a URL seed. */
@@ -268,6 +296,9 @@ export default function App() {
           </p>
         )}
         <div className="menu-actions">
+          <button className="btn secondary" disabled={phase === 'loading' || !!loadedSeed} onClick={startCreate} title="Hand-pick five screens and share the seed">
+            ◈ CREATE SEED
+          </button>
           <button className={`btn secondary seed-entry-btn${loadedSeed ? ' locked' : ''}`} onClick={() => setShowSeedEntry(true)}>
             {loadedSeed ? '◈ SEED LOCKED' : '◈ SEED ENTRY'}
           </button>
@@ -281,6 +312,11 @@ export default function App() {
         {showSeedEntry && <SeedEntryModal onClose={() => setShowSeedEntry(false)} onSubmitSeed={applySeed} onUnlockCheat={unlockCheat} />}
       </div>
     );
+  }
+
+  // ---------------------------------------------------------------- CREATE
+  if (phase === 'creating' && data) {
+    return <CreateSeed data={data} gameId={selectedGameId} onExit={() => setPhase('menu')} onPlay={playIndices} />;
   }
 
   // ---------------------------------------------------------------- SUMMARY
@@ -494,8 +530,4 @@ export default function App() {
       </div>
     </div>
   );
-}
-
-function areaName(data: GameData, areaId: string): string {
-  return data.areas.find((a) => a.id === areaId)?.name ?? areaId;
 }

@@ -1,4 +1,4 @@
-import { DEFAULT_RATING, EXCLUDED_RATING, type Difficulty } from './scoring';
+import { DEFAULT_RATING, DIFFICULTIES, EXCLUDED_RATING, type Difficulty } from './scoring';
 import type { GameData, MapGlyph, Connector, RoundTarget, Cell } from './types';
 
 export const GAMES = [
@@ -235,4 +235,44 @@ export function pickTargets(data: GameData, n: number, diff?: Difficulty, rng: (
 
 export function cellKey(areaId: string, cell: Cell): string {
   return `${areaId}:${cell.x},${cell.y}`;
+}
+
+export function areaName(data: GameData, areaId: string): string {
+  return data.areas.find((a) => a.id === areaId)?.name ?? areaId;
+}
+
+/**
+ * The game's canonical flat cell pool: every playable cell, areas in order,
+ * then each area's `cells` in order. A seed stores each tile as its index into
+ * this list, so encode and decode must build it identically (see seed.ts).
+ */
+export function cellPool(data: GameData): RoundTarget[] {
+  const pool: RoundTarget[] = [];
+  for (const area of data.areas) {
+    for (const cell of area.cells) pool.push({ areaId: area.id, cell });
+  }
+  return pool;
+}
+
+/** Resolve a seed's tile indices back to targets against `data`'s cell pool. */
+export function targetsFromIndices(data: GameData, indices: number[]): RoundTarget[] {
+  const pool = cellPool(data);
+  return indices.map((i) => pool[i]).filter((t): t is RoundTarget => !!t);
+}
+
+/** Map picked targets to their indices in `pool` (−1 if not found). */
+export function indicesFromTargets(pool: RoundTarget[], targets: RoundTarget[]): number[] {
+  return targets.map((t) => pool.findIndex((p) => p.areaId === t.areaId && p.cell.x === t.cell.x && p.cell.y === t.cell.y));
+}
+
+/**
+ * The difficulty tier that best labels a hand-picked run: average the tiles'
+ * ratings and snap to the nearest tier centre (recruit≈2, hunter≈3, chozo≈4).
+ * Scoring is per-tile regardless — this is purely the share/summary label.
+ */
+export function deriveDifficultyIndex(data: GameData, targets: RoundTarget[]): number {
+  if (!targets.length) return DIFFICULTIES.findIndex((d) => d.id === 'hunter');
+  const mean = targets.reduce((s, t) => s + cellRating(data, t.areaId, t.cell), 0) / targets.length;
+  const i = mean < 2.5 ? 0 : mean < 3.5 ? 1 : 2;
+  return Math.min(i, DIFFICULTIES.length - 1);
 }

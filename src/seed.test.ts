@@ -1,33 +1,32 @@
 import { describe, expect, it } from 'vitest';
-import { decodeSeed, encodeSeed, mulberry32 } from './seed';
+import { MAX_CELL_INDEX, SEED_LENGTH, decodeSeed, encodeSeed, mulberry32 } from './seed';
 import { pickTargets, cellKey } from './data';
 import { getDifficulty } from './scoring';
 import type { Cell, GameData } from './types';
 
 describe('encodeSeed / decodeSeed', () => {
-  it('round-trips game, difficulty, and the 30-bit prng seed', () => {
+  it('round-trips game, difficulty, and the five tile indices', () => {
     const cases = [
-      { gameIndex: 0, diffIndex: 0, prngSeed: 0 },
-      { gameIndex: 2, diffIndex: 1, prngSeed: 123456 },
-      { gameIndex: 1, diffIndex: 2, prngSeed: 0x3fffffff }, // max 30-bit seed
-      { gameIndex: 7, diffIndex: 6, prngSeed: 0x2abcdef } // max indices (3 bits each)
+      { gameIndex: 0, diffIndex: 0, indices: [0, 0, 0, 0, 0] },
+      { gameIndex: 2, diffIndex: 1, indices: [1, 22, 333, 1226, 7] },
+      { gameIndex: 7, diffIndex: 7, indices: [MAX_CELL_INDEX, 0, MAX_CELL_INDEX, 0, MAX_CELL_INDEX] } // max fields
     ];
     for (const c of cases) {
       expect(decodeSeed(encodeSeed(c))).toEqual(c);
     }
   });
 
-  it('produces a 6-char, url-safe code', () => {
-    const code = encodeSeed({ gameIndex: 0, diffIndex: 1, prngSeed: 0x1eadbee });
-    expect(code).toHaveLength(6);
+  it('produces a 12-char, url-safe code', () => {
+    const code = encodeSeed({ gameIndex: 0, diffIndex: 1, indices: [12, 345, 678, 9, 1024] });
+    expect(code).toHaveLength(SEED_LENGTH);
     expect(code).toMatch(/^[A-Za-z0-9_-]+$/);
   });
 
   it('returns null for malformed codes', () => {
     expect(decodeSeed('')).toBeNull();
     expect(decodeSeed('abc')).toBeNull(); // too short
-    expect(decodeSeed('abcdefg')).toBeNull(); // too long
-    expect(decodeSeed('abc!!!')).toBeNull(); // bad char
+    expect(decodeSeed('abcdefghijklm')).toBeNull(); // too long (13)
+    expect(decodeSeed('abc!!!ghijkl')).toBeNull(); // bad char
   });
 });
 

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { cellKey, cellRating, pickTargets } from './data';
-import { DEFAULT_RATING, getDifficulty } from './scoring';
+import { cellKey, cellPool, cellRating, deriveDifficultyIndex, indicesFromTargets, pickTargets, targetsFromIndices } from './data';
+import { decodeSeed, encodeSeed } from './seed';
+import { DEFAULT_RATING, DIFFICULTIES, getDifficulty } from './scoring';
 import type { Cell, GameData } from './types';
 
 /** Minimal GameData with only the fields pickTargets touches. */
@@ -144,6 +145,51 @@ describe('pickTargets rating-6 exclusion', () => {
     for (const t of targets) {
       expect(cellKey(t.areaId, t.cell)).not.toBe('brinstar:0,0');
     }
+  });
+});
+
+describe('cell pool / seed index round-trip', () => {
+  const data = makeData({ crateria: grid(6, 6), brinstar: grid(5, 4), norfair: grid(7, 3) });
+
+  it('cellPool flattens areas in order, cells in order', () => {
+    const pool = cellPool(data);
+    expect(pool).toHaveLength(36 + 20 + 21);
+    expect(pool[0]).toEqual({ areaId: 'crateria', cell: { x: 0, y: 0 } });
+    expect(pool[36]).toEqual({ areaId: 'brinstar', cell: { x: 0, y: 0 } });
+    expect(pool[36 + 20]).toEqual({ areaId: 'norfair', cell: { x: 0, y: 0 } });
+  });
+
+  it('indices ↔ targets round-trip', () => {
+    const pool = cellPool(data);
+    const picks = [pool[3], pool[40], pool[36 + 20 + 10], pool[0], pool[70]];
+    const indices = indicesFromTargets(pool, picks);
+    expect(indices).toEqual([3, 40, 66, 0, 70]);
+    expect(targetsFromIndices(data, indices)).toEqual(picks);
+  });
+
+  it('a hand-picked run survives encode → decode → resolve', () => {
+    const pool = cellPool(data);
+    const picks = [pool[5], pool[36], pool[76], pool[12], pool[50]];
+    const indices = indicesFromTargets(pool, picks);
+    const diffIndex = deriveDifficultyIndex(data, picks);
+    const seed = decodeSeed(encodeSeed({ gameIndex: 0, diffIndex, indices }))!;
+    expect(seed.indices).toEqual(indices);
+    expect(targetsFromIndices(data, seed.indices)).toEqual(picks);
+  });
+});
+
+describe('deriveDifficultyIndex', () => {
+  const idOf = (i: number) => DIFFICULTIES[i].id;
+  it('snaps the mean rating to the nearest tier centre', () => {
+    const cells = grid(3, 2); // 6 cells
+    const rated = (rs: number[]) => makeData({ norfair: cells }, Object.fromEntries(cells.map((c, i) => [cellKey('norfair', c), rs[i]])));
+    const pick = (d: GameData) => cellPool(d);
+    const low = rated([1, 2, 2, 1, 2, 1]); // mean 1.5 → recruit
+    const mid = rated([3, 3, 3, 3, 3, 3]); // mean 3 → hunter
+    const high = rated([5, 4, 5, 4, 5, 4]); // mean 4.5 → chozo
+    expect(idOf(deriveDifficultyIndex(low, pick(low)))).toBe('recruit');
+    expect(idOf(deriveDifficultyIndex(mid, pick(mid)))).toBe('hunter');
+    expect(idOf(deriveDifficultyIndex(high, pick(high)))).toBe('chozo');
   });
 });
 
