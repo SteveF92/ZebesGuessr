@@ -1703,6 +1703,11 @@ a:hover {
     flex-wrap: wrap;
     justify-content: flex-end;
   }
+  /* Scan/X-Ray Visor are hover-driven debug/dev tools with no touch
+     equivalent, so hide them on phones rather than cram them in */
+  .hud-tools {
+    display: none;
+  }
 
   /* area tabs: one swipeable row instead of wrapping into three */
   .area-tabs {
