@@ -13,8 +13,12 @@ Parameters:
     Default: Z02128332WRM7WRTUEBHR
   GitHubRepo:
     Type: String
-    Default: SteveF92/zebesguessr
-    Description: owner/repo allowed to assume the deploy role.
+    Default: SteveF92/ZebesGuessr
+    Description: >
+      owner/repo allowed to assume the deploy role. Must match GitHub's
+      canonical casing exactly — the OIDC `sub` claim uses it verbatim and the
+      trust policy compares with case-sensitive StringEquals. The clone URL is
+      not a reliable source; `gh repo view --json nameWithOwner` is.
 
 Resources:
   # Private bucket. No public access, no S3 website hosting — CloudFront is the
