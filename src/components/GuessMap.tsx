@@ -112,13 +112,17 @@ const COL = {
   wall: '#a0f8f8',
   map: '#00f858',
   ship: '#f88838',
-  hover: 'rgba(255,255,255,0.85)',
+  hover: 'rgba(160, 248, 248, 0.6)',
   selected: '#ffd24d',
   item: '#f8f8f8',
   target: '#00ff88',
-  guess: '#ff4444',
-  targetOutline: '#004422',
-  guessOutline: '#660000'
+  /* Prime scan-visor brackets: cursor / placed guess markers */
+  scan: '#a0f8f8',
+  scanOutline: '#08262e',
+  /* Zero Mission dot trail + Fusion target dot */
+  trailDot: '#f8e048',
+  trailOutline: '#1a1400',
+  targetRing: '#ff4444'
 };
 
 const N = 1,
@@ -127,12 +131,13 @@ const N = 1,
   W = 8;
 
 /** Reveal lock-on timeline (ms): a same-area miss traces the guess→target
- *  line first, then the target blinks in and the ring pulse plays. An exact
- *  guess earns a second ring pulse, offset by RING2_DELAY. */
+ *  dot trail first, then the target indicator lands and the ring pulse plays.
+ *  An exact guess earns a second ring pulse, offset by RING2_DELAY. */
 const TRACE_MS = 450;
-const BLINK_MS = 240;
 const RING_MS = 650;
 const RING2_DELAY = 350;
+/** Fusion-style TARGET callout: palette flip cadence (runs while revealed). */
+const TARGET_BLINK_MS = 350;
 
 /**
  * The clickable guess map, rebuilt as web elements: cells from the actual
@@ -347,7 +352,7 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
   const [revealT, setRevealT] = useState(0);
   // Same-area misses trace the line first; exact/cross-area lock on immediately.
   const traceMs = result && isFinite(result.distance) && result.distance > 0 ? TRACE_MS : 0;
-  const revealTotal = traceMs + Math.max(BLINK_MS, RING_MS + (result?.distance === 0 ? RING2_DELAY : 0));
+  const revealTotal = traceMs + RING_MS + (result?.distance === 0 ? RING2_DELAY : 0);
   useEffect(() => {
     if (!result) {
       setRevealT(0);
@@ -379,6 +384,20 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
     raf = requestAnimationFrame(step);
     return () => cancelAnimationFrame(raf);
   }, [selected, result]);
+
+  // Fusion-style TARGET callout: flips its palette on a slow interval for as
+  // long as the reveal is up (a 3fps repaint, not a rAF loop). Reduced motion
+  // holds the steady dark/gold state instead.
+  const [targetBlink, setTargetBlink] = useState(false);
+  useEffect(() => {
+    if (!result) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const id = setInterval(() => setTargetBlink((b) => !b), TARGET_BLINK_MS);
+    return () => {
+      clearInterval(id);
+      setTargetBlink(false);
+    };
+  }, [result]);
 
   // Load ship and boss images
   useEffect(() => {
@@ -453,18 +472,38 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
     if (showTiles) drawTiles(ctx);
     if (editing) (tool === 'difficulty' ? drawDiffTint : drawRoomTint)(ctx);
 
-    const box = (tile: Cell, color: string, outlineColor: string | null, lw: number) => {
+    // Prime scan-visor brackets: four corner Ls around a cell, in place of a
+    // full box — the same motif as the tile viewer's frame corners.
+    const brackets = (tile: Cell, color: string, lw: number, outlineColor: string | null) => {
       const x = tile.x * S + 1;
       const y = tile.y * S + 1;
       const size = S - 2;
+      const leg = 5;
+      const path = () => {
+        ctx.beginPath();
+        ctx.moveTo(x, y + leg);
+        ctx.lineTo(x, y);
+        ctx.lineTo(x + leg, y);
+        ctx.moveTo(x + size - leg, y);
+        ctx.lineTo(x + size, y);
+        ctx.lineTo(x + size, y + leg);
+        ctx.moveTo(x + size, y + size - leg);
+        ctx.lineTo(x + size, y + size);
+        ctx.lineTo(x + size - leg, y + size);
+        ctx.moveTo(x + leg, y + size);
+        ctx.lineTo(x, y + size);
+        ctx.lineTo(x, y + size - leg);
+      };
       if (outlineColor) {
         ctx.strokeStyle = outlineColor;
         ctx.lineWidth = lw + 2;
-        ctx.strokeRect(x, y, size, size);
+        path();
+        ctx.stroke();
       }
       ctx.strokeStyle = color;
       ctx.lineWidth = lw;
-      ctx.strokeRect(x, y, size, size);
+      path();
+      ctx.stroke();
     };
 
     // One-shot expanding ring centered on a cell; p in (0,1) — no-op outside.
@@ -479,43 +518,137 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
       ctx.globalAlpha = 1;
     };
 
+    // Zero Mission-style trail: a run of thrown dots along the guess→target
+    // path (no solid line), with a larger head dot leading while it traces.
+    const dotTrail = (gx: number, gy: number, tx: number, ty: number, prog: number) => {
+      const dist = Math.hypot(tx - gx, ty - gy);
+      if (dist <= 12) return; // adjacent cells: markers alone tell the story
+      const ux = (tx - gx) / dist;
+      const uy = (ty - gy) / dist;
+      const dot = (s: number, half: number) => {
+        const px = gx + ux * s;
+        const py = gy + uy * s;
+        ctx.fillStyle = COL.trailOutline;
+        ctx.fillRect(px - half - 1, py - half - 1, half * 2 + 2, half * 2 + 2);
+        ctx.fillStyle = COL.trailDot;
+        ctx.fillRect(px - half, py - half, half * 2, half * 2);
+      };
+      const reach = prog * dist;
+      // dots start clear of the guess brackets and stop short of the target dot
+      for (let s = 8; s <= Math.min(reach, dist - 8); s += 9) dot(s, 1.5);
+      if (prog < 1) dot(Math.min(reach, dist - 8), 2.5); // the thrown head dot
+    };
+
+    // Fusion-style target indicator: a sun-yellow dot in a red dashed ring
+    // (dark under-dash so it reads on the pink rooms), with a blinking TARGET
+    // callout pointing at it.
+    const targetIndicator = (tile: Cell, blink: boolean) => {
+      const cx = (tile.x + 0.5) * S;
+      const cy = (tile.y + 0.5) * S;
+      // the dot + its ticking ring (the dash pattern jumps with each blink)
+      ctx.fillStyle = COL.trailOutline;
+      ctx.beginPath();
+      ctx.arc(cx, cy, 4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = COL.trailDot;
+      ctx.beginPath();
+      ctx.arc(cx, cy, 3, 0, Math.PI * 2);
+      ctx.fill();
+      const ringDash = (color: string, lw: number) => {
+        ctx.strokeStyle = color;
+        ctx.lineWidth = lw;
+        ctx.setLineDash([3, 2.5]);
+        ctx.lineDashOffset = blink ? 2.75 : 0;
+        ctx.beginPath();
+        ctx.arc(cx, cy, 6.5, 0, Math.PI * 2);
+        ctx.stroke();
+      };
+      ringDash('#04060f', 3.5); // dark under-dash: contrast against room pink
+      ringDash(COL.targetRing, 1.5);
+      ctx.setLineDash([]);
+      ctx.lineDashOffset = 0;
+
+      // The callout box, framed and palette-flipped like Fusion's: dark navy
+      // outline, mint-green frame, then purple/dark-navy ↔ dark/yellow.
+      // `k` scales the whole callout up when the canvas is displayed small
+      // (phones, shrunken windows) so the label stays ~12 css px on screen.
+      const cssPerUnit = (canvas.getBoundingClientRect().width || w) / w;
+      const k = Math.min(2.5, Math.max(1, 12 / (8 * cssPerUnit)));
+      const label = 'TARGET';
+      ctx.font = `${8 * k}px 'Super Metroid Large Alt', 'Press Start 2P', monospace`;
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      const pad = 4 * k;
+      const bw = ctx.measureText(label).width + pad * 2;
+      const bh = 13 * k;
+      const frame = 1.5 * k; // green frame thickness
+      const line = 1.5 * k; // dark outline thickness
+      const tail = 5 * k;
+      const gap = 9; // tail tip sits just off the dashed ring
+      const ext = frame + line; // how far the frame + outline extend past the fill
+      // Side pick: sit opposite the incoming dot trail so the two never
+      // overlap; without a trail (wrong-area reveal) default left, Fusion
+      // style. Either way flip if the canvas edge would cut the box off
+      // (tile space: the canvas spans -dx .. cols-dx).
+      const hasTrail = result && isFinite(result.distance) && result.distance > 0 && result.guess.areaId === result.target.areaId;
+      const fitsLeft = cx - gap - tail - bw - ext >= -dx * S + 1;
+      const fitsRight = cx + gap + tail + bw + ext <= (cols - dx) * S - 1;
+      let right = hasTrail ? result.guess.cell.x <= tile.x : false;
+      if (right && !fitsRight && fitsLeft) right = false;
+      if (!right && !fitsLeft && fitsRight) right = true;
+      const bx = right ? cx + gap + tail : cx - gap - tail - bw;
+      const by = Math.max(-dy * S + ext + 1, Math.min((rows - dy) * S - bh - ext - 1, cy - bh / 2));
+      const my = by + bh / 2; // tail meets the box at its vertical middle
+      // nested fills: dark outline, green frame, then the blinking face
+      ctx.fillStyle = '#0a1420';
+      ctx.fillRect(bx - ext, by - ext, bw + ext * 2, bh + ext * 2);
+      ctx.fillStyle = COL.map;
+      ctx.fillRect(bx - frame, by - frame, bw + frame * 2, bh + frame * 2);
+      ctx.fillStyle = blink ? '#8a3ff0' : '#2a2a33';
+      ctx.fillRect(bx, by, bw, bh);
+      // tail: green wedge with the dark outline, pointing at the dot
+      const tw = 4 * k; // half-height of the tail at the box edge
+      const wedge = (grow: number) => {
+        ctx.beginPath();
+        if (right) {
+          ctx.moveTo(bx - frame, my - tw - grow);
+          ctx.lineTo(bx - frame - tail - grow, my);
+          ctx.lineTo(bx - frame, my + tw + grow);
+        } else {
+          ctx.moveTo(bx + bw + frame, my - tw - grow);
+          ctx.lineTo(bx + bw + frame + tail + grow, my);
+          ctx.lineTo(bx + bw + frame, my + tw + grow);
+        }
+        ctx.closePath();
+        ctx.fill();
+      };
+      ctx.fillStyle = '#0a1420';
+      wedge(line + 0.5);
+      ctx.fillStyle = COL.map;
+      wedge(0);
+      ctx.fillStyle = blink ? '#1a0a3c' : '#f8e048';
+      ctx.fillText(label, bx + pad, my + 0.5 * k);
+    };
+
     if (!result) {
-      if (hover) box(hover, COL.hover, null, 1.5);
+      if (hover) brackets(hover, COL.hover, 1.5, null);
       if (selected && selected.areaId === area.id) {
-        box(selected.cell, COL.selected, null, 2.5);
-        ring(selected.cell, selectPulse, COL.selected);
+        brackets(selected.cell, COL.scan, 2.5, COL.scanOutline);
+        ring(selected.cell, selectPulse, COL.scan);
       }
     } else {
       const lockT = revealT - traceMs; // ms since the target lock-on began
-      if (result.guess.areaId === area.id) box(result.guess.cell, COL.guess, COL.guessOutline, 3.5);
-      if (result.target.areaId === area.id && lockT >= 0) {
-        // Target lands: blink white↔green for a beat, then settle.
-        const blinkOn = lockT < BLINK_MS && Math.floor(lockT / 80) % 2 === 0;
-        box(result.target.cell, blinkOn ? '#ffffff' : COL.target, COL.targetOutline, 3.5);
-      }
+      if (result.guess.areaId === area.id) brackets(result.guess.cell, COL.scan, 3, COL.scanOutline);
       if (result.guess.areaId === area.id && result.target.areaId === area.id && result.distance > 0) {
-        // Trace the dashed line from guess toward target, marching while live.
         const p = traceMs > 0 ? Math.min(1, revealT / traceMs) : 1;
         const e = 1 - Math.pow(1 - p, 3);
-        const gx = (result.guess.cell.x + 0.5) * S;
-        const gy = (result.guess.cell.y + 0.5) * S;
-        const tx = (result.target.cell.x + 0.5) * S;
-        const ty = (result.target.cell.y + 0.5) * S;
-        ctx.strokeStyle = '#ffff00';
-        ctx.lineWidth = 2.5;
-        ctx.setLineDash([6, 4]);
-        ctx.lineDashOffset = -revealT * 0.04;
-        ctx.beginPath();
-        ctx.moveTo(gx, gy);
-        ctx.lineTo(gx + (tx - gx) * e, gy + (ty - gy) * e);
-        ctx.stroke();
-        ctx.setLineDash([]);
-        ctx.lineDashOffset = 0;
+        dotTrail((result.guess.cell.x + 0.5) * S, (result.guess.cell.y + 0.5) * S, (result.target.cell.x + 0.5) * S, (result.target.cell.y + 0.5) * S, e);
       }
       if (result.target.areaId === area.id && lockT >= 0) {
         ring(result.target.cell, lockT / RING_MS, COL.target);
         // Exact guess: a second pulse for the direct hit.
         if (result.distance === 0) ring(result.target.cell, (lockT - RING2_DELAY) / RING_MS, COL.target);
+        targetIndicator(result.target.cell, targetBlink);
       }
     }
     ctx.restore();
