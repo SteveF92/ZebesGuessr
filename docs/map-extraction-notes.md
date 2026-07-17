@@ -7,6 +7,14 @@ are handled at the **pixel level, before quantization** (an earlier cell-level
 approach missed several cases); the rules below hold for Super Metroid today
 and are worth re-validating for another game or a re-sourced map.
 
+GBA games (Metroid Fusion, later Zero Mission) use a different extractor,
+`pipeline/extract_gba_maps.py` — see [the GBA section](#gba-map-extraction-metroid-fusion)
+at the end. `mapStyle` in `maps.config.json` (baked into `<game>.json`)
+decides which extractor owns which game; each skips the other's. The
+style-agnostic plumbing (grid phase detection, connected components,
+tile-grid alignment, `mapOverrides` handling, the merge onto the one cell
+list) is shared via `pipeline/maplib.py`.
+
 ## Phantom rooms (map annotations drawn in room colours)
 
 ### What they were
@@ -162,10 +170,51 @@ from the pink x/y correlation heuristic, `|corr| ≥ 0.2`):
 ## Regenerating
 
 ```
-python pipeline/extract_ingame_maps.py   # needs Images/raw/<game>/ingame/*.webp
+python pipeline/extract_ingame_maps.py [game-id]   # needs Images/raw/<game>/ingame/<area>.*
 ```
 
 Landmark icons (station glyphs) are not auto-detected by this script at all —
 they're hand-placed in the app's icon editor and stored in
 `public/data/glyphs.<game>.json`, which this script skips explicitly and
 never writes to.
+
+## GBA map extraction (Metroid Fusion)
+
+The Fusion in-game maps (vgmaps.com rips by Narasumas) are clean tile art on
+an exact 8px grid with a small exact-RGB palette — none of the hand-drawn
+fuzziness above. `extract_gba_maps.py` is therefore mostly exact-color
+bookkeeping. What it reads per cell:
+
+- **Occupancy**: ≥4 px of room fill in the inner 6×6, or ≥12 px of station-icon
+  color (the yellow-on-red S/N icons fully displace a cell's fill — the same
+  bug class as Super Metroid's green map-station letters, pre-empted by
+  counting icon pixels as fill).
+- **Fill variant** (`f`): majority vote magenta `(248,0,248)` vs green
+  `(32,192,104)`. What the two colors _mean_ in the source is still an open
+  question — they're preserved per cell and rendered as-is.
+- **Walls** (`w`): ≥4 px of white + door color on the two lines straddling a
+  boundary. Every cell is a `room`; Fusion's pause map has no shafts and no
+  diagonals, so `bands` is always empty and the SNES machinery never runs.
+- **Doors** (`dr`): drawn in the source as a _gap in the white wall line_ —
+  the room fill showing through for a normal hatch, a colored pip
+  (red/yellow/green/blue) for locked doors. Detection: a 2–5 px non-white run
+  on the wall line **bounded by white on both ends**, classified by dominant
+  door color (`"n"` if none). The bounded-run rule is what filters the baked
+  caption boxes ("N:S:R" station labels): their solid outlines cross cell
+  borders as full-width or edge-touching runs, never as white-bounded gaps.
+
+Two empirical facts about the rips: all seven share the tile-grid alignment
+offset (11,5), and each frames the map in a wide border of empty lattice
+squares — ripper framing, not game data, so the extractor trims the render
+viewport to the tile grid plus a 2-cell margin instead of keeping the source
+canvas (unlike the SNES path, where the canvas is the in-game one).
+
+Where the _full_ map sheet disagrees with the pause map (a collage that moved
+a sub-area, a cropped last column, a room missing outright), the fix lives in
+`maps.config.json` on the slicing side — `extraRows`/`extraCols` +
+`includeCells` + `cellCropOffsets` — not in the extractor. See
+`docs/adding-a-game.md` step 5 for the case-by-case playbook.
+
+```
+python pipeline/extract_gba_maps.py [game-id]   # needs Images/raw/<game>/ingame/<area>.*
+```

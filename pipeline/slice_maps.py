@@ -4,15 +4,21 @@
 Requires Pillow (pip install pillow). Reads Images/raw/<game>/<area>.png
 (produced by download_maps.py) and writes:
 
-    public/tiles/<game>/<area>/cell_<x>_<y>.png   (256x256 playable cells)
+    public/tiles/<game>/<area>/cell_<x>_<y>.png   (one playable cell each)
     public/tiles/<game>/<area>/map.png            (downscaled guess map)
     public/data/<game>.json                       (grid + playable cells)
     pipeline/debug/<game>/<area>_grid.png         (grid overlay, for alignment checks)
 
-A cell counts as "playable" if enough of it is non-background. Tune
-FILL_THRESHOLD if too many junk tiles (labels, logos) get through.
+Run for one game with `python pipeline/slice_maps.py <game-id>`.
+
+Cells are cellSize square (SNES games) or cellWidth x cellHeight (GBA games,
+one 240x160 screen per map cell). A cell counts as "playable" if enough of it
+is non-background; `background` in maps.config.json names the sheet's empty
+color ("black" default, "white" for the vgmaps GBA rips). Tune FILL_THRESHOLD
+if too many junk tiles (labels, logos) get through.
 """
 import json
+import sys
 from pathlib import Path
 
 from PIL import Image
@@ -22,39 +28,53 @@ Image.MAX_IMAGE_PIXELS = None  # area maps are huge; they're trusted local files
 ROOT = Path(__file__).resolve().parent.parent
 CONFIG = json.loads((ROOT / "pipeline" / "maps.config.json").read_text())
 
-# Fraction of pixels in a cell that must be brighter than DARK_CUTOFF.
+# Fraction of pixels in a cell that must be non-background.
 FILL_THRESHOLD = 0.12
-DARK_CUTOFF = 16  # 0-255 grayscale
+DARK_CUTOFF = 16  # 0-255 grayscale: brighter than this = content on black sheets
+WHITE_CUTOFF = 240  # darker than this = content on white sheets
 
 
-def cell_playable(gray: Image.Image, x0: int, y0: int, size: int) -> bool:
-    cell = gray.crop((x0, y0, x0 + size, y0 + size))
+def cell_playable(gray: Image.Image, x0: int, y0: int, cw: int, ch: int, bg: str) -> bool:
+    cell = gray.crop((x0, y0, x0 + cw, y0 + ch))
     hist = cell.histogram()
-    bright = sum(hist[DARK_CUTOFF:])
-    return bright / (size * size) >= FILL_THRESHOLD
+    content = sum(hist[:WHITE_CUTOFF]) if bg == "white" else sum(hist[DARK_CUTOFF:])
+    return content / (cw * ch) >= FILL_THRESHOLD
 
 
 def process_game(game_id: str, game: dict) -> None:
-    size = game["cellSize"]
+    cw = game.get("cellWidth", game.get("cellSize"))
+    ch = game.get("cellHeight", game.get("cellSize"))
+    bg = game.get("background", "black")
     map_px = game["guessMapCellPx"]
+    # Refuse to write a partial JSON: a rerun without every raw image present
+    # (Images/raw is gitignored) must never gut the committed game data.
+    missing = [a["id"] for a in game["areas"]
+               if not next((ROOT / "Images" / "raw" / game_id).glob(f"{a['id']}.*"), None)]
+    if missing:
+        print(f"  SKIPPING {game_id}: missing raw images for {missing} - run download_maps.py first")
+        return
     data = {
         "game": game_id,
         "title": game["title"],
-        "cellSize": size,
+        "mapStyle": game.get("mapStyle", "snes"),
+        "cellSize": cw,
+        **({"cellWidth": cw, "cellHeight": ch} if cw != ch else {}),
         "guessMapCellPx": map_px,
         "areas": [],
         "roomNames": load_room_names(game_id),
     }
     for area in game["areas"]:
-        raw = ROOT / "Images" / "raw" / game_id / f"{area['id']}.png"
-        if not raw.exists():
-            print(f"MISSING {raw} - run download_maps.py first"); continue
+        raw = next((ROOT / "Images" / "raw" / game_id).glob(f"{area['id']}.*"))
         img = Image.open(raw).convert("RGB")
         ox, oy = area.get("offsetX", 0), area.get("offsetY", 0)
-        cols = (img.width - ox) // size
-        rows = (img.height - oy) // size
-        rx = (img.width - ox) % size
-        ry = (img.height - oy) % size
+        # extraCols/extraRows extend the grid past the source image for rooms
+        # the in-game map places where the sheet has no pixels (a collage that
+        # compacted a sub-area, or a rip that cropped its last column); cells
+        # out there exist only via includeCells + cellCropOffsets.
+        cols = (img.width - ox) // cw + area.get("extraCols", 0)
+        rows = (img.height - oy) // ch + area.get("extraRows", 0)
+        rx = (img.width - ox) % cw
+        ry = (img.height - oy) % ch
         if rx or ry:
             print(f"  note: {area['id']} has {rx}x{ry}px remainder - check offsets in maps.config.json")
         gray = img.convert("L")
@@ -62,8 +82,9 @@ def process_game(game_id: str, game: dict) -> None:
         tile_dir.mkdir(parents=True, exist_ok=True)
 
         excluded = {tuple(c) for c in area.get("excludeCells", [])}
-        # dark rooms (mostly black on the detail map) fall under FILL_THRESHOLD
-        # even though they're real, in-game-mapped rooms; force them in by cell.
+        # dark rooms (mostly background-colored on the detail map) fall under
+        # FILL_THRESHOLD even though they're real, in-game-mapped rooms; force
+        # them in by cell.
         forced = {tuple(c) for c in area.get("includeCells", [])}
         # A few rooms are drawn away from their logical grid slot (the in-game
         # map even shows a displacement arrow, e.g. Brinstar's Energy Tank).
@@ -74,23 +95,31 @@ def process_game(game_id: str, game: dict) -> None:
         cells = []
         for y in range(rows):
             for x in range(cols):
-                if (x, y) in excluded:
+                # includeCells beats excludeCells: a relocated room can occupy
+                # a grid slot whose on-sheet pixels belong to a different room
+                # (main-deck's displaced lower cluster).
+                if (x, y) in excluded and (x, y) not in forced:
                     continue
-                x0, y0 = ox + x * size, oy + y * size
-                if (x, y) in forced or cell_playable(gray, x0, y0, size):
+                x0, y0 = ox + x * cw, oy + y * ch
+                # past the image edge only forced cells exist (PIL pads crops
+                # with black, which would read as "content" on white sheets)
+                if (x0 + cw > img.width or y0 + ch > img.height) and (x, y) not in forced:
+                    continue
+                if (x, y) in forced or cell_playable(gray, x0, y0, cw, ch, bg):
                     cells.append([x, y])
                     dxp, dyp = crop_offsets.get((x, y), (0, 0))
                     img.crop((x0 + dxp, y0 + dyp,
-                              x0 + dxp + size, y0 + dyp + size)).save(
+                              x0 + dxp + cw, y0 + dyp + ch)).save(
                         tile_dir / f"cell_{x}_{y}.png", optimize=True
                     )
 
         # Downscaled guess map (in-game-map vibe: detail lost, shapes kept).
-        # Black out excluded cells (credits banner, minimap inset) first.
-        clean = img.crop((ox, oy, ox + cols * size, oy + rows * size))
+        # Blank out excluded cells (credits banner, minimap inset) first.
+        blank = (255, 255, 255) if bg == "white" else (0, 0, 0)
+        clean = img.crop((ox, oy, ox + cols * cw, oy + rows * ch))
         for (ex, ey) in excluded:
-            clean.paste((0, 0, 0), (ex * size, ey * size, (ex + 1) * size, (ey + 1) * size))
-        guess = clean.resize((cols * map_px, rows * map_px), Image.BOX)
+            clean.paste(blank, (ex * cw, ey * ch, (ex + 1) * cw, (ey + 1) * ch))
+        guess = clean.resize((cols * map_px, rows * round(map_px * ch / cw)), Image.BOX)
         guess.save(tile_dir / "map.png", optimize=True)
 
         # Debug overlay for alignment checking
@@ -100,13 +129,13 @@ def process_game(game_id: str, game: dict) -> None:
         from PIL import ImageDraw
         draw = ImageDraw.Draw(dbg)
         for gx in range(cols + 1):
-            draw.line([(ox + gx * size) // 4, oy // 4, (ox + gx * size) // 4, (oy + rows * size) // 4], fill=(255, 0, 255))
+            draw.line([(ox + gx * cw) // 4, oy // 4, (ox + gx * cw) // 4, (oy + rows * ch) // 4], fill=(255, 0, 255))
         for gy in range(rows + 1):
-            draw.line([ox // 4, (oy + gy * size) // 4, (ox + cols * size) // 4, (oy + gy * size) // 4], fill=(255, 0, 255))
+            draw.line([ox // 4, (oy + gy * ch) // 4, (ox + cols * cw) // 4, (oy + gy * ch) // 4], fill=(255, 0, 255))
         for (cx, cy) in cells:
             draw.rectangle(
-                [(ox + cx * size) // 4 + 2, (oy + cy * size) // 4 + 2,
-                 (ox + (cx + 1) * size) // 4 - 2, (oy + (cy + 1) * size) // 4 - 2],
+                [(ox + cx * cw) // 4 + 2, (oy + cy * ch) // 4 + 2,
+                 (ox + (cx + 1) * cw) // 4 - 2, (oy + (cy + 1) * ch) // 4 - 2],
                 outline=(0, 255, 0),
             )
         dbg.save(debug_dir / f"{area['id']}_grid.png")
@@ -124,7 +153,7 @@ def process_game(game_id: str, game: dict) -> None:
     out = ROOT / "public" / "data"
     out.mkdir(parents=True, exist_ok=True)
     # Indented so Prettier keeps objects expanded, matching committed
-    # formatting; extract_ingame_maps.py rewrites this file the same way.
+    # formatting; the extractors rewrite this file the same way.
     (out / f"{game_id}.json").write_text(json.dumps(data, indent=2))
     print(f"wrote public/data/{game_id}.json")
 
@@ -145,6 +174,11 @@ def load_room_names(game_id: str) -> dict:
 
 
 if __name__ == "__main__":
+    only = sys.argv[1] if len(sys.argv) > 1 else None
+    if only and only not in CONFIG:
+        raise SystemExit(f"unknown game id {only!r}; expected one of {list(CONFIG)}")
     for gid, g in CONFIG.items():
+        if only and gid != only:
+            continue
         print(f"== {g['title']}")
         process_game(gid, g)

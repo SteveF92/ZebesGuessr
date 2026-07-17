@@ -1,6 +1,7 @@
 {
   "super-metroid": {
     "title": "Super Metroid",
+    "mapStyle": "snes",
     "cellSize": 256,
     "guessMapCellPx": 14,
     "areas": [
@@ -137,6 +138,123 @@
           [0, 1],
           [1, 1]
         ]
+      }
+    ]
+  },
+  "metroid-fusion": {
+    "title": "Metroid Fusion",
+    "mapStyle": "gba",
+    "cellWidth": 240,
+    "cellHeight": 160,
+    "guessMapCellPx": 14,
+    "background": "white",
+    "areas": [
+      {
+        "id": "main-deck",
+        "name": "Main Deck",
+        "url": "https://vgmaps.com/Atlas/GBA/MetroidFusion-MainDeck.png",
+        "ingameUrl": "https://vgmaps.com/Atlas/GBA/MetroidFusion-MainDeck(In-GameMap).png",
+        "offsetX": 0,
+        "offsetY": 0,
+        "extraRows": 3,
+        "excludeCells": [
+          [5, 17],
+          [3, 18],
+          [4, 18],
+          [5, 18],
+          [3, 19],
+          [3, 20],
+          [7, 20],
+          [6, 21],
+          [7, 21]
+        ],
+        "includeCells": [
+          [5, 20],
+          [3, 21],
+          [4, 21],
+          [5, 21],
+          [3, 22],
+          [3, 23],
+          [7, 23],
+          [3, 24],
+          [4, 24],
+          [5, 24],
+          [6, 24],
+          [7, 24]
+        ],
+        "cellCropOffsets": {
+          "5,20": [0, -480],
+          "3,21": [0, -480],
+          "4,21": [0, -480],
+          "5,21": [0, -480],
+          "3,22": [0, -480],
+          "3,23": [0, -480],
+          "7,23": [0, -480],
+          "3,24": [0, -480],
+          "4,24": [0, -480],
+          "5,24": [0, -480],
+          "6,24": [0, -480],
+          "7,24": [0, -480]
+        }
+      },
+      {
+        "id": "sector-1",
+        "name": "Sector 1 (SRX)",
+        "url": "https://vgmaps.com/Atlas/GBA/MetroidFusion-Sector1(SRX).png",
+        "ingameUrl": "https://vgmaps.com/Atlas/GBA/MetroidFusion-Sector1(SRX)(In-GameMap).png",
+        "offsetX": 0,
+        "offsetY": 0
+      },
+      {
+        "id": "sector-2",
+        "name": "Sector 2 (TRO)",
+        "url": "https://vgmaps.com/Atlas/GBA/MetroidFusion-Sector2(TRO).png",
+        "ingameUrl": "https://vgmaps.com/Atlas/GBA/MetroidFusion-Sector2(TRO)(In-GameMap).png",
+        "offsetX": 0,
+        "offsetY": 0
+      },
+      {
+        "id": "sector-3",
+        "name": "Sector 3 (PYR)",
+        "url": "https://vgmaps.com/Atlas/GBA/MetroidFusion-Sector3(PYR).png",
+        "ingameUrl": "https://vgmaps.com/Atlas/GBA/MetroidFusion-Sector3(PYR)(In-GameMap).png",
+        "offsetX": 0,
+        "offsetY": 0,
+        "includeCells": [[17, 4]]
+      },
+      {
+        "id": "sector-4",
+        "name": "Sector 4 (AQA)",
+        "url": "https://vgmaps.com/Atlas/GBA/MetroidFusion-Sector4(AQA).png",
+        "ingameUrl": "https://vgmaps.com/Atlas/GBA/MetroidFusion-Sector4(AQA)(In-GameMap).png",
+        "offsetX": 0,
+        "offsetY": 0,
+        "excludeCells": [[22, 14]]
+      },
+      {
+        "id": "sector-5",
+        "name": "Sector 5 (ARC)",
+        "url": "https://vgmaps.com/Atlas/GBA/MetroidFusion-Sector5(ARC).png",
+        "ingameUrl": "https://vgmaps.com/Atlas/GBA/MetroidFusion-Sector5(ARC)(In-GameMap).png",
+        "offsetX": 0,
+        "offsetY": 0,
+        "extraCols": 1,
+        "includeCells": [
+          [23, 4],
+          [23, 5]
+        ],
+        "cellCropOffsets": {
+          "23,4": [-224, 0],
+          "23,5": [-224, 0]
+        }
+      },
+      {
+        "id": "sector-6",
+        "name": "Sector 6 (NOC)",
+        "url": "https://vgmaps.com/Atlas/GBA/MetroidFusion-Sector6(NOC).png",
+        "ingameUrl": "https://vgmaps.com/Atlas/GBA/MetroidFusion-Sector6(NOC)(In-GameMap).png",
+        "offsetX": 0,
+        "offsetY": 0
       }
     ]
   }

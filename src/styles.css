@@ -888,7 +888,9 @@ a:hover {
 .tile-frame {
   position: relative;
   width: 340px;
-  height: 340px;
+  /* height comes from aspect-ratio: square SNES screens by default, set
+     inline per game by TileViewer (GBA screens are 3:2) */
+  aspect-ratio: 1 / 1;
   overflow: hidden;
   border: 1px solid var(--line);
   border-radius: 10px;
@@ -898,8 +900,8 @@ a:hover {
     inset 0 0 0 1px rgba(160, 248, 248, 0.06);
 }
 .tile-frame img {
-  width: 340px;
-  height: 340px;
+  width: 100%;
+  height: 100%;
   image-rendering: pixelated;
   user-select: none;
   transition: transform 0.4s ease;
@@ -1320,7 +1322,8 @@ a:hover {
 }
 .scan-shot img {
   width: 192px;
-  height: 192px;
+  /* natural aspect: square SNES screens, 3:2 GBA screens */
+  height: auto;
   image-rendering: pixelated;
   display: block;
 }
@@ -2146,11 +2149,11 @@ a:hover {
   .signal-label {
     text-align: center;
   }
+  /* aspect-ratio (inline, per game) keeps driving the height */
   .tile-frame,
   .tile-frame img {
     width: min(204px, 52vw);
     height: auto;
-    aspect-ratio: 1 / 1;
   }
 
   /* HUD: keep it compact so it doesn't sprawl across several rows */

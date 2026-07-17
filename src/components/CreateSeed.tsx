@@ -151,7 +151,7 @@ export function CreateSeed({ data, gameId, onExit, onPlay }: Props) {
         <section className="pane left">
           {selected ? (
             <>
-              <TileViewer tileUrl={tileUrl(data, selected)} revealed />
+              <TileViewer tileUrl={tileUrl(data, selected)} revealed aspect={data.cellWidth && data.cellHeight ? data.cellWidth / data.cellHeight : 1} />
               <div className="reveal-box">
                 <p className="reveal-label">SELECTED SCREEN</p>
                 <p className="reveal-area">{areaName(data, selected.areaId)}</p>

@@ -319,7 +319,13 @@ async function drawThumbnailStrip(ctx: CanvasRenderingContext2D, data: GameData,
     roundRect(ctx, x, stripY, size, size, 4);
     ctx.clip();
     if (img) {
-      ctx.drawImage(img, x, stripY, size, size);
+      // letterbox non-square tiles (GBA screens are 3:2) in the square slot
+      const scale = size / Math.max(img.naturalWidth, img.naturalHeight);
+      const dw = img.naturalWidth * scale;
+      const dh = img.naturalHeight * scale;
+      ctx.fillStyle = '#000';
+      ctx.fillRect(x, stripY, size, size);
+      ctx.drawImage(img, x + (size - dw) / 2, stripY + (size - dh) / 2, dw, dh);
     } else {
       ctx.fillStyle = COL.panel;
       ctx.fillRect(x, stripY, size, size);

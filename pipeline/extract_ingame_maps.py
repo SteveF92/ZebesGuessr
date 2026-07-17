@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
-"""Extract in-game pause-map data from map recreations (vgmaps.de, Rick Bruns).
+"""Extract in-game pause-map data from SNES-style map recreations (vgmaps.de).
 
-Reads Images/raw/<game>/ingame/<area>.webp and, for each area:
+Handles games with mapStyle "snes" (hand-drawn recreations with the Super
+Metroid pause-map palette); GBA games are extract_gba_maps.py's job.
+
+Reads Images/raw/<game>/ingame/<area>.* and, for each area:
   1. auto-detects the 8px cell grid phase (edge-energy voting),
   2. classifies each cell: room / vertical|horizontal shaft,
   3. reads cyan wall segments per cell side (NESW bitmask),
@@ -9,19 +12,26 @@ Reads Images/raw/<game>/ingame/<area>.webp and, for each area:
   5. patches public/data/<game>.json with a per-area "map" object and
      filters playable target cells to those visible on the in-game map.
 
+Run for one game with `python pipeline/extract_ingame_maps.py <game-id>`.
+
 Areas without an in-game image get a fallback map synthesized from the tile
-grid so the game stays playable. Landmark icons (station glyphs) are no
+grid so the game stays playable — but only if the area never had a real
+extraction; a missing image for a previously-extracted area aborts the game
+instead of silently downgrading it. Landmark icons (station glyphs) are no
 longer auto-detected — they are hand-placed via the in-app icon editor and
 stored in glyphs.<game>.json, which this script never touches.
 """
 import json
-from collections import deque
+import sys
 from pathlib import Path
 
 import numpy as np
 from PIL import Image
 
-ROOT = Path(__file__).resolve().parent.parent
+from maplib import (E, N, ROOT, S, W, align, apply_cell_overrides, components,
+                    close_perimeter, detect_phase, fallback_cells,
+                    find_ingame_image, load_map_overrides, mask, merge_cells)
+
 CELL = 8  # in-game map cell size in source pixels
 
 PINK = (216, 56, 144)
@@ -39,45 +49,6 @@ ANNOT_MAX_ENCLOSURE = 0.5
 # a diag-chain cell with at least this much pink is a real map tile; below it
 # is a corner sliver of the band that exists for display continuity only
 DIAG_SOLID_PX = 24
-
-N, E, S, W = 1, 2, 4, 8
-
-
-def mask(im: np.ndarray, color) -> np.ndarray:
-    return np.all(im == color, axis=2)
-
-
-def detect_phase(solid: np.ndarray) -> tuple[int, int]:
-    dx = np.abs(np.diff(solid.astype(int), axis=1)).sum(axis=0)
-    dy = np.abs(np.diff(solid.astype(int), axis=0)).sum(axis=1)
-    ox = int(np.argmax([dx[o::CELL].sum() for o in range(CELL)]))
-    oy = int(np.argmax([dy[o::CELL].sum() for o in range(CELL)]))
-    return (ox + 1) % CELL, (oy + 1) % CELL
-
-
-def components(m: np.ndarray, diagonal: bool = False):
-    """Connected components of a boolean mask -> list of pixel lists."""
-    seen = np.zeros_like(m, bool)
-    out = []
-    steps = [(-1, 0), (1, 0), (0, -1), (0, 1)]
-    if diagonal:
-        steps += [(-1, -1), (-1, 1), (1, -1), (1, 1)]
-    for sy, sx in zip(*np.nonzero(m)):
-        if seen[sy, sx]:
-            continue
-        q, comp = deque([(sy, sx)]), []
-        seen[sy, sx] = True
-        while q:
-            y, x = q.popleft()
-            comp.append((y, x))
-            for dy, dx in steps:
-                ny, nx = y + dy, x + dx
-                if 0 <= ny < m.shape[0] and 0 <= nx < m.shape[1] \
-                        and m[ny, nx] and not seen[ny, nx]:
-                    seen[ny, nx] = True
-                    q.append((ny, nx))
-        out.append(comp)
-    return out
 
 
 def erase_annotations(pink: np.ndarray, cyan: np.ndarray) -> int:
@@ -260,7 +231,7 @@ def extract_area(img_path: Path):
     ship = np.zeros_like(pink)
     for c in SHIP:
         ship |= mask(im, c)
-    ox, oy = detect_phase(pink | cyan)
+    ox, oy = detect_phase(pink | cyan, CELL)
     erased = erase_annotations(pink, cyan)
     cols, rows = (w - ox) // CELL, (h - oy) // CELL
 
@@ -341,133 +312,8 @@ def drop_label_text(cells: dict) -> int:
     return removed
 
 
-def close_perimeter(cells: dict) -> int:
-    """Wall off exterior room edges the cyan detector missed.
-
-    ``side_has_wall`` needs >=4 cyan px on a boundary, so a room whose source
-    outline is thin or anti-aliased can end up with an open side facing empty
-    space. Any room-cell side with no occupied neighbour is a map boundary and
-    must show a wall, so OR those bits in. Only adds walls on exterior sides —
-    never between two occupied cells, and never touches shaft/diag cells (which
-    render no walls). Returns the number of edges closed.
-    """
-    occ = set(cells)
-    added = 0
-    for (x, y), v in cells.items():
-        if v["kind"] != "room":
-            continue
-        for bit, nb in ((N, (x, y - 1)), (E, (x + 1, y)),
-                        (S, (x, y + 1)), (W, (x - 1, y))):
-            if nb not in occ and not (v["walls"] & bit):
-                v["walls"] |= bit
-                added += 1
-    return added
-
-
-def align(map_cells, mcols, mrows, tile_cells, tcols, trows):
-    occ = np.zeros((mrows, mcols), bool)
-    for (x, y) in map_cells:
-        occ[y, x] = True
-    ours = np.zeros((trows, tcols), bool)
-    for c in tile_cells:
-        ours[c["y"], c["x"]] = True
-    best = (-1, 0, 0)
-    for dy in range(-12, 21):
-        for dx in range(-12, 21):
-            s = 0
-            for (cy, cx) in zip(*np.nonzero(ours)):
-                my, mx = cy + dy, cx + dx
-                if 0 <= my < mrows and 0 <= mx < mcols and occ[my, mx]:
-                    s += 1
-            if s > best[0]:
-                best = (s, dx, dy)
-    return best[1], best[2], best[0]
-
-
-def load_map_overrides(game_id: str) -> dict:
-    """Hand-tuned map fixes the extractor can't reproduce, authored by hand in
-    mapOverrides.<game>.json and applied on top of extraction (never written by
-    this script — same convention as glyphs/overlays). Tile coordinates, keyed
-    by areaId:
-
-        { "<areaId>": { "cells": [{x, y, k, w, [d]}, ...],
-                        "bands": [{"poly": [[x, y], ...]}, ...] } }
-
-    ``cells`` upserts a cell's draw data by (x, y) — used to reclassify a room
-    as a stair (`diag`) or to draw rooms the pixel heuristics miss. ``bands``
-    replaces the area's whole band list (the auto-fitted stair polygons look
-    rough; these are drawn by hand). Both are applied after alignment, so they
-    are expressed in the same tile coordinates as everything else.
-    """
-    f = ROOT / "public" / "data" / f"mapOverrides.{game_id}.json"
-    return json.loads(f.read_text()) if f.exists() else {}
-
-
-def apply_cell_overrides(drawn: dict, ov: dict | None) -> int:
-    """Upsert hand-authored draw data into the tile-keyed grid."""
-    if not ov or "cells" not in ov:
-        return 0
-    for c in ov["cells"]:
-        v = {"kind": c["k"], "walls": c["w"]}
-        if "d" in c:
-            v["dir"] = c["d"]
-        drawn[(c["x"], c["y"])] = v
-    return len(ov["cells"])
-
-
-def merge_cells(tiles: list, drawn: dict) -> tuple[list, list]:
-    """Fold the extraction's draw data onto the sliced tile list.
-
-    One cell list per area, in tile coordinates. Every tile is a cell; a cell
-    that the pause map draws also carries `k`/`w`(/`d`), and one it doesn't —
-    an elevator shaft or tube run, whose rails are cyan-only and so never
-    become geometry — carries no draw data and simply isn't drawn. That's the
-    whole distinction: "what to draw, if anything". Whether a cell is *served*
-    as a target is difficulty's job, not this list's.
-
-    Returns (cells, undrawn_but_drawn_by_map): the second is cells the pause
-    map draws that have no tile behind them. That should always be empty — it
-    means the sliced map has a hole the pause map doesn't (a dark room under
-    the fill threshold, usually). They're kept so the map still renders, but
-    they'd be tile-less targets, so the caller warns: fix with `includeCells`.
-    """
-    have = {(c["x"], c["y"]) for c in tiles}
-    out = []
-    for c in tiles:
-        cell = {"x": c["x"], "y": c["y"]}
-        v = drawn.get((c["x"], c["y"]))
-        if v:
-            cell["k"] = v["kind"]
-            cell["w"] = v["walls"]
-            if "dir" in v:
-                cell["d"] = v["dir"]
-        out.append(cell)
-    tileless = sorted(set(drawn) - have)
-    for (x, y) in tileless:
-        v = drawn[(x, y)]
-        cell = {"x": x, "y": y, "k": v["kind"], "w": v["walls"]}
-        if "dir" in v:
-            cell["d"] = v["dir"]
-        out.append(cell)
-    out.sort(key=lambda c: (c["y"], c["x"]))  # row-major, matching slice_maps
-    return out, tileless
-
-
-def fallback_cells(area):
-    """No pause-map image: synthesize draw data from the tile grid itself."""
-    occ = {(c["x"], c["y"]) for c in area["cells"]}
-    cells = []
-    for (x, y) in sorted(occ, key=lambda t: (t[1], t[0])):
-        walls = 0
-        if (x, y - 1) not in occ: walls |= N
-        if (x + 1, y) not in occ: walls |= E
-        if (x, y + 1) not in occ: walls |= S
-        if (x - 1, y) not in occ: walls |= W
-        cells.append({"x": x, "y": y, "k": "room", "w": walls})
-    return cells
-
-
 def main() -> None:
+    only = sys.argv[1] if len(sys.argv) > 1 else None
     for data_file in sorted((ROOT / "public" / "data").glob("*.json")):
         data = json.loads(data_file.read_text())
         # Sidecar files (glyphs.*, overlays.*, difficulty.*, roomNames.*,
@@ -475,19 +321,37 @@ def main() -> None:
         # anything without a game file's top-level shape.
         if "game" not in data or "areas" not in data:
             continue
+        # GBA-style maps (Fusion, Zero Mission) belong to extract_gba_maps.py.
+        if data.get("mapStyle", "snes") != "snes":
+            continue
         game_id = data["game"]
+        if only and game_id != only:
+            continue
         overrides = load_map_overrides(game_id)
+        patched_areas = []
+        aborted = False
         for area in data["areas"]:
             ov = overrides.get(area["id"])
             # Only the coordinates matter here: re-running must ignore the draw
             # data a previous run folded in, and re-derive it from the image.
             tiles = [{"x": c["x"], "y": c["y"]} for c in area["cells"]]
-            img = ROOT / "Images" / "raw" / game_id / "ingame" / f"{area['id']}.webp"
-            if not img.exists():
-                area["cells"] = fallback_cells(area)
-                area["map"] = {"cols": area["cols"], "rows": area["rows"],
-                               "dx": 0, "dy": 0, "glyphs": [], "bands": [],
-                               "connectors": [], "source": "fallback"}
+            img = find_ingame_image(game_id, area["id"])
+            if img is None:
+                # Fallback is for areas that never had an in-game image; a
+                # previously-extracted area missing its image means the raw
+                # downloads are incomplete — never overwrite real data with
+                # the fallback grid.
+                if area.get("map", {}).get("source") == "ingame":
+                    print(f"  ERROR: {area['id']} was extracted from an in-game "
+                          f"image that is now missing - run download_maps.py; "
+                          f"skipping {game_id} entirely")
+                    aborted = True
+                    break
+                cells = fallback_cells(area)
+                mapobj = {"cols": area["cols"], "rows": area["rows"],
+                          "dx": 0, "dy": 0, "glyphs": [], "bands": [],
+                          "connectors": [], "source": "fallback"}
+                patched_areas.append((area, cells, mapobj, None))
                 print(f"  {area['id']}: no in-game image, using fallback grid")
                 continue
             cols, rows, cells, bands, erased = extract_area(img)
@@ -503,16 +367,17 @@ def main() -> None:
             overridden = apply_cell_overrides(drawn, ov)
             if ov and "bands" in ov:
                 bands = ov["bands"]  # hand-drawn stairs win over the auto-fit
-            area["cells"], tileless = merge_cells(tiles, drawn)
-            undrawn = sum(1 for c in area["cells"] if "k" not in c)
-            area["map"] = {
+            merged, tileless = merge_cells(tiles, drawn)
+            undrawn = sum(1 for c in merged if "k" not in c)
+            mapobj = {
                 "cols": cols, "rows": rows, "dx": dx, "dy": dy,
                 "glyphs": [],
                 "bands": bands,
                 "connectors": [],
                 "source": "ingame",
             }
-            print(f"  {area['id']}: {cols}x{rows} map, {len(area['cells'])} cells "
+            patched_areas.append((area, merged, mapobj, tileless))
+            print(f"  {area['id']}: {cols}x{rows} map, {len(merged)} cells "
                   f"({undrawn} undrawn), {len(bands)} bands, offset ({dx},{dy}), "
                   f"{matches} aligned, "
                   f"{erased} annotation px erased, {dropped_labels} label cells removed, "
@@ -522,6 +387,11 @@ def main() -> None:
                       f"have no tile behind them: {tileless}\n"
                       f"    They'd be tile-less targets — add them to includeCells "
                       f"in maps.config.json.")
+        if aborted:
+            continue
+        for area, cells, mapobj, _ in patched_areas:
+            area["cells"] = cells
+            area["map"] = mapobj
         # Indented so Prettier keeps objects expanded (one field per line) —
         # matches the committed formatting and gives clean per-coordinate diffs.
         # Still run `npm run format` afterward to normalise the rest.

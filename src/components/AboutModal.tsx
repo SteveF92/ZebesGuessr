@@ -35,8 +35,9 @@ export function AboutModal({ onClose }: { onClose: () => void }) {
         <h2>ABOUT ZEBESGUESSR</h2>
         <p>ZebesGuessr is GeoGuessr for 2D Metroid: you are shown a single screen from a game and your job is to identify where it is on a recreation of the in-game pause map.</p>
         <p>
-          The Super Metroid maps are by <strong>Rick Bruns</strong> (<a href="https://www.snesmaps.com">snesmaps.com</a>). Additional maps come from the <a href="https://www.vgmaps.com">VGMaps</a>{' '}
-          community.
+          The Super Metroid maps are by <strong>Rick Bruns</strong> (<a href="https://www.snesmaps.com">snesmaps.com</a>). The Metroid Fusion maps are by <strong>zerofighter</strong> and{' '}
+          <strong>rocktyt</strong>, with in-game map rips by <strong>Narasumas</strong>, all via <a href="https://www.vgmaps.com">VGMaps</a>. Additional maps come from the{' '}
+          <a href="https://www.vgmaps.com">VGMaps</a> community.
         </p>
         <p>
           Metroid and all game imagery are © Nintendo. This is a non-commercial fan project and is not affiliated with or endorsed by Nintendo. If you are a rights holder and want something removed,

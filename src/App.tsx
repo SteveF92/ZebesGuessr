@@ -505,7 +505,7 @@ export default function App() {
 
       <div className="panes">
         <section className="pane left">
-          <TileViewer tileUrl={tileUrl(data, target)} revealed={phase === 'reveal'} />
+          <TileViewer tileUrl={tileUrl(data, target)} revealed={phase === 'reveal'} aspect={data.cellWidth && data.cellHeight ? data.cellWidth / data.cellHeight : 1} />
 
           {phase === 'reveal' && result && (
             <div className="reveal-box">

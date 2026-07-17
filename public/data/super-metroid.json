@@ -1,6 +1,7 @@
 {
   "game": "super-metroid",
   "title": "Super Metroid",
+  "mapStyle": "snes",
   "cellSize": 256,
   "guessMapCellPx": 14,
   "areas": [

@@ -28,12 +28,13 @@ Run `npm run format` before every commit. This includes `public/data/*.json` —
 There is no lint setup. The map pipeline (Python, needs `pip install pillow numpy`) only matters when regenerating data — the repo ships with baked tiles/JSON:
 
 ```
-python pipeline/download_maps.py       # fetch source maps into Images/raw/ (gitignored)
-python pipeline/slice_maps.py          # slice 256px tiles, write base public/data/<game>.json
-python pipeline/extract_ingame_maps.py # patch that JSON with per-area "map" objects
+python pipeline/download_maps.py [game]       # fetch source maps into Images/raw/ (gitignored)
+python pipeline/slice_maps.py [game]          # slice per-screen tiles, write base public/data/<game>.json
+python pipeline/extract_ingame_maps.py [game] # patch that JSON with per-area "map" objects (mapStyle "snes")
+python pipeline/extract_gba_maps.py [game]    # same, for mapStyle "gba" (Metroid Fusion / Zero Mission)
 ```
 
-Order matters: `slice_maps.py` writes the base JSON (the tile list — one entry per sliced screen), `extract_ingame_maps.py` patches it in place (folds each cell's draw data onto that list and adds the `map` viewport). `pipeline/debug/` gets grid-overlay images for checking alignment; fix misalignment via per-area `offsetX`/`offsetY` in `pipeline/maps.config.json`.
+Order matters: `slice_maps.py` writes the base JSON (the tile list — one entry per sliced screen), the style-matching extractor patches it in place (folds each cell's draw data onto that list and adds the `map` viewport). `mapStyle` in `maps.config.json` (baked into the JSON) decides which extractor owns a game; each skips the other's, and shared plumbing lives in `pipeline/maplib.py`. Tiles are `cellSize` square (SNES, 256) or `cellWidth`×`cellHeight` (GBA, 240×160 — one screen per map cell). `pipeline/debug/` gets grid-overlay images for checking alignment; fix misalignment via per-area `offsetX`/`offsetY` in `pipeline/maps.config.json`. The whole play-through of adding a game is documented in `docs/adding-a-game.md`.
 
 The extractor never drops a cell. If the pause map draws something the sliced map has no tile for, it keeps it and prints a **WARNING** naming the cells — fix it by adding them to `includeCells` in `maps.config.json` (a dark room under `slice_maps.py`'s fill threshold, usually). It should always be zero; the old behaviour was to silently delete those targets, which cost a long line of "recover room X as a valid tile" commits.
 
@@ -45,7 +46,7 @@ The pipeline is reproducible: rerunning it (then `npm run format`) reproduces th
 
 `area.cells` is the single source of truth: **every cell of the area, drawn or not.** A cell carries optional draw data answering the only question the pause map adds — _what to draw, if anything_:
 
-- `k` (kind) + `w` (walls), plus `d` for stairs — the pause map charts this cell.
+- `k` (kind) + `w` (walls), plus `d` for stairs — the pause map charts this cell. GBA-style cells may also carry `f` (fill-variant index) and `dr` (door pips, side+color strings like `"Nr"`/`"En"`).
 - **no `k`** — it doesn't (elevator shafts and Maridia's tube runs, whose cyan-only rails are drawn as overlay `connectors` instead). Still a real tile, still pointable.
 
 Draw data is all-or-nothing, and `AreaCell`'s union type enforces it: `if (!c.k) return;` narrows `c.w` to a number. Whether a cell is _served_ as a target is difficulty's job (`EXCLUDED_RATING` = 6, never served) — not this list's. There is no "secret"/excluded cell flag; don't add one.
@@ -55,7 +56,7 @@ The pause-map canvas is bigger than the tile grid and has its own origin (Wrecke
 ## Architecture
 
 - `src/App.tsx` — the whole game flow as a phase state machine (`menu → loading → guessing → reveal → summary`). Game data is fetched at runtime from `public/data/<game>.json`.
-- `src/components/GuessMap.tsx` — canvas recreation of the SNES pause map (rooms, shafts, walls, diagonal stair bands, landmark glyphs). Also contains the icon editor.
+- `src/components/GuessMap.tsx` — canvas recreation of the in-game pause map (rooms, shafts, walls, diagonal stair bands, door pips, landmark glyphs), with a palette per `mapStyle` (`SNES_COL`/`GBA_COL`). Also contains the icon editor.
 - `src/components/TileViewer.tsx` — shows the mystery screen; difficulty crops via CSS scale.
 - `src/scoring.ts` — pure functions: distance, exponential score falloff, difficulty presets (`DIFFICULTIES`: crop tightness × score multiplier), rank names. Tune game feel here.
 - `src/data.ts` — data loading, target picking, URL helpers.

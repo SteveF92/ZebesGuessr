@@ -104,14 +104,9 @@ const S = 16;
  *  uniformly (cells, walls, glyphs, and the tile overlay together). */
 const SCALE = 2;
 
-// SNES pause-map palette
-const COL = {
-  bg: '#000000',
-  dot: '#40166e',
-  room: '#d83890',
-  wall: '#a0f8f8',
-  map: '#00f858',
-  ship: '#f88838',
+/* Marker colors (scan brackets, dot trail, target ring): shared visual
+ * language across games, so they live outside the per-style palettes. */
+const MARKERS = {
   hover: 'rgba(160, 248, 248, 0.6)',
   selected: '#ffd24d',
   item: '#f8f8f8',
@@ -123,6 +118,37 @@ const COL = {
   trailDot: '#f8e048',
   trailOutline: '#1a1400',
   targetRing: '#00f858'
+};
+
+// SNES pause-map palette (Super Metroid recreation style)
+const SNES_COL = {
+  bg: '#000000',
+  /** snes: the purple dot lattice; gba: the empty-cell square color */
+  dot: '#40166e',
+  room: '#d83890',
+  wall: '#a0f8f8',
+  map: '#00f858',
+  ship: '#f88838',
+  /** room-fill variants (`CellDraw.f` indexes this; [0] === room) */
+  fills: ['#d83890'],
+  /** door-pip colors by letter (`CellDraw.dr`; gba style only) */
+  doors: {} as Record<string, string>,
+  ...MARKERS
+};
+
+// GBA pause-map palette (Fusion tile-art style) — exact colors from the
+// source rips: navy lattice of empty squares, magenta/green room fills,
+// white walls, colored door pips.
+const GBA_COL: typeof SNES_COL = {
+  bg: '#000090', // lattice grid lines
+  dot: '#202048', // empty-cell square interiors
+  room: '#f800f8',
+  wall: '#f8f8f8',
+  map: '#20c068',
+  ship: '#f82048',
+  fills: ['#f800f8', '#20c068'],
+  doors: { r: '#f82048', y: '#f8f800', g: '#10f880', b: '#0000f8' },
+  ...MARKERS
 };
 
 const N = 1,
@@ -148,6 +174,8 @@ const TARGET_BLINK_MS = 350;
  * Samus' ship) — no environment art, knowledge only.
  */
 export default function GuessMap({ data, selected, onSelect, onHoverCell, onAreaChange, result, editing, showTiles }: Props) {
+  const mapStyle = data.mapStyle ?? 'snes';
+  const COL = mapStyle === 'gba' ? GBA_COL : SNES_COL;
   const [areaId, setAreaId] = useState(data.areas[0].id);
   const area = data.areas.find((a) => a.id === areaId)!;
 
@@ -526,13 +554,23 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
     const ctx = canvas.getContext('2d')!;
     ctx.setTransform(SCALE, 0, 0, SCALE, 0, 0); // 1 logical unit -> SCALE css px
 
-    // background: black with the purple dot lattice of the pause screen
+    // background: the pause screen's empty-space treatment. SNES draws a
+    // purple dot lattice on black; GBA draws a grid of dark squares on navy
+    // lines (1 source px of line = 2 logical px around each 8px cell).
     ctx.fillStyle = COL.bg;
     ctx.fillRect(0, 0, w, h);
     ctx.fillStyle = COL.dot;
-    for (let y = S / 4; y < h; y += S / 2) {
-      for (let x = S / 4; x < w; x += S / 2) {
-        ctx.fillRect(x, y, 2, 2);
+    if (mapStyle === 'gba') {
+      for (let cy = 0; cy < rows; cy++) {
+        for (let cx = 0; cx < cols; cx++) {
+          ctx.fillRect(cx * S + 2, cy * S + 2, S - 4, S - 4);
+        }
+      }
+    } else {
+      for (let y = S / 4; y < h; y += S / 2) {
+        for (let x = S / 4; x < w; x += S / 2) {
+          ctx.fillRect(x, y, 2, 2);
+        }
       }
     }
 
@@ -737,9 +775,10 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
       ctx.fillRect(x, y + S / 2 - 2, S, 4);
       return;
     }
-    ctx.fillStyle = COL.room;
+    const fill = COL.fills[c.f ?? 0] ?? COL.room;
+    ctx.fillStyle = fill;
     ctx.fillRect(x, y, S, S);
-    // cyan walls — skipping any edge a diagonal passage opens through (see
+    // walls — skipping any edge a diagonal passage opens through (see
     // openWalls): there the room flows straight into the stairs, no wall.
     const open = (dir: string) => openWalls.has(`${c.x},${c.y},${dir}`);
     ctx.fillStyle = COL.wall;
@@ -747,6 +786,18 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
     if (c.w & SO && !open('SO')) ctx.fillRect(x, y + S - 2, S, 2);
     if (c.w & W && !open('W')) ctx.fillRect(x, y, 2, S);
     if (c.w & E && !open('E')) ctx.fillRect(x + S - 2, y, 2, S);
+    // doors (gba style): a small gap in the wall — the room fill showing
+    // through for a normal hatch, the lock color for a colored one. 2 source
+    // px of gap = 4 logical px, centered on the wall segment.
+    if (c.dr) {
+      for (const p of c.dr) {
+        ctx.fillStyle = p[1] === 'n' ? fill : (COL.doors[p[1]] ?? COL.wall);
+        if (p[0] === 'N') ctx.fillRect(x + S / 2 - 2, y, 4, 2);
+        else if (p[0] === 'S') ctx.fillRect(x + S / 2 - 2, y + S - 2, 4, 2);
+        else if (p[0] === 'W') ctx.fillRect(x, y + S / 2 - 2, 2, 4);
+        else if (p[0] === 'E') ctx.fillRect(x + S - 2, y + S / 2 - 2, 2, 4);
+      }
+    }
   }
 
   function drawGlyph(ctx: CanvasRenderingContext2D, g: MapGlyph) {

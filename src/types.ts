@@ -7,6 +7,21 @@ export interface Cell {
 export type MapCellKind = 'room' | 'vshaft' | 'hshaft' | 'diag';
 
 /**
+ * Which pause-map art style a game uses — dispatches both the pipeline
+ * extractor and the GuessMap palette/renderer. 'snes' is the Super Metroid
+ * recreation style (pink rooms, cyan walls); 'gba' is the Fusion/Zero Mission
+ * tile-art style (navy lattice, magenta/green rooms, white walls, door pips).
+ */
+export type MapStyle = 'snes' | 'gba';
+
+/**
+ * A door pip on a cell border ('gba' style only): side letter + color letter,
+ * e.g. "Nr" = red door on the north wall. Sides N/E/S/W; colors r/y/g/b for
+ * locked/special hatches, "n" for a normal door (drawn as a gap in the wall).
+ */
+export type DoorPip = string;
+
+/**
  * One cell of an area — the single source of truth for "this screen exists".
  * Every cell has a tile PNG behind it and so can be a guess target; whether
  * it's actually served is difficulty's job (`EXCLUDED_RATING` = never), not
@@ -25,6 +40,10 @@ export interface CellDraw {
   w: number;
   /** diagonal direction for k==="diag": "/" (NE-SW) or "\\" (NW-SE) */
   d?: '/' | '\\';
+  /** fill-variant index into the game's fill palette ('gba' style; 0 = default, omitted) */
+  f?: number;
+  /** door pips on this cell's borders ('gba' style), e.g. ["Nr", "En"] */
+  dr?: DoorPip[];
 }
 
 /** Draw data is all-or-nothing, so `if (!c.k)` narrows `c.w` to a number. */
@@ -114,8 +133,13 @@ export interface AreaData {
 export interface GameData {
   game: string;
   title: string;
+  /** pause-map art style; absent = 'snes' */
+  mapStyle?: MapStyle;
   /** pixel size of one map cell in the source map */
   cellSize: number;
+  /** source-map cell dimensions when non-square (GBA: one 240×160 screen per cell) */
+  cellWidth?: number;
+  cellHeight?: number;
   /** px per cell in the downscaled guess-map image */
   guessMapCellPx: number;
   areas: AreaData[];
