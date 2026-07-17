@@ -122,7 +122,7 @@ const COL = {
   /* Zero Mission dot trail + Fusion target dot */
   trailDot: '#f8e048',
   trailOutline: '#1a1400',
-  targetRing: '#ff4444'
+  targetRing: '#00f858'
 };
 
 const N = 1,
@@ -627,7 +627,7 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
       ctx.fillStyle = COL.map;
       wedge(0);
       ctx.fillStyle = blink ? '#1a0a3c' : '#f8e048';
-      ctx.fillText(label, bx + pad, my + 0.5 * k);
+      ctx.fillText(label, bx + pad, my - 1 * k);
     };
 
     if (!result) {
