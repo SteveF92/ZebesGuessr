@@ -3,7 +3,7 @@ import type { Difficulty } from './scoring';
 import { maxForRating, scoreRank } from './scoring';
 
 /** Where a shared run points a curious friend. */
-export const GAME_URL = 'https://zebesguessr.com/';
+export const GAME_URL = 'https://www.zebesguessr.com/';
 
 /**
  * One emoji summarising how a round went, GeoGuessr/Wordle-style. Checked

@@ -62,7 +62,7 @@ Asset URLs must be prefixed with `import.meta.env.BASE_URL` — Vite `base` is `
 
 ## Hosting
 
-Static site on S3 + CloudFront in AWS account 433030147996, served at zebesguessr.com (www resolves to the same distribution). `infra/site.yml` is the CloudFormation template defining every piece of it — bucket, distribution, ACM cert, Route 53 records, and the IAM role GitHub assumes. It is the source of truth: change infrastructure by editing it and updating the stack, not by clicking in the console.
+Static site on S3 + CloudFront in AWS account 433030147996, served at **www.zebesguessr.com** — the canonical name. Both names point at the one distribution, and a CloudFront Function on viewer-request 301s the apex to www, preserving path and query string (`?seed=` links must survive it). Share links and anything else naming the site should use the www form. `infra/site.yml` is the CloudFormation template defining every piece of it — bucket, distribution, ACM cert, Route 53 records, and the IAM role GitHub assumes. It is the source of truth: change infrastructure by editing it and updating the stack, not by clicking in the console.
 
 `.github/workflows/deploy.yml` builds and deploys on push to main. It authenticates via GitHub's OIDC provider — there are no AWS keys in the repo's secrets, and the role's trust policy only accepts workflows running on `main` in this repo. The bucket name is hardcoded in the workflow's `env`; the distribution id and role ARN come from repo-level Actions **variables** (`CLOUDFRONT_DISTRIBUTION_ID`, `AWS_DEPLOY_ROLE_ARN`), which are stack outputs.
 
