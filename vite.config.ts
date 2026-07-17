@@ -46,9 +46,7 @@ function glyphSaver(): Plugin {
   };
 }
 
-// base is set for GitHub Pages project-site hosting (github.io/ZebesGuessr/).
-// Change or remove if hosting at a root domain.
 export default defineConfig({
   plugins: [react(), glyphSaver()],
-  base: '/ZebesGuessr/'
+  base: '/'
 });

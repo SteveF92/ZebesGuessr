@@ -2,8 +2,8 @@ import type { GameData, RoundResult } from './types';
 import type { Difficulty } from './scoring';
 import { maxForRating, scoreRank } from './scoring';
 
-/** Where a shared run points a curious friend. Matches the Vite `base` path. */
-export const GAME_URL = 'https://stevef92.github.io/ZebesGuessr/';
+/** Where a shared run points a curious friend. */
+export const GAME_URL = 'https://zebesguessr.com/';
 
 /**
  * One emoji summarising how a round went, GeoGuessr/Wordle-style. Checked

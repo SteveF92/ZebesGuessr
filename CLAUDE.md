@@ -58,7 +58,15 @@ The pause-map canvas is bigger than the tile grid and has its own origin (Wrecke
 - `src/scoring.ts` — pure functions: distance, exponential score falloff, difficulty presets (`DIFFICULTIES`: crop tightness × score multiplier), rank names. Tune game feel here.
 - `src/data.ts` — data loading, target picking, URL helpers.
 
-Asset URLs must be prefixed with `import.meta.env.BASE_URL` — Vite `base` is `/ZebesGuessr/` for GitHub Pages (deploys automatically on push to main via `.github/workflows/deploy.yml`).
+Asset URLs must be prefixed with `import.meta.env.BASE_URL` — Vite `base` is `/`, since the site is served at the root of zebesguessr.com.
+
+## Hosting
+
+Static site on S3 + CloudFront in AWS account 433030147996, served at zebesguessr.com (www resolves to the same distribution). `infra/site.yml` is the CloudFormation template defining every piece of it — bucket, distribution, ACM cert, Route 53 records, and the IAM role GitHub assumes. It is the source of truth: change infrastructure by editing it and updating the stack, not by clicking in the console.
+
+`.github/workflows/deploy.yml` builds and deploys on push to main. It authenticates via GitHub's OIDC provider — there are no AWS keys in the repo's secrets, and the role's trust policy only accepts workflows running on `main` in this repo. The bucket name is hardcoded in the workflow's `env`; the distribution id and role ARN come from repo-level Actions **variables** (`CLOUDFRONT_DISTRIBUTION_ID`, `AWS_DEPLOY_ROLE_ARN`), which are stack outputs.
+
+Cache headers are set per-path at upload time, and CloudFront honors them: hashed assets and baked tiles are `immutable` (one year), `data/*.json` gets 60 seconds, and `index.html` is `no-cache`. If you add a path that changes in place under a stable name, give it a short TTL or a deploy won't reach users.
 
 ## Hand-curated map overlays (glyphs, connectors, room names)
 
