@@ -416,8 +416,8 @@ export default function App() {
         <p className="summary-note">Tougher screens are worth more points. To get the best possible score, try "{DIFFICULTIES[DIFFICULTIES.length - 1].label}" mode.</p>
 
         <div className="summary-actions">
-          <button className="btn secondary share" onClick={() => setShowShare(true)}>
-            ⇪ SHARE
+          <button className="btn secondary share" onClick={() => setShowShare(true)} disabled={visorsUsed} title={visorsUsed ? 'Visors Used — Share Disabled' : undefined}>
+            {visorsUsed ? '⇪ VISORS USED — SHARE DISABLED' : '⇪ SHARE'}
           </button>
           {loadedSeed ? (
             <button className="btn primary" onClick={clearSeed}>

@@ -1051,6 +1051,20 @@ a:hover {
   color: var(--bg);
   background: var(--cyan);
 }
+.btn.secondary.share:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.btn.secondary.share:disabled:hover {
+  color: var(--cyan);
+  background: none;
+}
+/* Summary-screen secondary actions (Menu/About) shouldn't read as disabled
+   next to the dim-by-default .btn.secondary baseline. */
+.summary-actions .btn.secondary:not(.share) {
+  color: var(--text);
+  border-color: var(--line);
+}
 /* HUD tool buttons (Scan Visor / X-Ray Visor / Icons / Reload): matching
    SNES-bevel boxes seated to the left of the score readout. */
 .hud-tools {
