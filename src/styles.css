@@ -1484,7 +1484,7 @@ a:hover {
    waits for the traced line to reach the target (TRACE_MS in GuessMap);
    a wrong-area miss has no trace, so it hits immediately and harder. */
 .map-scroll.shake-far {
-  animation: zgShakeFar 0.4s ease-in-out 0.45s;
+  animation: zgShakeFar 0.4s ease-in-out 0.9s;
 }
 .map-scroll.shake-wrong {
   animation: zgShakeWrong 0.45s ease-in-out;

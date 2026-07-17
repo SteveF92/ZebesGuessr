@@ -133,9 +133,12 @@ const N = 1,
 /** Reveal lock-on timeline (ms): a same-area miss traces the guess→target
  *  dot trail first, then the target indicator lands and the ring pulse plays.
  *  An exact guess earns a second ring pulse, offset by RING2_DELAY. */
-const TRACE_MS = 450;
+const TRACE_MS = 900;
 const RING_MS = 650;
 const RING2_DELAY = 350;
+/** The map scan sweep's duration — keep in step with zgMapSweep in styles.css.
+ *  An exact hit holds its TARGET indicator until the sweep has passed. */
+const SWEEP_MS = 550;
 /** Fusion-style TARGET callout: palette flip cadence (runs while revealed). */
 const TARGET_BLINK_MS = 350;
 
@@ -350,9 +353,11 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
   // traced guess→target line, the target blink-in, and the ring pulse(s) —
   // all staged off this one clock inside draw().
   const [revealT, setRevealT] = useState(0);
-  // Same-area misses trace the line first; exact/cross-area lock on immediately.
-  const traceMs = result && isFinite(result.distance) && result.distance > 0 ? TRACE_MS : 0;
-  const revealTotal = traceMs + RING_MS + (result?.distance === 0 ? RING2_DELAY : 0);
+  // Lock-on delay before the TARGET indicator lands: same-area misses trace
+  // the trail first, exact hits let the scan sweep pass over the answer,
+  // cross-area reveals lock on immediately.
+  const lockMs = result ? (isFinite(result.distance) && result.distance > 0 ? TRACE_MS : result.distance === 0 ? SWEEP_MS : 0) : 0;
+  const revealTotal = lockMs + RING_MS + (result?.distance === 0 ? RING2_DELAY : 0);
   useEffect(() => {
     if (!result) {
       setRevealT(0);
@@ -384,6 +389,47 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
     raf = requestAnimationFrame(step);
     return () => cancelAnimationFrame(raf);
   }, [selected, result]);
+
+  // Small screens: when the reveal's target sits outside the current pan
+  // view (the player was zoomed in on their guess), follow the dot trail as
+  // it draws — keep the tip centered until lock-on, then hand control back.
+  const followTip = useRef(false);
+  useEffect(() => {
+    followTip.current = false;
+    if (!result || !panEnabled) return;
+    const el = scrollRef.current;
+    const v = viewRef.current;
+    if (!el || !v) return;
+    // only the same-area miss draws a trail; cross-area reveals refit anyway
+    if (!isFinite(result.distance) || result.distance <= 0 || result.guess.areaId !== result.target.areaId) return;
+    const { dx, dy } = area.map;
+    const sx = v.tx + (result.target.cell.x + dx + 0.5) * S * SCALE * v.z;
+    const sy = v.ty + (result.target.cell.y + dy + 0.5) * S * SCALE * v.z;
+    const m = 12; // nearly-offscreen counts as hidden
+    followTip.current = sx < m || sx > el.clientWidth - m || sy < m || sy > el.clientHeight - m;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [result, panEnabled]);
+  useEffect(() => {
+    if (!followTip.current || !result || !panEnabled) return;
+    const el = scrollRef.current;
+    if (!el) return;
+    const vw = el.clientWidth,
+      vh = el.clientHeight;
+    if (!vw || !vh) return;
+    // mirror the trail's easing so the view tracks the drawn tip exactly
+    const p = lockMs > 0 ? Math.min(1, revealT / lockMs) : 1;
+    const e = 1 - Math.pow(1 - p, 3);
+    const { dx, dy } = area.map;
+    const gx = (result.guess.cell.x + dx + 0.5) * S * SCALE;
+    const gy = (result.guess.cell.y + dy + 0.5) * S * SCALE;
+    const tx = (result.target.cell.x + dx + 0.5) * S * SCALE;
+    const ty = (result.target.cell.y + dy + 0.5) * S * SCALE;
+    const tipX = gx + (tx - gx) * e;
+    const tipY = gy + (ty - gy) * e;
+    setView((v) => (v ? clampView({ z: v.z, tx: vw / 2 - tipX * v.z, ty: vh / 2 - tipY * v.z }, vw, vh) : v));
+    if (p >= 1) followTip.current = false;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [revealT, result, panEnabled]);
 
   // Fusion-style TARGET callout: flips its palette on a slow interval for as
   // long as the reveal is up (a 3fps repaint, not a rAF loop). Reduced motion
@@ -447,7 +493,7 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
     const cv = canvasRef.current;
     const sc = scrollRef.current;
     if (!cv || !sc || !result || result.target.areaId !== area.id) return null;
-    if (revealT < traceMs) return null;
+    if (revealT < lockMs) return null;
     const cr = cv.getBoundingClientRect();
     const sr = sc.getBoundingClientRect();
     if (cr.width === 0 || sr.width === 0) return null;
@@ -612,10 +658,10 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
         ring(selected.cell, selectPulse, COL.scan);
       }
     } else {
-      const lockT = revealT - traceMs; // ms since the target lock-on began
+      const lockT = revealT - lockMs; // ms since the target lock-on began
       if (result.guess.areaId === area.id) brackets(result.guess.cell, COL.scan, 3, COL.scanOutline);
       if (result.guess.areaId === area.id && result.target.areaId === area.id && result.distance > 0) {
-        const p = traceMs > 0 ? Math.min(1, revealT / traceMs) : 1;
+        const p = lockMs > 0 ? Math.min(1, revealT / lockMs) : 1;
         const e = 1 - Math.pow(1 - p, 3);
         dotTrail((result.guess.cell.x + 0.5) * S, (result.guess.cell.y + 0.5) * S, (result.target.cell.x + 0.5) * S, (result.target.cell.y + 0.5) * S, e);
       }
