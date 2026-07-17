@@ -434,6 +434,39 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
 
   useEffect(draw); // repaint on every state change; canvas is small
 
+  /**
+   * Anchor for the DOM TARGET callout, in map-scroll content coordinates
+   * (rect-based, so pan/zoom transforms and fitted scaling are handled for
+   * free). Sits opposite the incoming dot trail so the two never overlap;
+   * defaults left (Fusion style) on wrong-area reveals; flips when the
+   * viewport edge would cut it off. Null while the trail is still tracing or
+   * the target's area isn't on screen. Re-measured every render — the blink
+   * interval keeps that fresh through resizes while the callout is up.
+   */
+  function calloutPos(): { x: number; y: number; right: boolean } | null {
+    const cv = canvasRef.current;
+    const sc = scrollRef.current;
+    if (!cv || !sc || !result || result.target.areaId !== area.id) return null;
+    if (revealT < traceMs) return null;
+    const cr = cv.getBoundingClientRect();
+    const sr = sc.getBoundingClientRect();
+    if (cr.width === 0 || sr.width === 0) return null;
+    const { cols, rows, dx, dy } = area.map;
+    const ax = cr.left - sr.left + sc.scrollLeft + ((result.target.cell.x + dx + 0.5) / cols) * cr.width;
+    const ay = cr.top - sr.top + sc.scrollTop + ((result.target.cell.y + dy + 0.5) / rows) * cr.height;
+    const gap = (8 / (cols * S)) * cr.width + 10; // clear the dashed ring + tail
+    const estW = 84; // label + frame + tail estimate, for edge flipping
+    const hasTrail = isFinite(result.distance) && result.distance > 0 && result.guess.areaId === result.target.areaId;
+    let right = hasTrail ? result.guess.cell.x <= result.target.cell.x : false;
+    const lo = sc.scrollLeft;
+    const hi = sc.scrollLeft + sr.width;
+    if (right && ax + gap + estW > hi && ax - gap - estW >= lo) right = false;
+    if (!right && ax - gap - estW < lo && ax + gap + estW <= hi) right = true;
+    const y = Math.max(sc.scrollTop + 16, Math.min(sc.scrollTop + sr.height - 16, ay));
+    return { x: right ? ax + gap : ax - gap, y, right };
+  }
+  const callout = calloutPos();
+
   function draw() {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -567,67 +600,9 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
       ringDash(COL.targetRing, 1.5);
       ctx.setLineDash([]);
       ctx.lineDashOffset = 0;
-
-      // The callout box, framed and palette-flipped like Fusion's: dark navy
-      // outline, mint-green frame, then purple/dark-navy ↔ dark/yellow.
-      // `k` scales the whole callout up when the canvas is displayed small
-      // (phones, shrunken windows) so the label stays ~12 css px on screen.
-      const cssPerUnit = (canvas.getBoundingClientRect().width || w) / w;
-      const k = Math.min(2.5, Math.max(1, 12 / (8 * cssPerUnit)));
-      const label = 'TARGET';
-      ctx.font = `${8 * k}px 'Super Metroid Large Alt', 'Press Start 2P', monospace`;
-      ctx.textAlign = 'left';
-      ctx.textBaseline = 'middle';
-      const pad = 4 * k;
-      const bw = ctx.measureText(label).width + pad * 2;
-      const bh = 13 * k;
-      const frame = 1.5 * k; // green frame thickness
-      const line = 1.5 * k; // dark outline thickness
-      const tail = 5 * k;
-      const gap = 9; // tail tip sits just off the dashed ring
-      const ext = frame + line; // how far the frame + outline extend past the fill
-      // Side pick: sit opposite the incoming dot trail so the two never
-      // overlap; without a trail (wrong-area reveal) default left, Fusion
-      // style. Either way flip if the canvas edge would cut the box off
-      // (tile space: the canvas spans -dx .. cols-dx).
-      const hasTrail = result && isFinite(result.distance) && result.distance > 0 && result.guess.areaId === result.target.areaId;
-      const fitsLeft = cx - gap - tail - bw - ext >= -dx * S + 1;
-      const fitsRight = cx + gap + tail + bw + ext <= (cols - dx) * S - 1;
-      let right = hasTrail ? result.guess.cell.x <= tile.x : false;
-      if (right && !fitsRight && fitsLeft) right = false;
-      if (!right && !fitsLeft && fitsRight) right = true;
-      const bx = right ? cx + gap + tail : cx - gap - tail - bw;
-      const by = Math.max(-dy * S + ext + 1, Math.min((rows - dy) * S - bh - ext - 1, cy - bh / 2));
-      const my = by + bh / 2; // tail meets the box at its vertical middle
-      // nested fills: dark outline, green frame, then the blinking face
-      ctx.fillStyle = '#0a1420';
-      ctx.fillRect(bx - ext, by - ext, bw + ext * 2, bh + ext * 2);
-      ctx.fillStyle = COL.map;
-      ctx.fillRect(bx - frame, by - frame, bw + frame * 2, bh + frame * 2);
-      ctx.fillStyle = blink ? '#8a3ff0' : '#2a2a33';
-      ctx.fillRect(bx, by, bw, bh);
-      // tail: green wedge with the dark outline, pointing at the dot
-      const tw = 4 * k; // half-height of the tail at the box edge
-      const wedge = (grow: number) => {
-        ctx.beginPath();
-        if (right) {
-          ctx.moveTo(bx - frame, my - tw - grow);
-          ctx.lineTo(bx - frame - tail - grow, my);
-          ctx.lineTo(bx - frame, my + tw + grow);
-        } else {
-          ctx.moveTo(bx + bw + frame, my - tw - grow);
-          ctx.lineTo(bx + bw + frame + tail + grow, my);
-          ctx.lineTo(bx + bw + frame, my + tw + grow);
-        }
-        ctx.closePath();
-        ctx.fill();
-      };
-      ctx.fillStyle = '#0a1420';
-      wedge(line + 0.5);
-      ctx.fillStyle = COL.map;
-      wedge(0);
-      ctx.fillStyle = blink ? '#1a0a3c' : '#f8e048';
-      ctx.fillText(label, bx + pad, my - 1 * k);
+      // The TARGET callout itself is a DOM overlay (see calloutPos) — canvas
+      // text turns to mush when the canvas is displayed far below its backing
+      // resolution, while DOM text rasterizes at screen resolution.
     };
 
     if (!result) {
@@ -1345,6 +1320,11 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
       )}
       <div className={`map-scroll${panEnabled ? ' pan' : ''}${result ? (!isFinite(result.distance) ? ' shake-wrong' : result.distance >= 10 ? ' shake-far' : '') : ''}`} ref={scrollRef}>
         {result && <div className="map-scan-sweep" aria-hidden="true" />}
+        {callout && (
+          <div className={`target-callout${targetBlink ? ' alt' : ''}${callout.right ? ' right' : ''}`} style={{ left: callout.x, top: callout.y }} aria-hidden="true">
+            TARGET
+          </div>
+        )}
         <canvas
           ref={canvasRef}
           className={`map-canvas${editing ? ' editing' : ''}${panEnabled ? ' pan' : ''}`}

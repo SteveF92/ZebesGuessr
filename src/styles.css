@@ -1430,6 +1430,56 @@ a:hover {
   }
 }
 
+/* Fusion-style TARGET callout. DOM (not canvas) so the pixel font stays
+   crisp at every map scale — GuessMap positions it in map-scroll content
+   coordinates next to the target dot. Palette flips via the .alt class on
+   the map's blink cadence: dark/yellow ↔ purple/navy inside a green frame
+   with a dark outline. */
+.target-callout {
+  position: absolute;
+  transform: translate(-100%, -50%);
+  z-index: 6;
+  pointer-events: none;
+  font-family: var(--font-display);
+  font-size: 14px;
+  line-height: 1;
+  letter-spacing: 0.06em;
+  padding: 4px 7px 5px;
+  color: #f8e048;
+  background: #2a2a33;
+  border: 2px solid #00f858;
+  box-shadow: 0 0 0 2px #0a1420;
+}
+.target-callout.alt {
+  background: #8a3ff0;
+  color: #1a0a3c;
+}
+.target-callout.right {
+  transform: translate(0, -50%);
+}
+/* the wedge tail, pointing at the target dot */
+.target-callout::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 100%;
+  margin-left: 2px;
+  transform: translateY(-50%);
+  border: 6px solid transparent;
+  border-right-width: 0;
+  border-left: 8px solid #00f858;
+  filter: drop-shadow(2px 0 0 #0a1420) drop-shadow(0 -1px 0 #0a1420) drop-shadow(0 1px 0 #0a1420);
+}
+.target-callout.right::after {
+  left: auto;
+  right: 100%;
+  margin-left: 0;
+  margin-right: 2px;
+  border-left-width: 0;
+  border-right: 8px solid #00f858;
+  filter: drop-shadow(-2px 0 0 #0a1420) drop-shadow(0 -1px 0 #0a1420) drop-shadow(0 1px 0 #0a1420);
+}
+
 /* Bad-guess feedback: the map rattles when the reveal lands. `shake-far`
    waits for the traced line to reach the target (TRACE_MS in GuessMap);
    a wrong-area miss has no trace, so it hits immediately and harder. */
