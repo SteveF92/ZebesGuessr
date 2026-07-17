@@ -11,14 +11,6 @@ Parameters:
   HostedZoneId:
     Type: String
     Default: Z02128332WRM7WRTUEBHR
-  GitHubRepo:
-    Type: String
-    Default: SteveF92/ZebesGuessr
-    Description: >
-      owner/repo allowed to assume the deploy role. Must match GitHub's
-      canonical casing exactly — the OIDC `sub` claim uses it verbatim and the
-      trust policy compares with case-sensitive StringEquals. The clone URL is
-      not a reliable source; `gh repo view --json nameWithOwner` is.
 
 Resources:
   # Private bucket. No public access, no S3 website hosting — CloudFront is the
@@ -152,6 +144,15 @@ Resources:
   # GitHub Actions assumes this by presenting a signed OIDC token. The `sub`
   # condition is the security boundary: only a workflow running on main in this
   # repo matches. Without it, any repo on GitHub could assume the role.
+  #
+  # The repo name is spelled out rather than parameterised: it is never a
+  # per-deploy choice, and it must carry GitHub's canonical casing verbatim —
+  # the OIDC claim uses that exact spelling and IAM compares it with
+  # case-sensitive StringEquals. Confirm it against the API
+  # (`gh repo view --json nameWithOwner`), never the clone URL, which GitHub
+  # resolves case-insensitively and which is therefore not authoritative.
+  # Renaming the repo, the owner, or the default branch invalidates this and
+  # every deploy fails with "Not authorized to perform sts:AssumeRoleWithWebIdentity".
   DeployRole:
     Type: AWS::IAM::Role
     Properties:
@@ -166,7 +167,7 @@ Resources:
             Condition:
               StringEquals:
                 token.actions.githubusercontent.com:aud: sts.amazonaws.com
-                token.actions.githubusercontent.com:sub: !Sub 'repo:${GitHubRepo}:ref:refs/heads/main'
+                token.actions.githubusercontent.com:sub: 'repo:SteveF92/ZebesGuessr:ref:refs/heads/main'
       Policies:
         - PolicyName: deploy
           PolicyDocument:
