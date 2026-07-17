@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
+  DEFAULT_DIFFICULTY,
   DEFAULT_RATING,
   DIFFICULTIES,
   MAX_SCORE,
-  ROUNDS_PER_RUN,
   UNLOCK_CREATE,
   UNLOCK_SCAN,
   UNLOCK_XRAY,
@@ -108,32 +108,39 @@ describe('scoreRound', () => {
 });
 
 describe('scoreRank', () => {
-  const max = MAX_SCORE * ROUNDS_PER_RUN;
-
+  // Each tier's threshold and the score one point below it, so a retune of
+  // the RANKS ladder in scoring.ts must be mirrored here deliberately.
   it.each([
-    [1.0, 'Galactic Cartographer'],
-    [0.95, 'Galactic Cartographer'],
-    [0.94, 'Chozo Scholar'],
-    [0.8, 'Chozo Scholar'],
-    [0.79, 'Seasoned Bounty Hunter'],
-    [0.6, 'Seasoned Bounty Hunter'],
-    [0.59, 'Rookie Explorer'],
-    [0.4, 'Rookie Explorer'],
-    [0.39, 'Lost in Maridia'],
-    [0.2, 'Lost in Maridia'],
-    [0.19, 'Space Pirate Cannon Fodder'],
-    [0, 'Space Pirate Cannon Fodder']
-  ])('%f of max total is ranked %s', (fraction, rank) => {
-    expect(scoreRank(max * fraction)).toBe(rank);
+    [25000, 'Galactic Cartographer'],
+    [23000, 'Galactic Cartographer'],
+    [22999, 'Chozo Scholar'],
+    [19000, 'Chozo Scholar'],
+    [18999, 'Seasoned Bounty Hunter'],
+    [15000, 'Seasoned Bounty Hunter'],
+    [14999, 'Federation Scout'],
+    [10000, 'Federation Scout'],
+    [9999, 'Unreliable Navigator'],
+    [5000, 'Unreliable Navigator'],
+    [4999, 'Hint System Candidate'],
+    [0, 'Hint System Candidate']
+  ])('a run total of %i is ranked %s', (total, rank) => {
+    expect(scoreRank(total)).toBe(rank);
   });
 });
 
 describe('DIFFICULTIES', () => {
-  it("every tier's band includes the default rating, so unrated data plays on any tier", () => {
+  it('keeps every band inside the 1–5 rating scale', () => {
     for (const diff of DIFFICULTIES) {
-      expect(diff.min).toBeLessThanOrEqual(DEFAULT_RATING);
-      expect(diff.max).toBeGreaterThanOrEqual(DEFAULT_RATING);
+      expect(diff.min).toBeGreaterThanOrEqual(1);
+      expect(diff.max).toBeLessThanOrEqual(5);
+      expect(diff.min).toBeLessThanOrEqual(diff.max);
     }
+  });
+
+  it("the default tier's band includes the default rating, so unrated data plays there", () => {
+    const def = getDifficulty(DEFAULT_DIFFICULTY);
+    expect(def.min).toBeLessThanOrEqual(DEFAULT_RATING);
+    expect(def.max).toBeGreaterThanOrEqual(DEFAULT_RATING);
   });
 });
 
@@ -184,7 +191,7 @@ describe('getDifficulty', () => {
     }
   });
 
-  it('falls back to Bounty Hunter for null or unknown ids', () => {
+  it('falls back to Brinstar for null or unknown ids', () => {
     expect(getDifficulty(null)).toBe(DIFFICULTIES[1]);
     expect(getDifficulty('nonsense')).toBe(DIFFICULTIES[1]);
   });

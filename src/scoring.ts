@@ -6,8 +6,10 @@ export const ROUNDS_PER_RUN = 5;
 /**
  * Difficulty presets — tweak these freely to find the right feel.
  * Each tier draws round targets from a band of per-tile ratings
- * (1 = unmissable landmark … 5 = anonymous corridor). All bands include
- * the default rating (3), so unrated data behaves the same on every tier.
+ * (1 = unmissable landmark … 5 = anonymous corridor). Bands may exclude the
+ * default rating (3): unrated data always plays on the default tier
+ * (brinstar), and a tier whose band holds too few cells falls back to the
+ * full pool (see pickTargets).
  * `hint`: short blurb shown under the label on the menu.
  */
 export interface Difficulty {
@@ -125,7 +127,7 @@ export interface Rank {
 /**
  * The rank ladder, high → low. The three rank-aligned unlocks make the rank
  * name double as the unlock notice: Scan = Seasoned Bounty Hunter (15,000),
- * X-Ray = Chozo Scholar (20,000), Create Seed = Galactic Cartographer (23,750).
+ * X-Ray = Chozo Scholar (19,000), Create Seed = Galactic Cartographer (23,000).
  * Because `best` only ratchets up and cheats are permanent, unlocks are
  * monotonic — nothing ever re-locks. Runs played with a visor active don't set
  * a PB (see App's visor-taint guard), so the ladder can't be cheesed by the
@@ -171,8 +173,8 @@ function unlockThreshold(k: keyof Unlocks): number {
 }
 
 export const UNLOCK_SCAN = unlockThreshold('scan'); // 15,000 — Seasoned Bounty Hunter
-export const UNLOCK_XRAY = unlockThreshold('xray'); // 20,000 — Chozo Scholar
-export const UNLOCK_CREATE = unlockThreshold('create'); // 23,750 — Galactic Cartographer
+export const UNLOCK_XRAY = unlockThreshold('xray'); // 19,000 — Chozo Scholar
+export const UNLOCK_CREATE = unlockThreshold('create'); // 23,000 — Galactic Cartographer
 
 /** Derive what's unlocked from the sticky PB plus the two cheat flags.
  *  JUSTIN BAILEY grants both visors; NARPAS SWORD grants Create Seed. */
