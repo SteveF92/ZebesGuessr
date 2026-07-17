@@ -33,7 +33,7 @@ export function AboutModal({ onClose }: { onClose: () => void }) {
           ✕
         </button>
         <h2>ABOUT ZEBESGUESSR</h2>
-        <p>ZebesGuessr is GeoGuessr for 2D Metroid: you are shown a single screen from a game and your job is to identify where it found on the in game map.</p>
+        <p>ZebesGuessr is GeoGuessr for 2D Metroid: you are shown a single screen from a game and your job is to identify where it is on a recreation of the in-game pause map.</p>
         <p>
           The Super Metroid maps are by <strong>Rick Bruns</strong> (<a href="https://www.snesmaps.com">snesmaps.com</a>). Additional maps come from the <a href="https://www.vgmaps.com">VGMaps</a>{' '}
           community.
@@ -47,10 +47,13 @@ export function AboutModal({ onClose }: { onClose: () => void }) {
           <a href="https://fontstruct.com/fontstructions/show/2383815/super-metroid-large-alt-snes">Super Metroid (Large Alt)</a> by Patrick H. Lauke (CC BY 3.0), both via FontStruct.
         </p>
         <p>
-          Made by Steve Fallon, who also builds <a href="https://www.fantasycritic.games">Fantasy Critic</a> - "Fantasy Football for Video Games". The code for this site is available on{' '}
+          Made by Steve Fallon, who also builds <a href="https://www.fantasycritic.games">Fantasy Critic</a> — "Fantasy Football for Video Games". The code for this site is available on{' '}
           <a href="https://github.com/SteveF92/zebesguessr">Github</a>.
         </p>
-        <p>I built this because (A), I'm a huge Metroid fan and I thought it would be neat; and (B) I wanted to experiment with Claude Code. I'm not hiding it, it was immensely useful for a project like this!</p>
+        <p>
+          I built this because (A), I'm a huge Metroid fan and I thought it would be neat; and (B) I wanted to experiment with Claude Code. I'm not hiding it, it was immensely useful for a project
+          like this!
+        </p>
       </div>
     </div>
   );

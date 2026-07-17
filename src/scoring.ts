@@ -145,7 +145,7 @@ export const RANKS: Rank[] = [
     flavor: 'Your tracking skills would be highly sought after across the Federation.',
     unlocks: ['scan']
   },
-  { minScore: 10000, name: 'Federation Scout', flavor: 'Your scan reports show promise, despite occasional coordinate drift.' },
+  { minScore: 10000, name: 'Federation Scout', flavor: 'Your scan reports show promise. Your coordinates show drift.' },
   { minScore: 5000, name: 'Unreliable Navigator', flavor: 'You detected the signal. Pinpointing it remains a challenge.' },
   { minScore: 0, name: 'Hint System Candidate', flavor: 'Automated guidance would improve your odds considerably.' }
 ];

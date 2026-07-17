@@ -391,7 +391,7 @@ export default function App() {
         <BackdropFX phase={phase} />
         <div className="debrief-grid">
           <div className="debrief-hero">
-            <h1 className="debrief-kicker">MISSION FINAL</h1>
+            <h1 className="debrief-title">MISSION FINAL</h1>
             <p className="total">
               {shownTotal.toLocaleString()} <span className="max">/ {maxTotal.toLocaleString()}</span>
             </p>
@@ -448,7 +448,7 @@ export default function App() {
           </ol>
         </div>
 
-        <p className="summary-note">Tougher screens are worth more points. To get the best possible score, try "Sanctuary Fortress" mode.</p>
+        <p className="summary-note">Tougher screens are worth more points. To get the best possible score, try "{DIFFICULTIES[DIFFICULTIES.length - 1].label}" mode.</p>
 
         <div className="summary-actions">
           <button className="btn secondary share" onClick={onCopyText}>

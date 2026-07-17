@@ -1442,6 +1442,12 @@ a:hover {
    ============================================================ */
 .debrief-kicker {
   font-family: var(--font-display);
+  font-size: 14px;
+  letter-spacing: 0.34em;
+  color: var(--cyan);
+}
+.debrief-title {
+  font-family: var(--font-display);
   font-size: 55px;
   letter-spacing: 0.34em;
   color: var(--cyan);
