@@ -97,8 +97,7 @@ export function CreateSeed({ data, gameId, onExit, onPlay }: Props) {
     return (
       <div className="shell menu summary">
         <div className="debrief-hero create-done">
-          <p className="debrief-kicker">◇ SEED FORGED ◇</p>
-          <h1 className="logo">READY TO SHARE</h1>
+          <h1 className="debrief-title">SEED FORGED</h1>
           <p className="create-done-sub">Five screens locked in. Send this seed to a friend — they'll get your exact run.</p>
           <p className="seed-line big">{done.code}</p>
 
