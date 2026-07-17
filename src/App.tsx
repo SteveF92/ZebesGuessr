@@ -20,8 +20,7 @@ const UNLOCK_LABELS: Record<keyof Unlocks, string> = {
   create: 'Create Seed'
 };
 const UNLOCK_ORDER: (keyof Unlocks)[] = ['enterSeed', 'scan', 'xray', 'create'];
-import { GAME_URL, buildShareText } from './share';
-import { buildShareImage, downloadBlob } from './shareImage';
+import { ShareModal } from './components/ShareModal';
 import { type Seed, decodeSeed, encodeSeed } from './seed';
 import type { Cell, GameData, RoundResult, RoundTarget } from './types';
 
@@ -84,8 +83,7 @@ export default function App() {
   // Latches true the moment a visor is switched on during a run, so the run
   // can't set a personal best. Reset at the start of each run.
   const [visorsUsed, setVisorsUsed] = useState(false);
-  const [copyState, setCopyState] = useState<'idle' | 'copied' | 'error'>('idle');
-  const [imgState, setImgState] = useState<'idle' | 'saved' | 'error'>('idle');
+  const [showShare, setShowShare] = useState(false);
   // Features whose gate this run just crossed — drives the Prime-style acquired
   // banner on the summary. Populated once when we bump the PB; cleared per run.
   const [justUnlocked, setJustUnlocked] = useState<(keyof Unlocks)[]>([]);
@@ -193,43 +191,6 @@ export default function App() {
     window.history.replaceState({}, '', window.location.pathname);
     setLoadedSeed(null);
     setPhase('menu');
-  }
-
-  async function onCopyText() {
-    if (!data) return;
-    const url = activeSeedCode ? `${GAME_URL}?seed=${activeSeedCode}` : GAME_URL;
-    const text = buildShareText(data, results, total, difficulty, url);
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopyState('copied');
-    } catch {
-      setCopyState('error'); // clipboard blocked (denied permission / insecure context)
-    }
-    setTimeout(() => setCopyState('idle'), 2000);
-  }
-
-  async function onShareImage() {
-    if (!data) return;
-    const maxTotal = results.reduce((s, r) => s + maxForRating(r.rating), 0);
-    const blob = await buildShareImage({ data, results, total, maxTotal, difficulty, seedCode: activeSeedCode ?? undefined });
-    if (!blob) {
-      setImgState('error');
-      setTimeout(() => setImgState('idle'), 2000);
-      return;
-    }
-    const file = new File([blob], 'zebesguessr.png', { type: 'image/png' });
-    try {
-      if (navigator.canShare?.({ files: [file] }) && navigator.share) {
-        await navigator.share({ files: [file], url: GAME_URL });
-        return; // OS share sheet handled it — no toast needed
-      }
-      downloadBlob(blob, 'zebesguessr.png'); // no share sheet → save the PNG
-    } catch (e) {
-      if (e instanceof DOMException && e.name === 'AbortError') return; // user cancelled the sheet
-      downloadBlob(blob, 'zebesguessr.png'); // share failed → fall back to a download
-    }
-    setImgState('saved');
-    setTimeout(() => setImgState('idle'), 2000);
   }
 
   const canSubmit = !!selected && (!viewingAreaId || selected.areaId === viewingAreaId);
@@ -455,11 +416,8 @@ export default function App() {
         <p className="summary-note">Tougher screens are worth more points. To get the best possible score, try "{DIFFICULTIES[DIFFICULTIES.length - 1].label}" mode.</p>
 
         <div className="summary-actions">
-          <button className="btn secondary share" onClick={onCopyText}>
-            {copyState === 'copied' ? '✓ COPIED' : copyState === 'error' ? '✗ TRY AGAIN' : '⎘ COPY TEXT'}
-          </button>
-          <button className="btn secondary share" onClick={onShareImage}>
-            {imgState === 'saved' ? '✓ SAVED' : imgState === 'error' ? '✗ TRY AGAIN' : '⇪ SHARE IMAGE'}
+          <button className="btn secondary share" onClick={() => setShowShare(true)}>
+            ⇪ SHARE
           </button>
           {loadedSeed ? (
             <button className="btn primary" onClick={clearSeed}>
@@ -481,6 +439,7 @@ export default function App() {
         </div>
         <Credits onAbout={() => setShowAbout(true)} />
         {showAbout && <AboutModal onClose={() => setShowAbout(false)} />}
+        {showShare && <ShareModal data={data} results={results} total={total} difficulty={difficulty} seedCode={activeSeedCode} onClose={() => setShowShare(false)} />}
       </div>
     );
   }

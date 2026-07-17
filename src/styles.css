@@ -573,6 +573,75 @@ a:hover {
 .modal-close:hover {
   color: var(--cyan);
 }
+/* ---- Share (image scorecard on top, text blurb below) ---- */
+.share-modal {
+  max-width: 500px;
+  text-align: center;
+}
+.share-modal h2 {
+  text-align: center;
+}
+.share-preview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* The scorecard is tall; cap it so the copy/share buttons stay in view. */
+  max-height: 46vh;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg);
+}
+.share-preview img {
+  max-width: 100%;
+  max-height: calc(46vh - 20px);
+  border-radius: 4px;
+  object-fit: contain;
+}
+.share-preview-empty {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  color: var(--dim);
+  padding: 60px 0;
+}
+.share-actions {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 12px;
+}
+.share-actions .btn.secondary {
+  padding: 11px 18px;
+  font-size: 14px;
+}
+.share-actions .btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.share-actions .btn.secondary.share:disabled:hover {
+  color: var(--cyan);
+  background: none;
+}
+.share-sep {
+  height: 1px;
+  margin: 20px 0;
+  background: var(--line);
+}
+.share-text {
+  margin: 0;
+  padding: 14px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.7;
+  text-align: center;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg);
+}
 /* ---- Seed Entry (NES password-screen flavored) ---- */
 .seed-modal {
   max-width: 468px;
