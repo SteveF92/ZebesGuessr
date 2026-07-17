@@ -138,16 +138,16 @@ export const RANKS: Rank[] = [
     flavor: 'The whole planet is mapped behind your visor.',
     unlocks: ['create']
   },
-  { minScore: 19000, name: 'Chozo Scholar', flavor: 'The statues would approve.', unlocks: ['xray'] },
+  { minScore: 19000, name: 'Chozo Scholar', flavor: 'Your scan analysis is exceptional. Even the statues would approve.', unlocks: ['xray'] },
   {
     minScore: 15000,
     name: 'Seasoned Bounty Hunter',
-    flavor: 'The Federation pays well for eyes like yours.',
+    flavor: 'Your tracking skills would be highly sought after across the Federation.',
     unlocks: ['scan']
   },
-  { minScore: 10000, name: 'Rookie Explorer', flavor: "You'll find your way. Eventually." },
-  { minScore: 5000, name: 'Lost in Maridia', flavor: 'The current keeps pulling you back under.' },
-  { minScore: 0, name: 'Space Pirate Cannon Fodder', flavor: 'Ridley barely noticed you.' }
+  { minScore: 10000, name: 'Federation Scout', flavor: 'Your scan reports show promise, despite occasional coordinate drift.' },
+  { minScore: 5000, name: 'Unreliable Navigator', flavor: 'You detected the signal. Pinpointing it remains a challenge.' },
+  { minScore: 0, name: 'Hint System Candidate', flavor: 'Automated guidance would improve your odds considerably.' }
 ];
 
 /** The rank tier a run total lands in (first cleared, scanning high → low). */
@@ -190,10 +190,10 @@ export function computeUnlocks(best: number, cheats: { jb: boolean; narpas: bool
 
 /** One-liner shown on the reveal card, keyed off how close the guess landed. */
 export function revealFlavor(distance: number): string {
-  if (!isFinite(distance)) return 'The map betrayed you.';
-  if (distance === 0) return 'Chozo blood runs in your veins.';
-  if (distance < 2) return 'Dead on the money.';
-  if (distance < 5) return 'A confident read.';
-  if (distance < 10) return 'In the neighborhood.';
-  return "You'll want that map data.";
+  if (!isFinite(distance)) return 'Target is not within the current sector.';
+  if (distance === 0) return 'Scan data aligns perfectly.';
+  if (distance < 2) return 'Position estimate within acceptable range.';
+  if (distance < 5) return 'Partial location match detected.';
+  if (distance < 10) return 'Navigation data requires recalibration.';
+  return 'Position estimate outside mission tolerance.';
 }
