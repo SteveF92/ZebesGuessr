@@ -305,10 +305,10 @@ export default function App() {
     return (
       <div className="shell menu">
         <BackdropFX phase={phase} />
-        <p className="kicker">CHOZO PLANETARY ARCHIVE // SECTOR ZEBES</p>
+        <p className="kicker">CHOZO OBSERVATORY // SECTOR ZEBES</p>
         <h1 className="logo">ZebesGuessr</h1>
         <p className="tagline">
-          You woke up somewhere on the planet. <em>Where?</em>
+          Unidentified signal detected. <em>Locate it.</em>
         </p>
         {error && <p className="error">{error}</p>}
 
@@ -391,8 +391,7 @@ export default function App() {
         <BackdropFX phase={phase} />
         <div className="debrief-grid">
           <div className="debrief-hero">
-            <p className="debrief-kicker">◇ MISSION DEBRIEF ◇</p>
-            <h1 className="logo">RUN COMPLETE</h1>
+            <h1 className="debrief-kicker">MISSION FINAL</h1>
             <p className="total">
               {shownTotal.toLocaleString()} <span className="max">/ {maxTotal.toLocaleString()}</span>
             </p>
@@ -449,7 +448,7 @@ export default function App() {
           </ol>
         </div>
 
-        <p className="summary-note">Tougher screens are worth more — play the hardest difficulty to max out your score.</p>
+        <p className="summary-note">Tougher screens are worth more points. To get the best possible score, try "Sanctuary Fortress" mode.</p>
 
         <div className="summary-actions">
           <button className="btn secondary share" onClick={onCopyText}>

@@ -1442,7 +1442,7 @@ a:hover {
    ============================================================ */
 .debrief-kicker {
   font-family: var(--font-display);
-  font-size: 14px;
+  font-size: 55px;
   letter-spacing: 0.34em;
   color: var(--cyan);
 }
@@ -1746,7 +1746,7 @@ a:hover {
 }
 .seed-line {
   font-family: ui-monospace, 'JetBrains Mono', monospace;
-  font-size: 13px;
+  font-size: 25px;
   letter-spacing: 0.18em;
   color: var(--cyan);
   opacity: 0.85;
