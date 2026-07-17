@@ -215,7 +215,24 @@ a:hover {
   .tile-scanline,
   .pip.current,
   .newbest,
-  .init .cursor {
+  .init .cursor,
+  .map-scan-sweep::after,
+  .map-scroll.shake-far,
+  .map-scroll.shake-wrong,
+  .reveal-box,
+  .reveal-box::after,
+  .reveal-scoreline.exact .reveal-score,
+  .summary .debrief-title,
+  .summary .total,
+  .summary .rank-block,
+  .summary .practice-note,
+  .summary .newbest,
+  .summary .sign-off,
+  .summary .seed-line,
+  .summary .summary-note,
+  .summary .summary-actions,
+  .round-card,
+  .bar-fill {
     animation: none !important;
   }
   /* Banner starts at opacity 0 for its reveal — keep it visible when the
@@ -1037,13 +1054,38 @@ a:hover {
 
 /* ---------- reveal box ---------- */
 .reveal-box {
-  animation: zgRise 0.4s ease both;
+  position: relative;
+  overflow: hidden;
+  /* small delay so the map lock-on visibly leads the card on desktop */
+  animation: zgRise 0.4s ease 0.2s both;
   border: 1px solid var(--line);
   border-left: 3px solid var(--accent);
   border-radius: 10px;
   padding: 15px 16px;
   background: linear-gradient(var(--panel), var(--bg2));
   box-shadow: 0 0 30px rgba(20, 52, 94, 0.3);
+}
+/* one-shot scan sweep down the card as it lands (clipped above it pre-delay) */
+.reveal-box::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 60px;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(160, 248, 248, 0), rgba(160, 248, 248, 0.16), rgba(160, 248, 248, 0));
+  animation: zgCardSweep 0.55s ease-out 0.3s both;
+}
+@keyframes zgCardSweep {
+  from {
+    transform: translateY(-60px);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(420px);
+    opacity: 0;
+  }
 }
 .reveal-label {
   font-family: var(--font-display);
@@ -1098,10 +1140,30 @@ a:hover {
   letter-spacing: 0.2em;
   color: var(--dim);
 }
+/* Exact guess: the score flares white-hot for a beat once the card lands. */
+.reveal-scoreline.exact .reveal-score {
+  animation: zgExactFlash 0.9s ease-out 0.6s both;
+}
+@keyframes zgExactFlash {
+  0% {
+    text-shadow: 0 0 20px rgba(255, 210, 77, 0.4);
+  }
+  25% {
+    color: #ffffff;
+    text-shadow:
+      0 0 30px rgba(255, 255, 255, 0.9),
+      0 0 60px rgba(255, 210, 77, 0.8);
+  }
+  100% {
+    text-shadow: 0 0 20px rgba(255, 210, 77, 0.4);
+  }
+}
 .reveal-flavor {
   font-size: 16px;
   color: var(--accent);
   margin-top: 8px;
+  /* height reserved so the typewriter doesn't reflow the card as it types */
+  min-height: 1.5em;
 }
 
 .debug-panel {
@@ -1310,6 +1372,7 @@ a:hover {
   box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.4);
 }
 .map-scroll {
+  position: relative;
   overflow: auto;
   border: 1px solid var(--line);
   border-radius: 0 10px 10px 10px;
@@ -1336,6 +1399,84 @@ a:hover {
 }
 .map-canvas.editing {
   cursor: cell;
+}
+
+/* One-shot scan-visor sweep across the map viewport when a reveal starts.
+   The wrapper clips; the ::after bar (30% of the viewport tall) traverses
+   top → past the bottom (334% of its own height ≈ 100% + its height). */
+.map-scan-sweep {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  overflow: hidden;
+  pointer-events: none;
+}
+.map-scan-sweep::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 30%;
+  background: linear-gradient(180deg, rgba(160, 248, 248, 0), rgba(160, 248, 248, 0.2), rgba(160, 248, 248, 0));
+  animation: zgMapSweep 0.55s ease-out forwards;
+}
+@keyframes zgMapSweep {
+  from {
+    transform: translateY(-100%);
+  }
+  to {
+    transform: translateY(334%);
+  }
+}
+
+/* Bad-guess feedback: the map rattles when the reveal lands. `shake-far`
+   waits for the traced line to reach the target (TRACE_MS in GuessMap);
+   a wrong-area miss has no trace, so it hits immediately and harder. */
+.map-scroll.shake-far {
+  animation: zgShakeFar 0.4s ease-in-out 0.45s;
+}
+.map-scroll.shake-wrong {
+  animation: zgShakeWrong 0.45s ease-in-out;
+}
+@keyframes zgShakeFar {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  20% {
+    transform: translate(-3px, 2px);
+  }
+  40% {
+    transform: translate(3px, -2px);
+  }
+  60% {
+    transform: translate(-3px, -1px);
+  }
+  80% {
+    transform: translate(2px, 2px);
+  }
+}
+@keyframes zgShakeWrong {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  15% {
+    transform: translate(-6px, 3px);
+  }
+  30% {
+    transform: translate(6px, -4px);
+  }
+  45% {
+    transform: translate(-5px, -3px);
+  }
+  60% {
+    transform: translate(5px, 3px);
+  }
+  75% {
+    transform: translate(-3px, 2px);
+  }
 }
 
 /* ---- touch pan/zoom map (small screens) ---- */
@@ -1720,7 +1861,17 @@ a:hover {
   border-radius: 3px;
   background: linear-gradient(90deg, var(--accent), var(--cyan));
   box-shadow: 0 0 10px rgba(77, 255, 136, 0.4);
-  transition: width 0.6s ease;
+  /* grow to the inline width; per-card delay set inline alongside it */
+  transform-origin: left;
+  animation: zgBarFill 0.6s ease both;
+}
+@keyframes zgBarFill {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
 }
 .summary-note {
   width: 100%;
@@ -1769,6 +1920,41 @@ a:hover {
     opacity: 1;
     text-shadow: 0 0 34px rgba(255, 210, 77, 0.65);
   }
+}
+
+/* ---------- summary choreography ----------
+   The debrief reveals in beats: title → total → rank → badges → sign-off,
+   with the round cards dealing out alongside (delays set inline per card).
+   Elements with a standing animation (newbest glow, sign-off pulse) chain
+   the rise in front of it. */
+.summary .debrief-title {
+  animation: zgRise 0.45s ease both;
+}
+.summary .total {
+  animation: zgRise 0.45s ease 0.12s both;
+}
+.summary .rank-block {
+  animation: zgRise 0.45s ease 0.28s both;
+}
+.summary .practice-note {
+  animation: zgRise 0.45s ease 0.45s both;
+}
+.summary .newbest {
+  animation:
+    zgRise 0.45s ease 0.45s both,
+    zgGlow 2s ease-in-out 0.9s infinite;
+}
+.summary .sign-off {
+  animation:
+    zgRise 0.45s ease 0.6s both,
+    signOffPulse 2.4s ease-in-out 1.05s infinite;
+}
+.summary .seed-line {
+  animation: zgRise 0.45s ease 0.7s both;
+}
+.summary .summary-note,
+.summary .summary-actions {
+  animation: zgRise 0.45s ease 1s both;
 }
 
 @media (max-width: 800px) {

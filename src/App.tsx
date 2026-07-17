@@ -6,6 +6,7 @@ import { SeedEntryModal } from './components/SeedEntryModal';
 import { CreateSeed } from './components/CreateSeed';
 import { HoverScan } from './components/HoverScan';
 import { useCountUp } from './hooks/useCountUp';
+import { useTypewriter } from './hooks/useTypewriter';
 import { GAMES, areaName, cellPool, cellRating, indicesFromTargets, loadGameData, pickTargets, roomName, targetsFromIndices, tileUrl } from './data';
 import { DIFFICULTIES, ROUNDS_PER_RUN, cellDistance, computeUnlocks, getDifficulty, maxForRating, rankFlavor, revealFlavor, scoreRank, scoreRound } from './scoring';
 import type { Unlocks } from './scoring';
@@ -106,6 +107,9 @@ export default function App() {
   const cardVisible = phase === 'reveal' && revealStage === 'result';
   const shownRoundScore = Math.round(useCountUp(cardVisible ? (revealResult?.score ?? 0) : 0, 900, [revealResult, cardVisible]));
   const shownTotal = Math.round(useCountUp(total, 1200, [phase]));
+  // Scan-log typewriter for the reveal card's flavor line, gated like the
+  // score count-up so it starts when the card actually appears.
+  const shownFlavor = useTypewriter(revealResult ? revealFlavor(revealResult.distance) : '', cardVisible);
 
   function pickDifficulty(id: string) {
     setDifficultyId(id);
@@ -425,7 +429,7 @@ export default function App() {
               const dist = !isFinite(r.distance) ? 'wrong area' : r.distance === 0 ? 'exact!' : `${r.distance.toFixed(1)} cells off`;
               const rn = roomName(data, r.target);
               return (
-                <li key={i} className="round-card" style={{ animationDelay: `${i * 0.06}s` }}>
+                <li key={i} className="round-card" style={{ animationDelay: `${0.35 + i * 0.12}s` }}>
                   <div className="round-head">
                     <span className="round-info">
                       <span className="round-idx">{i + 1}.</span> <span className="round-area">{areaName(data, r.target.areaId)}</span> <span className="round-dist">{dist}</span>
@@ -440,7 +444,7 @@ export default function App() {
                     </span>
                   </div>
                   <div className="bar-track">
-                    <div className="bar-fill" style={{ width: `${pct * 100}%` }} />
+                    <div className="bar-fill" style={{ width: `${pct * 100}%`, animationDelay: `${0.7 + i * 0.12}s` }} />
                   </div>
                 </li>
               );
@@ -557,11 +561,11 @@ export default function App() {
                 </span>
               </p>
               <p className="reveal-dist">{isFinite(result.distance) ? (result.distance === 0 ? 'Exact cell.' : `${result.distance.toFixed(1)} cells away`) : 'Wrong area entirely.'}</p>
-              <div className="reveal-scoreline">
+              <div className={`reveal-scoreline${result.distance === 0 ? ' exact' : ''}`}>
                 <span className="reveal-score">{shownRoundScore.toLocaleString()}</span>
                 <span className="reveal-pts">PTS</span>
               </div>
-              <p className="reveal-flavor">{revealFlavor(result.distance)}</p>
+              <p className="reveal-flavor">{shownFlavor}</p>
               <button className="btn next" onClick={nextRound}>
                 {round + 1 >= targets.length ? '◇ SEE RESULTS ↵' : 'NEXT ROUND ▶ ↵'}
               </button>

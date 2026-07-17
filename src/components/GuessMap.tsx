@@ -126,6 +126,14 @@ const N = 1,
   SO = 4,
   W = 8;
 
+/** Reveal lock-on timeline (ms): a same-area miss traces the guess→target
+ *  line first, then the target blinks in and the ring pulse plays. An exact
+ *  guess earns a second ring pulse, offset by RING2_DELAY. */
+const TRACE_MS = 450;
+const BLINK_MS = 240;
+const RING_MS = 650;
+const RING2_DELAY = 350;
+
 /**
  * The clickable guess map, rebuilt as web elements: cells from the actual
  * in-game pause map are drawn on canvas (rooms, shafts, station glyphs,
@@ -333,23 +341,44 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
     if (result) setAreaId(result.target.areaId);
   }, [result]);
 
-  // Reveal "lock-on": a shrinking ring pulse around the target, 0 → 1 over 650ms.
-  const [revealPulse, setRevealPulse] = useState(0);
+  // Reveal lock-on timeline: ms elapsed since the round ended. Drives the
+  // traced guess→target line, the target blink-in, and the ring pulse(s) —
+  // all staged off this one clock inside draw().
+  const [revealT, setRevealT] = useState(0);
+  // Same-area misses trace the line first; exact/cross-area lock on immediately.
+  const traceMs = result && isFinite(result.distance) && result.distance > 0 ? TRACE_MS : 0;
+  const revealTotal = traceMs + Math.max(BLINK_MS, RING_MS + (result?.distance === 0 ? RING2_DELAY : 0));
   useEffect(() => {
     if (!result) {
-      setRevealPulse(0);
+      setRevealT(0);
       return;
     }
     let raf = 0;
     const start = performance.now();
     const step = (t: number) => {
-      const p = Math.min(1, (t - start) / 650);
-      setRevealPulse(p);
+      const el = Math.min(revealTotal, t - start);
+      setRevealT(el);
+      if (el < revealTotal) raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [result]);
+
+  // Guess-placement pop: a quick expanding ring on the cell just clicked.
+  const [selectPulse, setSelectPulse] = useState(1);
+  useEffect(() => {
+    if (!selected || result) return;
+    let raf = 0;
+    const start = performance.now();
+    const step = (t: number) => {
+      const p = Math.min(1, (t - start) / 250);
+      setSelectPulse(p);
       if (p < 1) raf = requestAnimationFrame(step);
     };
     raf = requestAnimationFrame(step);
     return () => cancelAnimationFrame(raf);
-  }, [result]);
+  }, [selected, result]);
 
   // Load ship and boss images
   useEffect(() => {
@@ -438,32 +467,55 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
       ctx.strokeRect(x, y, size, size);
     };
 
+    // One-shot expanding ring centered on a cell; p in (0,1) — no-op outside.
+    const ring = (tile: Cell, p: number, color: string) => {
+      if (p <= 0 || p >= 1) return;
+      ctx.strokeStyle = color;
+      ctx.globalAlpha = 1 - p;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc((tile.x + 0.5) * S, (tile.y + 0.5) * S, S * (0.6 + p * 1.6), 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    };
+
     if (!result) {
       if (hover) box(hover, COL.hover, null, 1.5);
-      if (selected && selected.areaId === area.id) box(selected.cell, COL.selected, null, 2.5);
-    } else {
-      if (result.guess.areaId === area.id) box(result.guess.cell, COL.guess, COL.guessOutline, 3.5);
-      if (result.target.areaId === area.id) box(result.target.cell, COL.target, COL.targetOutline, 3.5);
-      if (result.target.areaId === area.id && revealPulse < 1) {
-        const cx = (result.target.cell.x + 0.5) * S;
-        const cy = (result.target.cell.y + 0.5) * S;
-        ctx.strokeStyle = COL.target;
-        ctx.globalAlpha = 1 - revealPulse;
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.arc(cx, cy, S * (0.6 + revealPulse * 1.6), 0, Math.PI * 2);
-        ctx.stroke();
-        ctx.globalAlpha = 1;
+      if (selected && selected.areaId === area.id) {
+        box(selected.cell, COL.selected, null, 2.5);
+        ring(selected.cell, selectPulse, COL.selected);
       }
-      if (result.guess.areaId === area.id && result.target.areaId === area.id) {
+    } else {
+      const lockT = revealT - traceMs; // ms since the target lock-on began
+      if (result.guess.areaId === area.id) box(result.guess.cell, COL.guess, COL.guessOutline, 3.5);
+      if (result.target.areaId === area.id && lockT >= 0) {
+        // Target lands: blink white↔green for a beat, then settle.
+        const blinkOn = lockT < BLINK_MS && Math.floor(lockT / 80) % 2 === 0;
+        box(result.target.cell, blinkOn ? '#ffffff' : COL.target, COL.targetOutline, 3.5);
+      }
+      if (result.guess.areaId === area.id && result.target.areaId === area.id && result.distance > 0) {
+        // Trace the dashed line from guess toward target, marching while live.
+        const p = traceMs > 0 ? Math.min(1, revealT / traceMs) : 1;
+        const e = 1 - Math.pow(1 - p, 3);
+        const gx = (result.guess.cell.x + 0.5) * S;
+        const gy = (result.guess.cell.y + 0.5) * S;
+        const tx = (result.target.cell.x + 0.5) * S;
+        const ty = (result.target.cell.y + 0.5) * S;
         ctx.strokeStyle = '#ffff00';
         ctx.lineWidth = 2.5;
         ctx.setLineDash([6, 4]);
+        ctx.lineDashOffset = -revealT * 0.04;
         ctx.beginPath();
-        ctx.moveTo((result.guess.cell.x + 0.5) * S, (result.guess.cell.y + 0.5) * S);
-        ctx.lineTo((result.target.cell.x + 0.5) * S, (result.target.cell.y + 0.5) * S);
+        ctx.moveTo(gx, gy);
+        ctx.lineTo(gx + (tx - gx) * e, gy + (ty - gy) * e);
         ctx.stroke();
         ctx.setLineDash([]);
+        ctx.lineDashOffset = 0;
+      }
+      if (result.target.areaId === area.id && lockT >= 0) {
+        ring(result.target.cell, lockT / RING_MS, COL.target);
+        // Exact guess: a second pulse for the direct hit.
+        if (result.distance === 0) ring(result.target.cell, (lockT - RING2_DELAY) / RING_MS, COL.target);
       }
     }
     ctx.restore();
@@ -1158,7 +1210,8 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
           {saveMsg && <span className="edit-msg">{saveMsg}</span>}
         </div>
       )}
-      <div className={`map-scroll${panEnabled ? ' pan' : ''}`} ref={scrollRef}>
+      <div className={`map-scroll${panEnabled ? ' pan' : ''}${result ? (!isFinite(result.distance) ? ' shake-wrong' : result.distance >= 10 ? ' shake-far' : '') : ''}`} ref={scrollRef}>
+        {result && <div className="map-scan-sweep" aria-hidden="true" />}
         <canvas
           ref={canvasRef}
           className={`map-canvas${editing ? ' editing' : ''}${panEnabled ? ' pan' : ''}`}
