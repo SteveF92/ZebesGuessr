@@ -44,7 +44,7 @@ def cell_playable(gray: Image.Image, x0: int, y0: int, cw: int, ch: int, bg: str
 def process_game(game_id: str, game: dict) -> None:
     cw = game.get("cellWidth", game.get("cellSize"))
     ch = game.get("cellHeight", game.get("cellSize"))
-    bg = game.get("background", "black")
+    game_bg = game.get("background", "black")
     map_px = game["guessMapCellPx"]
     # Refuse to write a partial JSON: a rerun without every raw image present
     # (Images/raw is gitignored) must never gut the committed game data.
@@ -64,6 +64,11 @@ def process_game(game_id: str, game: dict) -> None:
         "roomNames": load_room_names(game_id),
     }
     for area in game["areas"]:
+        # Background is usually a game-wide constant, but a single area can rip
+        # differently (Fusion's sector-3 detail map is a black-void sheet while
+        # its siblings are white-void); an area override picks the right
+        # fill-threshold polarity so only rooms - not the void - count as tiles.
+        bg = area.get("background", game_bg)
         raw = next((ROOT / "Images" / "raw" / game_id).glob(f"{area['id']}.*"))
         img = Image.open(raw).convert("RGB")
         ox, oy = area.get("offsetX", 0), area.get("offsetY", 0)

@@ -256,6 +256,8 @@
         "name": "Sector 3 (PYR)",
         "url": "https://vgmaps.com/Atlas/GBA/MetroidFusion-Sector3(PYR).png",
         "ingameUrl": "https://vgmaps.com/Atlas/GBA/MetroidFusion-Sector3(PYR)(In-GameMap).png",
+        "localSource": true,
+        "background": "black",
         "offsetX": 0,
         "offsetY": 0,
         "keepTiles": [
