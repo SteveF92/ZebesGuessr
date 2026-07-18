@@ -85,7 +85,7 @@ export default function App() {
     return out;
   });
   const [difficultyId, setDifficultyId] = useState<string>(() => (loadedSeed ? DIFFICULTIES[loadedSeed.diffIndex]?.id : null) ?? localStorage.getItem('zg-difficulty') ?? 'tallon');
-  const [selectedGameId, setSelectedGameId] = useState<string>(() => (loadedSeed ? GAMES[loadedSeed.gameIndex]?.id : null) ?? GAMES.find((g) => g.available)?.id ?? GAMES[0].id);
+  const [selectedGameId, setSelectedGameId] = useState<string>(() => (loadedSeed ? GAMES[loadedSeed.gameIndex]?.id : null) ?? localStorage.getItem('zg-game') ?? GAMES.find((g) => g.available)?.id ?? GAMES[0].id);
   const [debug, setDebug] = useState(false);
   const [editIcons, setEditIcons] = useState(false);
   const [showTiles, setShowTiles] = useState(false);
@@ -130,6 +130,11 @@ export default function App() {
   function pickDifficulty(id: string) {
     setDifficultyId(id);
     localStorage.setItem('zg-difficulty', id);
+  }
+
+  function pickGame(id: string) {
+    setSelectedGameId(id);
+    localStorage.setItem('zg-game', id);
   }
 
   function unlockCheat(which: 'jb' | 'narpas') {
@@ -306,7 +311,7 @@ export default function App() {
                 key={g.id}
                 className={`game-btn ${g.id === selectedGameId ? 'active' : ''}`}
                 disabled={!g.available || phase === 'loading' || !!loadedSeed}
-                onClick={() => setSelectedGameId(g.id)}
+                onClick={() => pickGame(g.id)}
               >
                 <span className="game-title">{g.title}</span>
                 {!g.available ? <span className="standby">STANDBY</span> : bests[g.id] > 0 ? <span className="game-pb">◆ {bests[g.id].toLocaleString()}</span> : null}
