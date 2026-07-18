@@ -60,9 +60,11 @@ export interface MapGlyph {
   x: number;
   y: number;
   /** landmark kind. `navigation` (talk-to-computer + save) and `data`
-   *  (ability download) are Fusion-only; the rest are shared across games,
-   *  drawn per `mapStyle`. */
-  t: 'save' | 'map' | 'ship' | 'boss' | 'item' | 'recharge' | 'navigation' | 'data';
+   *  (ability download) are Fusion-only; `chozo` (statue room, the source
+   *  map's big red circle) and `itemMajor` (a major upgrade, circled on the
+   *  source map — vs the plain `item` dot) are Zero Mission-only; the rest
+   *  are shared across games, drawn per `mapStyle`. */
+  t: 'save' | 'map' | 'ship' | 'boss' | 'item' | 'recharge' | 'navigation' | 'data' | 'chozo' | 'itemMajor';
 }
 
 /**

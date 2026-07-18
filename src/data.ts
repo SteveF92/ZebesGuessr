@@ -4,7 +4,7 @@ import type { GameData, MapGlyph, Connector, RoundTarget, Cell } from './types';
 export const GAMES = [
   { id: 'super-metroid', title: 'Super Metroid', available: true },
   { id: 'metroid-fusion', title: 'Metroid Fusion', available: true },
-  { id: 'metroid-zero-mission', title: 'Metroid: Zero Mission', available: false }
+  { id: 'metroid-zero-mission', title: 'Metroid: Zero Mission', available: true }
 ];
 
 /**
@@ -30,6 +30,15 @@ const ENABLED_AREAS: Record<string, Record<string, boolean>> = {
     'sector-4': true,
     'sector-5': true,
     'sector-6': true
+  },
+  'metroid-zero-mission': {
+    brinstar: true,
+    kraid: true,
+    norfair: true,
+    ridley: true,
+    tourian: true,
+    crateria: true,
+    chozodia: true
   }
 };
 

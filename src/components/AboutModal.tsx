@@ -36,8 +36,8 @@ export function AboutModal({ onClose }: { onClose: () => void }) {
         <p>ZebesGuessr is GeoGuessr for 2D Metroid: you are shown a single screen from a game and your job is to identify where it is on a recreation of the in-game pause map.</p>
         <p>
           The Super Metroid maps are by <strong>Rick Bruns</strong> (<a href="https://www.snesmaps.com">snesmaps.com</a>). The Metroid Fusion maps are by <strong>zerofighter</strong> and{' '}
-          <strong>rocktyt</strong>, with in-game map rips by <strong>Narasumas</strong>, all via <a href="https://www.vgmaps.com">VGMaps</a>. Additional maps come from the{' '}
-          <a href="https://www.vgmaps.com">VGMaps</a> community.
+          <strong>rocktyt</strong>, with in-game map rips by <strong>Narasumas</strong>. The Metroid: Zero Mission maps are by <strong>rocktyt</strong> and <strong>zerofighter</strong>, with in-game
+          map rips by <strong>Eggie</strong>. All via the <a href="https://www.vgmaps.com">VGMaps</a> community.
         </p>
         <p>
           Room names come from the fan communities that mapped these games out: Metroid Fusion's are from the <a href="https://randovania.org">Randovania</a> project and the Fusion community, and

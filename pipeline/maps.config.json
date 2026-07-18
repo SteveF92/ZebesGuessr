@@ -273,5 +273,118 @@
         "offsetY": 0
       }
     ]
+  },
+  "metroid-zero-mission": {
+    "title": "Metroid: Zero Mission",
+    "mapStyle": "gba",
+    "cellWidth": 240,
+    "cellHeight": 160,
+    "guessMapCellPx": 14,
+    "background": "white",
+    "areas": [
+      {
+        "id": "brinstar",
+        "name": "Brinstar",
+        "url": "https://vgmaps.com/Atlas/GBA/Metroid-ZeroMission-Brinstar.png",
+        "ingameUrl": "https://vgmaps.com/Atlas/GBA/Metroid-ZeroMission-Brinstar(In-GameMap).png",
+        "offsetX": 0,
+        "offsetY": 0,
+        "excludeCells": [
+          [28, 17],
+          [29, 17]
+        ]
+      },
+      {
+        "id": "kraid",
+        "name": "Kraid",
+        "url": "https://vgmaps.com/Atlas/GBA/Metroid-ZeroMission-Kraid.png",
+        "ingameUrl": "https://vgmaps.com/Atlas/GBA/Metroid-ZeroMission-Kraid(In-GameMap).png",
+        "offsetX": 0,
+        "offsetY": 0
+      },
+      {
+        "id": "norfair",
+        "name": "Norfair",
+        "url": "https://vgmaps.com/Atlas/GBA/Metroid-ZeroMission-Norfair.png",
+        "ingameUrl": "https://vgmaps.com/Atlas/GBA/Metroid-ZeroMission-Norfair(In-GameMap).png",
+        "offsetX": 0,
+        "offsetY": 0,
+        "extraCols": 1,
+        "includeCells": [
+          [20, 0],
+          [20, 1],
+          [20, 2],
+          [20, 3],
+          [20, 4],
+          [20, 5],
+          [20, 6],
+          [20, 7],
+          [20, 8],
+          [20, 9],
+          [20, 10],
+          [20, 11]
+        ],
+        "cellCropOffsets": {
+          "20,0": [-32, 0],
+          "20,1": [-32, 0],
+          "20,2": [-32, 0],
+          "20,3": [-32, 0],
+          "20,4": [-32, 0],
+          "20,5": [-32, 0],
+          "20,6": [-32, 0],
+          "20,7": [-32, 0],
+          "20,8": [-32, 0],
+          "20,9": [-32, 0],
+          "20,10": [-32, 0],
+          "20,11": [-32, 0]
+        }
+      },
+      {
+        "id": "ridley",
+        "name": "Ridley",
+        "url": "https://vgmaps.com/Atlas/GBA/Metroid-ZeroMission-Ridley.png",
+        "ingameUrl": "https://vgmaps.com/Atlas/GBA/Metroid-ZeroMission-Ridley(In-GameMap).png",
+        "offsetX": 0,
+        "offsetY": 0
+      },
+      {
+        "id": "tourian",
+        "name": "Tourian",
+        "url": "https://vgmaps.com/Atlas/GBA/Metroid-ZeroMission-Tourian.png",
+        "ingameUrl": "https://vgmaps.com/Atlas/GBA/Metroid-ZeroMission-Tourian(In-GameMap).png",
+        "offsetX": 0,
+        "offsetY": 0,
+        "excludeCells": [
+          [0, 12],
+          [1, 12],
+          [2, 12],
+          [3, 12]
+        ]
+      },
+      {
+        "id": "crateria",
+        "name": "Crateria",
+        "url": "https://vgmaps.com/Atlas/GBA/Metroid-ZeroMission-Crateria.png",
+        "ingameUrl": "https://vgmaps.com/Atlas/GBA/Metroid-ZeroMission-Crateria(In-GameMap).png",
+        "offsetX": 0,
+        "offsetY": 0
+      },
+      {
+        "id": "chozodia",
+        "name": "Chozodia",
+        "url": "https://vgmaps.com/Atlas/GBA/Metroid-ZeroMission-Chozodia.png",
+        "ingameUrl": "https://vgmaps.com/Atlas/GBA/Metroid-ZeroMission-Chozodia(In-GameMap).png",
+        "offsetX": 0,
+        "offsetY": 0,
+        "includeCells": [
+          [23, 0],
+          [23, 1],
+          [4, 15],
+          [5, 15],
+          [18, 16],
+          [19, 16]
+        ]
+      }
+    ]
   }
 }

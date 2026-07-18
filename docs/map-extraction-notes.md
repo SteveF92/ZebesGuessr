@@ -178,12 +178,16 @@ they're hand-placed in the app's icon editor and stored in
 `public/data/glyphs.<game>.json`, which this script skips explicitly and
 never writes to.
 
-## GBA map extraction (Metroid Fusion)
+## GBA map extraction (Metroid Fusion & Zero Mission)
 
-The Fusion in-game maps (vgmaps.com rips by Narasumas) are clean tile art on
-an exact 8px grid with a small exact-RGB palette — none of the hand-drawn
-fuzziness above. `extract_gba_maps.py` is therefore mostly exact-color
-bookkeeping. What it reads per cell:
+The GBA in-game maps (vgmaps.com rips — Fusion by Narasumas, Zero Mission by
+Eggie) are clean tile art on an exact 8px grid with a small exact-RGB palette
+— none of the hand-drawn fuzziness above. `extract_gba_maps.py` is therefore
+mostly exact-color bookkeeping, with the palette per game in its `PALETTES`
+dict (the two games share the map language but almost no colors — ZM's
+lattice is dark green, its fills are blue/green/orange, and pure blue is a
+_fill_ there while it's Fusion's blue-door color). What it reads per cell,
+Fusion colors quoted:
 
 - **Occupancy**: ≥4 px of room fill in the inner 6×6, or ≥12 px of station-icon
   color (the yellow-on-red S/N icons fully displace a cell's fill — the same
@@ -234,11 +238,54 @@ bookkeeping. What it reads per cell:
   door mask before wall/door detection; it still counts toward occupancy via
   the icon rule.
 
-Two empirical facts about the rips: all seven share the tile-grid alignment
-offset (11,5), and each frames the map in a wide border of empty lattice
-squares — ripper framing, not game data, so the extractor trims the render
-viewport to the tile grid plus a 2-cell margin instead of keeping the source
-canvas (unlike the SNES path, where the canvas is the in-game one).
+### Zero Mission specifics
+
+- **Doors are pips, not gaps**: ZM draws its normal blue door as a light-blue
+  `(0,112,248)` pip; a bare gap still reads as a plain `"n"` hatch, but they
+  are rare. Red/yellow/green pips are the locked tiers, same as Fusion.
+- **Icon art in door colors** (`strip_icon_art`): chozo-statue blobs and
+  major-item starbursts are baked into room interiors in door-red +
+  door-yellow. A door-colored component is kept only if it straddles a cell
+  boundary (symmetric pips; also the station caption boxes, whose box-red
+  lines are what makes station boundaries read as solid) or is pip-sized
+  (max dim <5) _and_ touches a border row/column (asymmetric one-sided
+  pips). Everything else is stripped from the door masks so a blob grazing
+  its cell's border can't fake a pip. Runs for Fusion too, where it's a
+  no-op on the output (verified byte-identical).
+- **White rooms** (`whiteFill`): chozo-statue and major-item rooms are
+  flooded wall-white with the icon inked in. Occupancy passes via the icon
+  rule; when interior white outvotes every real fill the cell gets the extra
+  fill variant one past the palette's fills list (rendered `#f8f8f8`). Ties
+  go to the real fill so a knob tunnel's rails (12 white vs 12 core px)
+  don't blanch it.
+- **No ladders** (`"ladders": False`): ZM elevators are exit arrows +
+  captions on empty lattice (no cell at all, like Super's Crateria), so the
+  ladder check is off — with only stray fill noise inside white rooms to
+  chew on, it pattern-matched rung runs and ate two chozo rooms.
+- **Narrow rooms are knobs**: ZM's morph-ball-only rooms are drawn as
+  full-width twin-rail tunnels (white rails hugging a 2px fill core,
+  background above and below). The knob rule was generalized for them: a
+  side whose edge line is **mostly background (≥6 of 8 px)** is inset too,
+  independent of the port rule — that's what turns them into thin bars
+  instead of full squares. (Fusion's one knob is unaffected: its open sides
+  show only 2 corner px of background.) They are real rooms with real
+  screens behind them — selectable, not connectors.
+- **Boss X marks self-neutralize**: Kraid/Ridley arenas are drawn with a
+  white box + diagonal X _over_ the room, but every stroke stays strictly
+  inside cell interiors, which the wall/door readers never look at (walls
+  live on the border lines, doors on the own-line scan). The diagonals graze
+  interior boundaries at ≤3 px — under the ≥4 wall threshold. No stripper
+  needed; verified against both arenas.
+- **Item circles** (open white rings) likewise live in cell interiors and
+  affect nothing.
+
+Two empirical facts about the rips: within a game they share the tile-grid
+alignment offset (Fusion: all seven at (11,5); ZM: (1,1) with Tourian at
+(1,2) and Crateria at (2,1)), and each frames the map in a wide border of
+empty lattice squares — ripper framing, not game data, so the extractor
+trims the render viewport to the tile grid plus a 2-cell margin instead of
+keeping the source canvas (unlike the SNES path, where the canvas is the
+in-game one).
 
 Where the _full_ map sheet disagrees with the pause map (a collage that moved
 a sub-area, a cropped last column, a room missing outright), the fix lives in

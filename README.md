@@ -64,8 +64,11 @@ file** (dev server only) and commit the JSON.
   and the [VGMaps](https://www.vgmaps.com) community. The Super Metroid maps are
   the work of Rick Bruns — enormous thanks. The Metroid Fusion full maps were
   ripped by zerofighter & rocktyt (VGMaps' Maps Of The Month, September 2010),
-  and the Fusion in-game map screens by Narasumas, all hosted at VGMaps. The
-  mapmakers are not affiliated with or involved in this project.
+  and the Fusion in-game map screens by Narasumas. The Metroid: Zero Mission
+  full maps were ripped by rocktyt (Chozodia by zerofighter & rocktyt; VGMaps'
+  Maps Of The Month, August 2008), and the Zero Mission in-game map screens by
+  Eggie — all hosted at VGMaps. The mapmakers are not affiliated with or
+  involved in this project.
 - **Metroid, Samus Aran, and all game imagery** © Nintendo / developed by
   Nintendo R&D1 and Intelligent Systems. This project is not affiliated with,
   endorsed by, or connected to Nintendo in any way.

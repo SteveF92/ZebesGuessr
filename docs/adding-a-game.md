@@ -148,11 +148,15 @@ npm run format     # includes the regenerated public/data/*.json
    **Randovania** logic database (per-region JSON, `areas` keyed by name, each
    with `extra.minimap_coordinates`) mapped onto our cell grid by a per-area
    integer offset — see `pipeline/import_fusion_room_names.py` and the offset
-   table in it (Super's came from Map Rando's data the same way). The in-app
-   editor's Name tool touches up the ~3% Randovania doesn't cover. Randovania
-   also supports Zero Mission, so ZM's names can come from the same source —
-   **but its logic-database format differs**, so the Fusion importer won't run
-   as-is; adapt the offset table / lookup when ZM's MVP lands.
+   table in it (Super's came from Map Rando's data the same way). Zero
+   Mission's Randovania database has **no** minimap coordinates — only
+   room-local node coordinates (y up) — so
+   `pipeline/import_zm_room_names.py` _solves_ the placement instead: paired
+   dock nodes give each room pair's relative offset (snap to the 240×160
+   screen grid; the ±16px door inset is the only noise), BFS places every
+   room, and the whole region is anchored onto our grid by brute-force
+   overlap. ~87% coverage at import. The in-app editor's Name tool touches
+   up what the import doesn't cover.
 3. **Glyphs**: `glyphs.<game>.json` via the editor. `MapGlyph['t']` now
    carries the Fusion-only `navigation` and `data` station kinds (alongside
    the shared save/map/recharge/ship/boss/item); the editor has **Nav**/**Data**
@@ -165,7 +169,7 @@ npm run format     # includes the regenerated public/data/*.json
 5. **Flavor**: game-conditional menu/reveal text if wanted ("SECTOR ZEBES"
    kicker etc. is still Super Metroid-flavored and static).
 
-## Fusion-specific facts worth remembering for ZM
+## GBA facts worth remembering (learned adding Fusion, updated for ZM)
 
 - GBA in-game rips: 8 px/cell, framed in a wide border of empty lattice
   squares; the extractor trims the viewport to the tile grid + 2 cells since
@@ -189,9 +193,14 @@ npm run format     # includes the regenerated public/data/*.json
   is stripped from the door mask so it can't fake a wall.
   Details for all three in `docs/map-extraction-notes.md`.
 - What magenta vs green fill _means_ in the source rips is still unknown
-  (preserved per cell as `f`); ZM should clarify whether it's per-state or
-  per-area coloring.
-- **Room names** come from Randovania (see step 8.2 /
-  `pipeline/import_fusion_room_names.py`). ZM is also in Randovania but uses a
-  different logic-database format, so that importer needs adapting rather than
-  reusing verbatim.
+  (preserved per cell as `f`). ZM's three fills are per-state — mapped /
+  unmapped-until-visited / super-heated — plus a solved-at-extraction white
+  variant for its chozo-statue and major-item rooms.
+- **ZM extraction quirks** (per-game palette, icon-art stripping, white
+  rooms, no ladders, narrow rooms as knobs, self-neutralizing boss X marks)
+  are documented in `docs/map-extraction-notes.md` → "Zero Mission
+  specifics". Frontend-side, ZM gets its own palette via `GAME_COL` in
+  `GuessMap.tsx` and two extra glyph kinds (`chozo`, `itemMajor`).
+- **Room names** come from Randovania (see step 8.2):
+  `pipeline/import_fusion_room_names.py` for Fusion (offset table),
+  `pipeline/import_zm_room_names.py` for ZM (dock-graph solve).

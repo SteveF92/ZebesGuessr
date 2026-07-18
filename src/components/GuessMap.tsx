@@ -40,6 +40,8 @@ const TOOLS: { id: Tool; label: string }[] = [
   { id: 'ship', label: 'Ship' },
   { id: 'boss', label: 'Boss' },
   { id: 'item', label: 'Item' },
+  { id: 'itemMajor', label: 'Major' },
+  { id: 'chozo', label: 'Chozo' },
   { id: 'connector', label: 'Connector' },
   { id: 'roomname', label: 'Name' },
   { id: 'difficulty', label: 'Diff' },
@@ -182,6 +184,24 @@ const GBA_COL: typeof SNES_COL = {
   ...MARKERS
 };
 
+// Zero Mission shares Fusion's map language but not its colors: dark-green
+// lattice, blue/green/orange fills (mapped / unmapped-until-visited /
+// super-heated) plus white-flooded chozo-statue and major-item rooms
+// (fill variant 3), and pips for every door — light blue is the normal one.
+const ZM_COL: typeof SNES_COL = {
+  ...GBA_COL,
+  bg: '#085810', // lattice grid lines
+  dot: '#202820', // empty-cell square interiors
+  room: '#0000f8',
+  fills: ['#0000f8', '#20c068', '#f86820', '#f8f8f8'],
+  doors: { r: '#f82048', y: '#f8f800', g: '#10f880', b: '#0070f8' }
+};
+
+/** Per-game palette overrides on top of the style default. */
+const GAME_COL: Record<string, typeof SNES_COL> = {
+  'metroid-zero-mission': ZM_COL
+};
+
 const N = 1,
   E = 2,
   SO = 4,
@@ -206,7 +226,7 @@ const TARGET_BLINK_MS = 350;
  */
 export default function GuessMap({ data, selected, onSelect, onHoverCell, onAreaChange, result, editing, showTiles }: Props) {
   const mapStyle = data.mapStyle ?? 'snes';
-  const COL = mapStyle === 'gba' ? GBA_COL : SNES_COL;
+  const COL = GAME_COL[data.game] ?? (mapStyle === 'gba' ? GBA_COL : SNES_COL);
   const [areaId, setAreaId] = useState(data.areas[0].id);
   const area = data.areas.find((a) => a.id === areaId)!;
 
@@ -1114,6 +1134,25 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
       const half = S * 0.1;
       ctx.fillStyle = COL.item;
       ctx.fillRect(dotX - half, dotY - half, half * 2, half * 2);
+      return;
+    }
+    if (g.t === 'itemMajor') {
+      // major upgrade: an open ring, echoing the source map's circled majors
+      // (vs the plain square dot minors get).
+      ctx.strokeStyle = COL.item;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(cx, cy, S * 0.22, 0, Math.PI * 2);
+      ctx.stroke();
+      return;
+    }
+    if (g.t === 'chozo') {
+      // chozo statue room: the source map's big red circle.
+      ctx.strokeStyle = COL.special;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(cx, cy, S * 0.3, 0, Math.PI * 2);
+      ctx.stroke();
       return;
     }
     if (g.t === 'ship') {

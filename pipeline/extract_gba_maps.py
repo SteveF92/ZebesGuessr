@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Extract in-game pause-map data from GBA map rips (vgmaps.com).
 
-Handles games with mapStyle "gba" (Metroid Fusion, and later Zero Mission);
+Handles games with mapStyle "gba" (Metroid Fusion and Metroid: Zero Mission);
 SNES-style recreations are extract_ingame_maps.py's job.
 
 Unlike the SNES recreations, the GBA rips are clean tile art: solid room
@@ -45,17 +45,46 @@ from maplib import (E, N, ROOT, S, W, align, apply_cell_overrides,
 
 CELL = 8  # in-game map cell size in source pixels
 
-# Metroid Fusion pause-map palette (exact RGB in the vgmaps rips)
-FILLS = [(248, 0, 248), (32, 192, 104)]  # room fill variants: magenta, green
-WALL = (248, 248, 248)
-DOORS = {"r": (248, 32, 72), "y": (248, 248, 0), "g": (16, 248, 128), "b": (0, 0, 248)}
-# baked station icons (yellow S/N letters on a red box) displace room fill in
-# their cell, so their colors count toward occupancy — same bug class as Super
-# Metroid's green map-station letters
-ICONS = [(248, 32, 72), (248, 248, 0)]
-# empty-canvas colors (navy lattice lines + dark cell interiors); their
-# presence on a cell's own perimeter ring marks a sub-cell "knob" passage
-BACKGROUND = [(0, 0, 144), (32, 32, 72)]
+# Per-game pause-map palettes (exact RGB in the vgmaps rips).
+#   fills:  room-fill variants; index = CellDraw.f (0 omitted)
+#   doors:  pip colors by letter. Fusion draws normal hatches as bare gaps in
+#           the wall line; ZM draws them as light-blue pips ("b").
+#   icons:  baked icon art that displaces room fill in its cell, so its colors
+#           count toward occupancy — station letter boxes in both games, plus
+#           ZM's chozo-statue blobs and major-item starbursts (whose shading
+#           tones appear nowhere else).
+#   background: empty-canvas colors (lattice lines + cell interiors); their
+#           presence on a cell's own perimeter ring marks a sub-cell "knob".
+PALETTES = {
+    "metroid-fusion": {
+        "fills": [(248, 0, 248), (32, 192, 104)],  # magenta, green
+        "wall": (248, 248, 248),
+        "doors": {"r": (248, 32, 72), "y": (248, 248, 0),
+                  "g": (16, 248, 128), "b": (0, 0, 248)},
+        "icons": [(248, 32, 72), (248, 248, 0)],
+        "background": [(0, 0, 144), (32, 32, 72)],
+    },
+    # ZM: fills are blue/green/orange (mapped / unmapped-until-visited /
+    # super-heated); pure blue is a FILL here, not the door color it is in
+    # Fusion, and the normal blue door is a lighter (0,112,248). Chozo-statue
+    # and some major-item rooms are flooded wall-WHITE with the icon inked
+    # into them ("whiteFill": an icon-occupied cell with no real fill gets an
+    # extra white fill variant, one past the fills list). ZM never draws
+    # ladder cells — its elevators are exit arrows on empty lattice — so the
+    # ladder check is off ("ladders": False): with only 3 real fill colors
+    # the stray fill noise inside a white room can pattern-match a rung run.
+    "metroid-zero-mission": {
+        "fills": [(0, 0, 248), (32, 192, 104), (248, 104, 32)],
+        "wall": (248, 248, 248),
+        "doors": {"r": (248, 32, 72), "y": (248, 248, 0),
+                  "g": (16, 248, 128), "b": (0, 112, 248)},
+        "icons": [(248, 32, 72), (248, 248, 0),
+                  (248, 72, 72), (232, 184, 0), (248, 248, 56)],
+        "background": [(8, 88, 16), (32, 40, 32)],
+        "whiteFill": True,
+        "ladders": False,
+    },
+}
 
 # interior room fill needed to occupy a cell (of the 6x6=36 inner pixels);
 # solid fills score ~36, so this only has to reject stray caption strokes
@@ -204,9 +233,13 @@ def knob_geometry(bg: np.ndarray, wall: np.ndarray,
     Returns (inset_bits, ports) — or None for a normal cell. A "port" is a
     side whose edge line shows the twin-rail signature (two white runs
     separated by a small gap); it becomes a plain-door pip so the renderer
-    knows where the openings are. A port side that still shows background
-    on the edge is where the box is *inset* and the rails bridge the gap;
-    a port side without background opens flush into the neighbour."""
+    knows where the openings are. A port side with background *between* the
+    rails is where the box is inset and the rails bridge the gap; one whose
+    gap shows room fill opens flush into the neighbour. Independently, a
+    side whose edge line is mostly background is open space the box pulls
+    away from — that's how ZM's "narrow rooms" (full-width morph-ball
+    tunnels: twin rails hugging a 2px core, background above and below)
+    come out as thin bars instead of full squares."""
     ring = np.concatenate([
         bg[y0, x0:x0 + CELL], bg[y0 + CELL - 1, x0:x0 + CELL],
         bg[y0 + 1:y0 + CELL - 1, x0], bg[y0 + 1:y0 + CELL - 1, x0 + CELL - 1]])
@@ -228,8 +261,10 @@ def knob_geometry(bg: np.ndarray, wall: np.ndarray,
                 start = None
         if len(runs) == 2 and 1 <= runs[1][0] - runs[0][1] <= 4:
             ports.append(letter + "n")
-            if bg[edge].any():
+            if bg[edge][runs[0][1]:runs[1][0]].any():
                 inset |= side
+        if int(bg[edge].sum()) >= 6:
+            inset |= side
     return inset, ports
 
 
@@ -251,6 +286,38 @@ def strip_ship(ymask: np.ndarray) -> bool:
     return stripped
 
 
+def strip_icon_art(doors: dict, ox: int, oy: int) -> int:
+    """ZM bakes icon art into room interiors in door-pip colors: chozo-statue
+    blobs in door-red, major-item starbursts in red + yellow. A door-colored
+    component is a real pip only if it lives on a cell border: either it
+    straddles a boundary (symmetric pips, and the station caption boxes,
+    which must stay in the mask — their box-red lines are what makes station
+    boundaries read as solid), or it's pip-sized (max dim 5, vs 6+ for every
+    icon) and touches a cell's border row/column (asymmetric one-sided
+    pips). Everything else is icon art — drop it so a blob grazing its
+    cell's border can't fake a pip. (Fusion's only interior door-color art
+    is the station letters, which never matched a pip scan anyway.) Returns
+    components stripped."""
+    stripped = 0
+    for m in doors.values():
+        for comp in components(m, diagonal=True):
+            ys = [p[0] for p in comp]
+            xs = [p[1] for p in comp]
+            crosses = any((b - oy) % CELL == 0
+                          for b in range(min(ys) + 1, max(ys) + 1)) or \
+                any((b - ox) % CELL == 0
+                    for b in range(min(xs) + 1, max(xs) + 1))
+            pip_sized = max(max(ys) - min(ys), max(xs) - min(xs)) < 5
+            on_border = any((y - oy) % CELL in (0, CELL - 1)
+                            or (x - ox) % CELL in (0, CELL - 1)
+                            for y, x in comp)
+            if not crosses and not (pip_sized and on_border):
+                for y, x in comp:
+                    m[y, x] = False
+                stripped += 1
+    return stripped
+
+
 def strip_boss_icon(wall: np.ndarray) -> list[tuple[int, int]]:
     """Defeated-boss rooms bake a small skull icon into the room fill, drawn
     in wall-white. In a one-cell-wide room its pixels land on the cell's
@@ -268,23 +335,24 @@ def strip_boss_icon(wall: np.ndarray) -> list[tuple[int, int]]:
     return hits
 
 
-def extract_area(img_path):
+def extract_area(img_path, pal):
     im = np.asarray(Image.open(img_path).convert("RGB")).astype(int)
     h, w = im.shape[:2]
-    fills = [mask(im, c) for c in FILLS]
+    fills = [mask(im, c) for c in pal["fills"]]
     anyfill = np.logical_or.reduce(fills)
-    wall = mask(im, WALL)
+    wall = mask(im, pal["wall"])
     skulls = strip_boss_icon(wall)
-    doors = {k: mask(im, c) for k, c in DOORS.items()}
+    ox, oy = detect_phase(anyfill | wall, CELL)
+    doors = {k: mask(im, c) for k, c in pal["doors"].items()}
     strip_ship(doors["y"])
+    icon_art = strip_icon_art(doors, ox, oy)
     anydoor = np.logical_or.reduce(list(doors.values()))
     icon = np.zeros_like(wall)
-    for c in ICONS:
+    for c in pal["icons"]:
         icon |= mask(im, c)
     bg = np.zeros_like(wall)
-    for c in BACKGROUND:
+    for c in pal["background"]:
         bg |= mask(im, c)
-    ox, oy = detect_phase(anyfill | wall, CELL)
     cols, rows = (w - ox) // CELL, (h - oy) // CELL
 
     cells = {}
@@ -299,14 +367,23 @@ def extract_area(img_path):
             nicon = int(icon[inner].sum())
             if nfill < FILL_MIN and (nfill + nicon) < ICON_MIN:
                 continue
-            if is_ladder(anyfill[y0:y0 + CELL, x0:x0 + CELL]):
+            if pal.get("ladders", True) \
+                    and is_ladder(anyfill[y0:y0 + CELL, x0:x0 + CELL]):
                 ladders.append((x, y))
                 continue
             if nfill < FILL_MIN:
                 icon_only.append((x, y))
-            # fill variant: majority vote (icon-only cells default to 0)
+            # fill variant: majority vote. With "whiteFill", interior white
+            # outvoting every real fill marks a white-flooded icon room
+            # (chozo statue / major item), which gets the extra white variant
+            # one past the fills list; ties go to the real fill so a knob
+            # tunnel's rails (white 12 vs core 12) don't blanch it.
             counts = [int(f[inner].sum()) for f in fills]
-            variant = counts.index(max(counts)) if max(counts) else 0
+            if pal.get("whiteFill") \
+                    and int(wall[inner].sum()) > max(counts):
+                variant = len(fills)
+            else:
+                variant = counts.index(max(counts)) if max(counts) else 0
             knob = knob_geometry(bg, wall, x0, y0)
             if knob is not None:
                 inset, ports = knob
@@ -338,7 +415,7 @@ def extract_area(img_path):
     # report skulls in cell coords so the note lines up with the others
     skull_cells = sorted({((px - ox) // CELL, (py - oy) // CELL)
                           for (py, px) in skulls})
-    return cols, rows, cells, icon_only, ladders, knobs, skull_cells
+    return cols, rows, cells, icon_only, ladders, knobs, skull_cells, icon_art
 
 
 def main() -> None:
@@ -352,6 +429,11 @@ def main() -> None:
             continue
         game_id = data["game"]
         if only and game_id != only:
+            continue
+        pal = PALETTES.get(game_id)
+        if pal is None:
+            print(f"  ERROR: no palette for {game_id} in PALETTES - sample its "
+                  f"rips and add one; skipping")
             continue
         overrides = load_map_overrides(game_id)
         patched_areas = []
@@ -375,7 +457,8 @@ def main() -> None:
                 patched_areas.append((area, cells, mapobj))
                 print(f"  {area['id']}: no in-game image, using fallback grid")
                 continue
-            cols, rows, cells, icon_only, ladders, knobs, skulls = extract_area(img)
+            (cols, rows, cells, icon_only, ladders, knobs, skulls,
+             icon_art) = extract_area(img, pal)
             closed = close_perimeter(cells)
             # the rips' empty-lattice frame can exceed the SNES search window
             dx, dy, matches = align(cells, cols, rows, tiles,
@@ -412,6 +495,9 @@ def main() -> None:
             if skulls:
                 print(f"    note: boss skull icon(s) stripped from the wall "
                       f"mask: {[(x - dx, y - dy) for (x, y) in skulls]}")
+            if icon_art:
+                print(f"    note: {icon_art} interior icon-art component(s) "
+                      f"stripped from the door masks")
             if icon_only:
                 print(f"    note: icon-only cells (fill displaced by a station "
                       f"icon): {[(x - dx, y - dy) for (x, y) in icon_only]}")
