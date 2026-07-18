@@ -20,7 +20,8 @@ const ENABLED_AREAS: Record<string, Record<string, boolean>> = {
     norfair: true,
     'wrecked-ship': true,
     maridia: true,
-    tourian: true
+    tourian: true,
+    ceres: true
   }
 };
 
