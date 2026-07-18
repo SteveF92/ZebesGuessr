@@ -152,5 +152,133 @@
         "labelPos": "right"
       }
     ]
+  },
+  "sector-3": {
+    "connectors": [
+      {
+        "x0": 4,
+        "y0": 1,
+        "x1": 4,
+        "y1": 1,
+        "label": "Main Deck",
+        "labelPos": "above"
+      },
+      {
+        "x0": -1,
+        "y0": 5,
+        "x1": -1,
+        "y1": 5,
+        "label": "5",
+        "labelPos": "left"
+      },
+      {
+        "x0": 19,
+        "y0": 0,
+        "x1": 19,
+        "y1": 0,
+        "label": "1",
+        "labelPos": "right"
+      }
+    ]
+  },
+  "sector-4": {
+    "connectors": [
+      {
+        "x0": 20,
+        "y0": 3,
+        "x1": 20,
+        "y1": 3,
+        "label": "Main Deck",
+        "labelPos": "above"
+      },
+      {
+        "x0": 23,
+        "y0": 5,
+        "x1": 23,
+        "y1": 5,
+        "label": "6",
+        "labelPos": "right"
+      },
+      {
+        "x0": 18,
+        "y0": 11,
+        "x1": 18,
+        "y1": 11,
+        "label": "2",
+        "labelPos": "left"
+      },
+      {
+        "x0": 4,
+        "y0": 8,
+        "x1": 4,
+        "y1": 8,
+        "label": "5",
+        "labelPos": "left"
+      }
+    ]
+  },
+  "sector-5": {
+    "connectors": [
+      {
+        "x0": 0,
+        "y0": 3,
+        "x1": 0,
+        "y1": 3,
+        "label": "6",
+        "labelPos": "left"
+      },
+      {
+        "x0": 0,
+        "y0": 0,
+        "x1": 0,
+        "y1": 0,
+        "label": "Main Deck",
+        "labelPos": "above"
+      },
+      {
+        "x0": 13,
+        "y0": 2,
+        "x1": 13,
+        "y1": 2,
+        "label": "3",
+        "labelPos": "right"
+      }
+    ]
+  },
+  "sector-6": {
+    "connectors": [
+      {
+        "x0": 0,
+        "y0": 0,
+        "x1": 0,
+        "y1": 0,
+        "label": "Main Deck",
+        "labelPos": "above"
+      },
+      {
+        "x0": 1,
+        "y0": 2,
+        "x1": 1,
+        "y1": 2,
+        "label": "4",
+        "labelPos": "left"
+      },
+      {
+        "x0": 13,
+        "y0": 1,
+        "x1": 13,
+        "y1": 1,
+        "label": "5",
+        "labelPos": "right"
+      },
+      {
+        "x0": 0,
+        "y0": 8,
+        "x1": 0,
+        "y1": 8,
+        "label": "RESTRICTED AREA",
+        "labelPos": "left"
+      }
+    ]
   }
 }
