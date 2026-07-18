@@ -386,7 +386,14 @@
         "ingameUrl": "https://vgmaps.com/Atlas/GBA/Metroid-ZeroMission-Crateria(In-GameMap).png",
         "offsetX": 0,
         "offsetY": 0,
-        "excludeCells": [[21, 12]]
+        "excludeCells": [[21, 12]],
+        "keepTiles": [
+          [14, 1],
+          [15, 1],
+          [16, 1],
+          [17, 1],
+          [18, 1]
+        ]
       },
       {
         "id": "chozodia",
