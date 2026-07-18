@@ -67,7 +67,23 @@ export default function App() {
   const [selected, setSelected] = useState<{ areaId: string; cell: Cell } | null>(null);
   const [viewingAreaId, setViewingAreaId] = useState<string | null>(null);
   const [results, setResults] = useState<RoundResult[]>([]);
-  const [best, setBest] = useState<number>(() => Number(localStorage.getItem('zg-best') ?? 0));
+  // Personal bests are per game (`zg-best-<gameId>`). Unlocks gate on the MAX
+  // across all of them, so progress in any game earns the shared toys.
+  const [bests, setBests] = useState<Record<string, number>>(() => {
+    const out: Record<string, number> = {};
+    for (const g of GAMES) {
+      const v = Number(localStorage.getItem(`zg-best-${g.id}`) ?? 0);
+      if (v > 0) out[g.id] = v;
+    }
+    // Migrate the pre-split single PB into Super Metroid (the only game that
+    // existed when it was recorded), unless that game already has one.
+    const legacy = Number(localStorage.getItem('zg-best') ?? 0);
+    if (legacy > 0 && !out['super-metroid']) {
+      out['super-metroid'] = legacy;
+      localStorage.setItem('zg-best-super-metroid', String(legacy));
+    }
+    return out;
+  });
   const [difficultyId, setDifficultyId] = useState<string>(() => (loadedSeed ? DIFFICULTIES[loadedSeed.diffIndex]?.id : null) ?? localStorage.getItem('zg-difficulty') ?? 'tallon');
   const [selectedGameId, setSelectedGameId] = useState<string>(() => (loadedSeed ? GAMES[loadedSeed.gameIndex]?.id : null) ?? GAMES.find((g) => g.available)?.id ?? GAMES[0].id);
   const [debug, setDebug] = useState(false);
@@ -92,6 +108,8 @@ export default function App() {
 
   const difficulty = getDifficulty(difficultyId);
   const total = results.reduce((s, r) => s + r.score, 0);
+  // The unlock ladder gates on your best run across every game.
+  const best = useMemo(() => Math.max(0, ...Object.values(bests)), [bests]);
   // What the player has earned: the four unlockables, off the sticky PB plus the
   // two cheat flags. DEV keeps everything on so the editor/dev tools stay handy.
   const unlocks = useMemo(() => computeUnlocks(best, { jb: cheatJB, narpas: cheatNarpas }), [best, cheatJB, cheatNarpas]);
@@ -241,14 +259,16 @@ export default function App() {
   }, [debug, showTiles]);
 
   useEffect(() => {
-    if (phase === 'summary' && !visorsUsed && total > best) {
-      // Diff the unlock set at the old PB against the new one so the banner
-      // announces only the gates this run actually pushed past.
+    if (phase === 'summary' && !visorsUsed && data && total > (bests[data.game] ?? 0)) {
+      // Diff the unlock set at the old cross-game max against the new one so the
+      // banner announces only the gates this run actually pushed past.
+      const nextBests = { ...bests, [data.game]: total };
+      const nextMax = Math.max(0, ...Object.values(nextBests));
       const before = computeUnlocks(best, { jb: cheatJB, narpas: cheatNarpas });
-      const after = computeUnlocks(total, { jb: cheatJB, narpas: cheatNarpas });
+      const after = computeUnlocks(nextMax, { jb: cheatJB, narpas: cheatNarpas });
       setJustUnlocked(UNLOCK_ORDER.filter((k) => after[k] && !before[k]));
-      setBest(total);
-      localStorage.setItem('zg-best', String(total));
+      setBests(nextBests);
+      localStorage.setItem(`zg-best-${data.game}`, String(total));
     }
   }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -288,8 +308,8 @@ export default function App() {
                 disabled={!g.available || phase === 'loading' || !!loadedSeed}
                 onClick={() => setSelectedGameId(g.id)}
               >
-                <span>{g.title}</span>
-                {!g.available && <span className="standby">STANDBY</span>}
+                <span className="game-title">{g.title}</span>
+                {!g.available ? <span className="standby">STANDBY</span> : bests[g.id] > 0 ? <span className="game-pb">◆ {bests[g.id].toLocaleString()}</span> : null}
               </button>
             ))}
           </div>
@@ -335,7 +355,6 @@ export default function App() {
             </button>
           )}
         </div>
-        {best > 0 && <p className="best">◆ PERSONAL BEST&nbsp;&nbsp;{best.toLocaleString()}</p>}
         <Credits onAbout={() => setShowAbout(true)} />
         {showAbout && <AboutModal onClose={() => setShowAbout(false)} />}
         {showSeedEntry && <SeedEntryModal onClose={() => setShowSeedEntry(false)} onSubmitSeed={applySeed} onUnlockCheat={unlockCheat} />}
@@ -364,7 +383,11 @@ export default function App() {
               <p className="rank">{scoreRank(total)}</p>
               <p className="rank-flavor">{rankFlavor(total)}</p>
             </div>
-            {visorsUsed ? <div className="practice-note">◈ PRACTICE RUN — visors used, score not recorded</div> : total >= best && total > 0 && <div className="newbest">★ NEW PERSONAL BEST ★</div>}
+            {visorsUsed ? (
+              <div className="practice-note">◈ PRACTICE RUN — visors used, score not recorded</div>
+            ) : (
+              total >= (bests[data.game] ?? 0) && total > 0 && <div className="newbest">★ NEW PERSONAL BEST ★</div>
+            )}
             {justUnlocked.length > 0 && (
               <div className="unlock-banners">
                 {justUnlocked.map((k, i) => (

@@ -1111,7 +1111,7 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
         dotX += (iW - iE) / 2;
         dotY += (iN - iS) / 2;
       }
-      const half = S * 0.10;
+      const half = S * 0.1;
       ctx.fillStyle = COL.item;
       ctx.fillRect(dotX - half, dotY - half, half * 2, half * 2);
       return;
