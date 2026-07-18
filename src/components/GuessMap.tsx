@@ -245,8 +245,11 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
   // desktop viewport is sized to the fitted map (see `fittedSize`) so there's
   // no wasted letterbox space around it at the default zoom — the map fills it
   // edge to edge, exactly as the plain fit-to-viewport canvas used to.
-  // Editing (a desktop-only dev mode) keeps plain click-to-place, so panEnabled
-  // stays false there.
+  // Editing (a desktop-only dev mode) rides the same viewport — a click that
+  // barely moves is an edit-tool action, a drag pans, the wheel zooms — so the
+  // curator can zoom in to judge room difficulty. Every edit tool is
+  // click-to-place (two discrete clicks for connectors/name rectangles, never a
+  // drag), so nothing collides with the pan gesture.
   const scrollRef = useRef<HTMLDivElement>(null);
   const outerRef = useRef<HTMLDivElement>(null); // measured region the desktop viewport is fitted into
   const [smallScreen, setSmallScreen] = useState(false);
@@ -266,7 +269,7 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
       hover.removeEventListener('change', update);
     };
   }, []);
-  const panEnabled = !editing; // editing is a desktop-only dev mode (click-to-place)
+  const panEnabled = true; // play and editing both use the pan/zoom viewport
   const desktopPan = panEnabled && !smallScreen;
 
   // canvas' natural CSS size (backing store is 1:1 with CSS px): cols*S*SCALE.
@@ -1303,9 +1306,15 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
     } catch {
       /* pointer already released */
     }
-    // a lone finger that barely moved (and never became a pinch) is a tap
+    // a lone finger that barely moved (and never became a pinch) is a tap:
+    // an edit-tool action while editing, otherwise a guess.
     if (g.pointers.size === 0 && !g.multi && g.moved < TAP_SLOP) {
-      selectAtPoint(e.clientX, e.clientY);
+      if (editing) {
+        const c = cellFromPoint(e.clientX, e.clientY);
+        if (c) handleEditClick(c);
+      } else {
+        selectAtPoint(e.clientX, e.clientY);
+      }
     }
     if (g.pointers.size === 0) g.multi = false;
   }
@@ -1640,18 +1649,6 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
             onMouseLeave={() => {
               setHover(null);
               onHoverCell?.(area.id, null);
-            }}
-            onClick={(e) => {
-              if (panEnabled) return; // selection handled by the tap detector in onPointerUp
-              const c = cellFromEvent(e);
-              if (!c) return;
-              if (editing) {
-                handleEditClick(c);
-                return;
-              }
-              if (result) return;
-              if (!selectable.has(`${c.x},${c.y}`)) return;
-              onSelect(area.id, c);
             }}
           />
           {panEnabled && view && (
