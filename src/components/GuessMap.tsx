@@ -1096,10 +1096,10 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
       return;
     }
     if (g.t === 'item') {
-      // item blip: small bright dot, like the in-game map's item markers. On a
-      // knob (a sub-cell box inset toward its connector), nudge the dot to the
-      // box's true centre — away from the inset rail side — so it doesn't sit
-      // on the tunnel out.
+      // item blip: small bright square, like the in-game map's item markers. On
+      // a knob (a sub-cell box inset toward its connector), nudge the marker to
+      // the box's true centre — away from the inset rail side — so it doesn't
+      // sit on the tunnel out.
       let dotX = cx,
         dotY = cy;
       const w = knobWalls.get(`${Math.floor(g.x)},${Math.floor(g.y)}`);
@@ -1111,10 +1111,9 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
         dotX += (iW - iE) / 2;
         dotY += (iN - iS) / 2;
       }
+      const half = S * 0.10;
       ctx.fillStyle = COL.item;
-      ctx.beginPath();
-      ctx.arc(dotX, dotY, S * 0.16, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.fillRect(dotX - half, dotY - half, half * 2, half * 2);
       return;
     }
     if (g.t === 'ship') {
