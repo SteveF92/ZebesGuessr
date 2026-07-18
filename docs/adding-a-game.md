@@ -144,9 +144,15 @@ npm run format     # includes the regenerated public/data/*.json
 1. **Difficulty**: `pipeline/rate_tiles.py <game>` + a hand-curated
    `pipeline/room-difficulty.<game>.json` base (see
    `docs/tile-difficulty-notes.md`); until then everything rates 3.
-2. **Room names**: `roomNames.<game>.json` via the in-app editor's Name tool
-   (for Fusion/ZM there may be a community source to derive from, as Map
-   Rando's data was for Super Metroid).
+2. **Room names**: `roomNames.<game>.json`. Fusion's are bulk-derived from the
+   **Randovania** logic database (per-region JSON, `areas` keyed by name, each
+   with `extra.minimap_coordinates`) mapped onto our cell grid by a per-area
+   integer offset — see `pipeline/import_fusion_room_names.py` and the offset
+   table in it (Super's came from Map Rando's data the same way). The in-app
+   editor's Name tool touches up the ~3% Randovania doesn't cover. Randovania
+   also supports Zero Mission, so ZM's names can come from the same source —
+   **but its logic-database format differs**, so the Fusion importer won't run
+   as-is; adapt the offset table / lookup when ZM's MVP lands.
 3. **Glyphs**: `glyphs.<game>.json` via the editor. `MapGlyph['t']` now
    carries the Fusion-only `navigation` and `data` station kinds (alongside
    the shared save/map/recharge/ship/boss/item); the editor has **Nav**/**Data**
@@ -185,3 +191,7 @@ npm run format     # includes the regenerated public/data/*.json
 - What magenta vs green fill _means_ in the source rips is still unknown
   (preserved per cell as `f`); ZM should clarify whether it's per-state or
   per-area coloring.
+- **Room names** come from Randovania (see step 8.2 /
+  `pipeline/import_fusion_room_names.py`). ZM is also in Randovania but uses a
+  different logic-database format, so that importer needs adapting rather than
+  reusing verbatim.

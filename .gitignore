@@ -3,6 +3,7 @@ dist/
 .vite/
 Images/raw/
 pipeline/debug/
+logic_database/
 *.log
 *.tsbuildinfo
 .DS_Store

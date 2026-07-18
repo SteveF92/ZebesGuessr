@@ -40,6 +40,10 @@ export function AboutModal({ onClose }: { onClose: () => void }) {
           <a href="https://www.vgmaps.com">VGMaps</a> community.
         </p>
         <p>
+          Room names come from the fan communities that mapped these games out: Metroid Fusion's are from the <a href="https://randovania.org">Randovania</a> project and the Fusion community, and
+          Super Metroid's are from <a href="https://maprando.com">Map Rando</a> and the Super Metroid community.
+        </p>
+        <p>
           Metroid and all game imagery are © Nintendo. This is a non-commercial fan project and is not affiliated with or endorsed by Nintendo. If you are a rights holder and want something removed,
           open an issue and I'll remove it.
         </p>
