@@ -1648,8 +1648,8 @@ a:hover {
 /* ---- pan/zoom map ---- */
 /* The .pan class is applied whenever the map is a zoomable viewport (always,
    except the desktop-only editing mode — see GuessMap). The map-scroll becomes
-   a fixed viewport; the canvas is absolutely positioned and moved with a CSS
-   transform set inline from the view state.
+   a fixed viewport that the canvas fills; GuessMap renders the visible slice
+   of the map into it at device resolution each frame (viewport rendering).
 
    The .map-viewport wrapper is the region the viewport is fitted into. On
    desktop it's a flex box filling the pane, and GuessMap sizes .map-scroll to
@@ -1680,15 +1680,19 @@ a:hover {
   height: clamp(220px, 38dvh, 400px);
   touch-action: none; /* we own the gesture, so the page never pans/zooms */
 }
+/* Viewport rendering: the canvas fills the .map-scroll window 1:1 (its backing
+   store is the viewport at device resolution) and GuessMap composes the pan/
+   zoom view into the draw transform — no CSS transform moves the element. */
 .map-canvas.pan {
   position: absolute;
   top: 0;
   left: 0;
+  width: 100%;
+  height: 100%;
   max-width: none;
   max-height: none;
   cursor: default;
   touch-action: none;
-  will-change: transform;
 }
 /* desktop (mouse): the map still places a guess on click, so keep the
    crosshair affordance even though the same surface drags to pan */

@@ -99,9 +99,11 @@ function connectorFromDrag(a: Cell, c: Cell): Connector {
 
 /** logical units per map cell (all drawing math is in these units) */
 const S = 16;
-/** on-screen magnification: the canvas backing store and context are scaled by
- *  this so every cell renders SCALE×S css px. Bump to grow/shrink the whole map
- *  uniformly (cells, walls, glyphs, and the tile overlay together). */
+/** css px per logical unit at view.z = 1 — the unit convention behind the pan/
+ *  zoom plumbing (W0/H0, fitZ, zoomBounds) and the editing path's backing
+ *  scale. Play-mode rendering is viewport-based (the canvas draws at the
+ *  viewport's device resolution whatever the zoom), so this is NOT a quality
+ *  knob. */
 const SCALE = 2;
 /** deepest zoom-in, expressed as the on-screen size of one map cell (css px).
  *  The map's base scale draws a cell at S*SCALE (32px), so this is the real
@@ -606,7 +608,7 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
     };
   }, [showTiles, area, data]);
 
-  useEffect(draw); // repaint on every state change; canvas is small
+  useEffect(draw); // repaint on every state change (incl. each pan/zoom step; draws are culled to the viewport)
 
   /**
    * Anchor for the DOM TARGET callout, in map-scroll content coordinates
@@ -626,9 +628,19 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
     const sr = sc.getBoundingClientRect();
     if (cr.width === 0 || sr.width === 0) return null;
     const { cols, rows, dx, dy } = area.map;
-    const ax = cr.left - sr.left + sc.scrollLeft + ((result.target.cell.x + dx + 0.5) / cols) * cr.width;
-    const ay = cr.top - sr.top + sc.scrollTop + ((result.target.cell.y + dy + 0.5) / rows) * cr.height;
-    const gap = (8 / (cols * S)) * cr.width + 10; // clear the dashed ring + tail
+    let ax: number, ay: number, gap: number;
+    if (view) {
+      // viewport rendering: the canvas is the viewport, so the anchor comes
+      // from the view transform (canvas sits at the scroll box's origin)
+      ax = view.tx + (result.target.cell.x + dx + 0.5) * S * SCALE * xScale * view.z;
+      ay = view.ty + (result.target.cell.y + dy + 0.5) * S * SCALE * view.z;
+      gap = 8 * view.z * SCALE * xScale + 10; // clear the dashed ring + tail
+    } else {
+      // editing (legacy full-map canvas, CSS-fitted): rect proportions
+      ax = cr.left - sr.left + sc.scrollLeft + ((result.target.cell.x + dx + 0.5) / cols) * cr.width;
+      ay = cr.top - sr.top + sc.scrollTop + ((result.target.cell.y + dy + 0.5) / rows) * cr.height;
+      gap = (8 / (cols * S)) * cr.width + 10;
+    }
     const estW = 84; // label + frame + tail estimate, for edge flipping
     const hasTrail = isFinite(result.distance) && result.distance > 0 && result.guess.areaId === result.target.areaId;
     let right = hasTrail ? result.guess.cell.x <= result.target.cell.x : false;
@@ -647,32 +659,69 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
     const { cols, rows, dx, dy } = area.map;
     const w = cols * S,
       h = rows * S; // logical dims (all draw math)
-    // xScale widens the backing store (and the base transform below) while
-    // X-Ray is engaged, turning square cells into the GBA screen's 3:2 so the
-    // tile overlay isn't smushed. Every draw funnels through this one transform,
-    // and cellFromPoint normalizes against the canvas rect, so nothing else changes.
-    const bw = Math.round(w * SCALE * xScale),
-      bh = h * SCALE; // backing/displayed px
-    if (canvas.width !== bw) canvas.width = bw;
-    if (canvas.height !== bh) canvas.height = bh;
     const ctx = canvas.getContext('2d')!;
-    ctx.setTransform(SCALE * xScale, 0, 0, SCALE, 0, 0); // 1 logical unit -> SCALE css px (x widened by xScale)
+    // Visible-cell culling bounds in canvas-grid columns/rows (whole map when
+    // the legacy path draws, the on-screen slice under viewport rendering).
+    let gx0 = 0,
+      gy0 = 0,
+      gx1 = cols - 1,
+      gy1 = rows - 1;
+    if (view) {
+      // Viewport rendering (all play modes): the canvas IS the .map-scroll
+      // viewport, backed at device resolution, and the pan/zoom view is
+      // composed into the draw transform — each frame renders just the visible
+      // slice of the map at its current zoom, so vectors stay crisp at any
+      // depth and memory is bounded by the viewport regardless of map size.
+      // xScale (X-Ray's GBA 3:2 stretch) rides the same transform.
+      const sc = scrollRef.current;
+      if (!sc) return;
+      const dpr = window.devicePixelRatio || 1;
+      const vw = sc.clientWidth,
+        vh = sc.clientHeight;
+      const bw = Math.round(vw * dpr),
+        bh = Math.round(vh * dpr);
+      if (canvas.width !== bw) canvas.width = bw;
+      if (canvas.height !== bh) canvas.height = bh;
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, bw, bh); // letterbox around the map shows .map-scroll's bg
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.translate(view.tx, view.ty);
+      ctx.scale(view.z * SCALE * xScale, view.z * SCALE);
+      const cw = view.z * SCALE * xScale * S,
+        ch = view.z * SCALE * S; // css px per map cell
+      gx0 = Math.max(0, Math.floor(-view.tx / cw));
+      gy0 = Math.max(0, Math.floor(-view.ty / ch));
+      gx1 = Math.min(cols - 1, Math.floor((vw - view.tx) / cw));
+      gy1 = Math.min(rows - 1, Math.floor((vh - view.ty) / ch));
+    } else {
+      // Editing (desktop-only dev mode, no pan/zoom): legacy full-map backing,
+      // CSS-fitted. xScale widens it while X-Ray is engaged.
+      const bw = Math.round(w * SCALE * xScale),
+        bh = h * SCALE; // backing/displayed px
+      if (canvas.width !== bw) canvas.width = bw;
+      if (canvas.height !== bh) canvas.height = bh;
+      ctx.setTransform(SCALE * xScale, 0, 0, SCALE, 0, 0); // 1 logical unit -> SCALE css px (x widened by xScale)
+    }
+    // Tile-coordinate culling bounds for the cell loops (mirror of gx/gy).
+    const vis = { x0: gx0 - dx, y0: gy0 - dy, x1: gx1 - dx, y1: gy1 - dy };
 
-    // background: the pause screen's empty-space treatment. SNES draws a
-    // purple dot lattice on black; GBA draws a grid of dark squares on navy
-    // lines (1 source px of line = 2 logical px around each 8px cell).
+    // background: the pause screen's empty-space treatment, drawn only over
+    // the visible cell range. SNES draws a purple dot lattice on black; GBA
+    // draws a grid of dark squares on navy lines (1 source px of line = 2
+    // logical px around each 8px cell).
     ctx.fillStyle = COL.bg;
-    ctx.fillRect(0, 0, w, h);
+    ctx.fillRect(gx0 * S, gy0 * S, (gx1 - gx0 + 1) * S, (gy1 - gy0 + 1) * S);
     ctx.fillStyle = COL.dot;
     if (mapStyle === 'gba') {
-      for (let cy = 0; cy < rows; cy++) {
-        for (let cx = 0; cx < cols; cx++) {
+      for (let cy = gy0; cy <= gy1; cy++) {
+        for (let cx = gx0; cx <= gx1; cx++) {
           ctx.fillRect(cx * S + 2, cy * S + 2, S - 4, S - 4);
         }
       }
     } else {
-      for (let y = S / 4; y < h; y += S / 2) {
-        for (let x = S / 4; x < w; x += S / 2) {
+      // dot phase: lattice points sit at S/4 + k*S/2, so a row's first is gy*S + S/4
+      for (let y = gy0 * S + S / 4; y < (gy1 + 1) * S; y += S / 2) {
+        for (let x = gx0 * S + S / 4; x < (gx1 + 1) * S; x += S / 2) {
           ctx.fillRect(x, y, 2, 2);
         }
       }
@@ -686,11 +735,14 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
 
     // stair passages go first so room cells drawn after cover the band ends
     for (const b of area.map.bands ?? []) drawBand(ctx, b);
-    for (const c of area.cells) drawCell(ctx, c);
+    for (const c of area.cells) {
+      if (c.x < vis.x0 || c.x > vis.x1 || c.y < vis.y0 || c.y > vis.y1) continue;
+      drawCell(ctx, c);
+    }
     for (const c of overlays.connectors) drawConnector(ctx, c, false);
     if (editing) drawOverlayEditing(ctx);
     for (const g of glyphs) drawGlyph(ctx, g);
-    if (tileP > 0) drawTiles(ctx);
+    if (tileP > 0) drawTiles(ctx, vis);
     if (editing) (tool === 'difficulty' ? drawDiffTint : drawRoomTint)(ctx);
 
     // Prime scan-visor brackets: four corner Ls around a cell, in place of a
@@ -1087,18 +1139,21 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
    *  judged against the real imagery. Images stream in asynchronously; cells
    *  whose PNG hasn't loaded yet keep the recreation fill until it arrives.
    *  Drawn under the Diff tint (which stays translucent) and the markers. */
-  function drawTiles(ctx: CanvasRenderingContext2D) {
+  function drawTiles(ctx: CanvasRenderingContext2D, vis: { x0: number; y0: number; x1: number; y1: number }) {
     ctx.save();
     ctx.globalAlpha = tileP; // step two: the real screens fade in over the stretched cells
-    // Each native screen (SNES 256², GBA 240×160) is minified hard into its map
-    // cell (~32² / 48×32 px). Nearest-neighbor point-samples one source pixel per
-    // ~5×5–8×8 block and aliases fine art into mud (worst on GBA); high-quality
-    // smoothing area-averages instead, so the cell reads as a clean minimap.
-    ctx.imageSmoothingEnabled = true;
+    // Minified (cell smaller than the native screen), nearest-neighbor
+    // point-samples one source pixel per block and aliases fine art into mud
+    // (worst on GBA), so high-quality smoothing area-averages instead — the
+    // cell reads as a clean minimap. Magnified (zoomed to/past native res),
+    // smoothing would blur, so it flips off for authentic sharp pixels.
     ctx.imageSmoothingQuality = 'high';
+    const cellDevW = (view ? view.z * (window.devicePixelRatio || 1) : 1) * S * SCALE * xScale; // device px per cell
     for (const c of area.cells) {
+      if (c.x < vis.x0 || c.x > vis.x1 || c.y < vis.y0 || c.y > vis.y1) continue;
       const img = tileCache.current.get(tileUrl(data, { areaId: area.id, cell: c }));
       if (!img || !img.complete || img.naturalWidth === 0) continue;
+      ctx.imageSmoothingEnabled = cellDevW < img.naturalWidth;
       ctx.drawImage(img, c.x * S, c.y * S, S, S);
     }
     ctx.restore();
@@ -1130,14 +1185,22 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
     ctx.restore();
   }
 
-  /** Returns TILE coordinates — the mirror of the translate in `draw`, and the
-   *  only other place the map canvas' own grid is acknowledged. Uses the
-   *  canvas' on-screen rect, so it accounts for the pan/zoom CSS transform. */
+  /** Returns TILE coordinates — the mirror of the view/base transform in
+   *  `draw`, and the only other place the map canvas' own grid is
+   *  acknowledged. Under viewport rendering the canvas rect is the viewport,
+   *  so the map position comes from the view transform; the editing path's
+   *  full-map canvas keeps the rect-proportion math. */
   function cellFromPoint(clientX: number, clientY: number): Cell | null {
     const canvas = canvasRef.current!;
     const rect = canvas.getBoundingClientRect();
-    const x = Math.floor(((clientX - rect.left) / rect.width) * area.map.cols);
-    const y = Math.floor(((clientY - rect.top) / rect.height) * area.map.rows);
+    let x: number, y: number;
+    if (view) {
+      x = Math.floor((clientX - rect.left - view.tx) / (view.z * S * SCALE * xScale));
+      y = Math.floor((clientY - rect.top - view.ty) / (view.z * S * SCALE));
+    } else {
+      x = Math.floor(((clientX - rect.left) / rect.width) * area.map.cols);
+      y = Math.floor(((clientY - rect.top) / rect.height) * area.map.rows);
+    }
     if (x < 0 || y < 0 || x >= area.map.cols || y >= area.map.rows) return null;
     return { x: x - area.map.dx, y: y - area.map.dy };
   }
@@ -1540,7 +1603,6 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
           <canvas
             ref={canvasRef}
             className={`map-canvas${editing ? ' editing' : ''}${panEnabled ? ' pan' : ''}${showTiles ? ' xray' : ''}`}
-            style={panEnabled && view ? { transform: `translate(${view.tx}px, ${view.ty}px) scale(${view.z})`, transformOrigin: '0 0' } : undefined}
             onPointerDown={onPointerDown}
             onPointerMove={onPointerMove}
             onPointerUp={onPointerUp}
