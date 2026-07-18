@@ -870,6 +870,11 @@ a:hover {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  /* .panes aligns items to the top (flex-start), which would leave the right
+     pane only as tall as its content. Stretch it to the full row height so the
+     map's flex chain (.guess-map → .map-viewport) has a definite region to fit
+     into, and the fitted viewport can use the whole available height. */
+  align-self: stretch;
 }
 
 /* ---------- mystery-screen "visor" ---------- */
@@ -1640,17 +1645,35 @@ a:hover {
   }
 }
 
-/* ---- touch pan/zoom map (small screens) ---- */
-/* The .pan class is only applied on small/touch screens (see GuessMap). The
-   map-scroll becomes a fixed-height window; the canvas is absolutely
-   positioned and moved with a CSS transform set inline from the view state. */
+/* ---- pan/zoom map ---- */
+/* The .pan class is applied whenever the map is a zoomable viewport (always,
+   except the desktop-only editing mode — see GuessMap). The map-scroll becomes
+   a fixed viewport; the canvas is absolutely positioned and moved with a CSS
+   transform set inline from the view state.
+
+   The .map-viewport wrapper is the region the viewport is fitted into. On
+   desktop it's a flex box filling the pane, and GuessMap sizes .map-scroll to
+   the fitted map (inline) and top-left-aligns it here — so the default zoom
+   fills the viewport edge to edge with no wasted letterbox space, exactly like
+   the old fit-to-viewport canvas. On phones the wrapper is display:contents
+   (no box), so .map-scroll is a direct flex child of .guess-map as before, and
+   its own width/height rules below drive the fixed window. */
+.map-viewport {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+}
 .map-scroll.pan {
   display: block;
   position: relative;
   overflow: hidden;
   flex: none;
   /* full width: the canvas is absolutely positioned (out of flow), so without
-     this the container would collapse to nothing under align-items: flex-start */
+     this the container would collapse to nothing under align-items: flex-start.
+     On desktop an inline width/height (the fitted map size) overrides this. */
   width: 100%;
   /* fixed viewport into the (zoomable) map — sized so the guessing phase fits
      the screen without page scroll, while staying usable when zoomed in */
@@ -1666,6 +1689,13 @@ a:hover {
   cursor: default;
   touch-action: none;
   will-change: transform;
+}
+/* desktop (mouse): the map still places a guess on click, so keep the
+   crosshair affordance even though the same surface drags to pan */
+@media (hover: hover) {
+  .map-canvas.pan {
+    cursor: crosshair;
+  }
 }
 /* zoom control cluster, bottom-right of the map window */
 .map-zoom {
@@ -2208,6 +2238,13 @@ a:hover {
   }
   .hud-tool .tool-glyph {
     width: 20px;
+  }
+
+  /* phones don't fit the map to a region — the .pan window's own width/height
+     rules drive it. Collapse the desktop wrapper so .map-scroll is a direct
+     flex child of .guess-map, exactly as before this wrapper existed. */
+  .map-viewport {
+    display: contents;
   }
 
   /* area tabs: one swipeable row instead of wrapping into three */

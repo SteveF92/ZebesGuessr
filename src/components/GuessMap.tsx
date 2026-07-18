@@ -232,25 +232,54 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
   const [bossLoaded, setBossLoaded] = useState(false);
   const [hover, setHover] = useState<Cell | null>(null);
 
-  // ---- pan/zoom (touch / small screens only) -----------------------------
-  // The wide pause maps are unusable when squeezed to a phone's width, so on
-  // small screens the map becomes a pinch-zoomable, drag-pannable viewport.
-  // Desktop keeps plain click-to-place (panEnabled stays false there).
+  // ---- pan/zoom ----------------------------------------------------------
+  // The map is a fixed viewport you can pinch / wheel-zoom and drag-pan, its
+  // default zoom fitting the whole area on screen. On phones this is the only
+  // way the wide maps are usable; on desktop it's an optional deeper look. The
+  // desktop viewport is sized to the fitted map (see `fittedSize`) so there's
+  // no wasted letterbox space around it at the default zoom — the map fills it
+  // edge to edge, exactly as the plain fit-to-viewport canvas used to.
+  // Editing (a desktop-only dev mode) keeps plain click-to-place, so panEnabled
+  // stays false there.
   const scrollRef = useRef<HTMLDivElement>(null);
+  const outerRef = useRef<HTMLDivElement>(null); // measured region the desktop viewport is fitted into
   const [smallScreen, setSmallScreen] = useState(false);
+  const [hoverCapable, setHoverCapable] = useState(false); // a mouse (not touch): drives hover preview
   useEffect(() => {
-    const mq = window.matchMedia('(max-width: 800px)');
-    const update = () => setSmallScreen(mq.matches);
+    const small = window.matchMedia('(max-width: 800px)');
+    const hover = window.matchMedia('(hover: hover)');
+    const update = () => {
+      setSmallScreen(small.matches);
+      setHoverCapable(hover.matches);
+    };
     update();
-    mq.addEventListener('change', update);
-    return () => mq.removeEventListener('change', update);
+    small.addEventListener('change', update);
+    hover.addEventListener('change', update);
+    return () => {
+      small.removeEventListener('change', update);
+      hover.removeEventListener('change', update);
+    };
   }, []);
-  const panEnabled = smallScreen && !editing; // editing is a desktop-only dev mode
+  const panEnabled = !editing; // editing is a desktop-only dev mode (click-to-place)
+  const desktopPan = panEnabled && !smallScreen;
 
   // canvas' natural CSS size (backing store is 1:1 with CSS px): cols*S*SCALE.
   // xScale widens it while X-Ray is engaged so the pan fit math tracks the map.
   const W0 = area.map.cols * S * SCALE * xScale;
   const H0 = area.map.rows * S * SCALE;
+
+  // Desktop: the pan viewport (.map-scroll) is sized to the fitted map so no
+  // letterbox space surrounds it. `avail` is the region it's fitted into
+  // (measured); `fittedSize` is the resulting content-box size. Phones don't
+  // use this — their viewport is a CSS full-width / clamped-height window.
+  const [avail, setAvail] = useState<{ w: number; h: number } | null>(null);
+  const fittedSize = useMemo(() => {
+    if (!desktopPan || !avail) return null;
+    const B = 2; // .map-scroll's 1px border, both sides — leave room for it
+    const z = Math.min((avail.w - B) / W0, (avail.h - B) / H0);
+    if (!isFinite(z) || z <= 0) return null;
+    return { w: Math.round(W0 * z), h: Math.round(H0 * z) };
+  }, [desktopPan, avail, W0, H0]);
 
   // view transform applied to the canvas: displayed = translate(tx,ty) scale(z)
   const [view, setView] = useState<{ z: number; tx: number; ty: number } | null>(null);
@@ -304,6 +333,36 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
     });
   }
 
+  // latest zoomAround for the native wheel listener (avoids re-binding on pan)
+  const zoomAroundRef = useRef(zoomAround);
+  zoomAroundRef.current = zoomAround;
+  // Desktop: the mouse wheel zooms toward the cursor. A native, non-passive
+  // listener so we can preventDefault the page scroll; phones pinch instead.
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el || !desktopPan) return;
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const rect = el.getBoundingClientRect();
+      zoomAroundRef.current(e.deltaY < 0 ? 1.12 : 1 / 1.12, e.clientX - rect.left, e.clientY - rect.top);
+    };
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onWheel);
+  }, [desktopPan]);
+
+  // Desktop: measure the region the viewport is fitted into (the flex box that
+  // wraps the map). Re-measured on resize; unused on phones (display:contents
+  // there, so the wrapper has no box of its own).
+  useLayoutEffect(() => {
+    const el = outerRef.current;
+    if (!el) return;
+    const update = () => setAvail({ w: el.clientWidth, h: el.clientHeight });
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [panEnabled]);
+
   // (re)fit whenever pan turns on, the area changes, or the viewport resizes
   // (orientation flip). useLayoutEffect + synchronous fit avoids a first-paint
   // flash of the full-size canvas.
@@ -319,7 +378,7 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
     ro.observe(el);
     return () => ro.disconnect();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [panEnabled, area.id, showTiles]);
+  }, [panEnabled, area.id, showTiles, fittedSize?.w, fittedSize?.h]);
 
   // Actual-game-screen overlay (showTiles): cache of the per-cell tile PNGs,
   // keyed by URL. Bumping tileVersion as they stream in triggers a repaint.
@@ -454,9 +513,10 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
     return () => cancelAnimationFrame(raf);
   }, [selected, result]);
 
-  // Small screens: when the reveal's target sits outside the current pan
-  // view (the player was zoomed in on their guess), follow the dot trail as
-  // it draws — keep the tip centered until lock-on, then hand control back.
+  // When the reveal's target sits outside the current pan view (the player
+  // was zoomed in on their guess), follow the dot trail as it draws — keep the
+  // tip centered until lock-on, then hand control back. Applies wherever pan is
+  // live (phones always, desktop once zoomed past the fitted default).
   const followTip = useRef(false);
   useEffect(() => {
     followTip.current = false;
@@ -1461,66 +1521,72 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
           {saveMsg && <span className="edit-msg">{saveMsg}</span>}
         </div>
       )}
-      <div className={`map-scroll${panEnabled ? ' pan' : ''}${result ? (!isFinite(result.distance) ? ' shake-wrong' : result.distance >= 10 ? ' shake-far' : '') : ''}`} ref={scrollRef}>
-        {result && <div className="map-scan-sweep" aria-hidden="true" />}
-        {callout && (
-          <div className={`target-callout${targetBlink ? ' alt' : ''}${callout.right ? ' right' : ''}`} style={{ left: callout.x, top: callout.y }} aria-hidden="true">
-            TARGET
-          </div>
-        )}
-        <canvas
-          ref={canvasRef}
-          className={`map-canvas${editing ? ' editing' : ''}${panEnabled ? ' pan' : ''}${showTiles ? ' xray' : ''}`}
-          style={panEnabled && view ? { transform: `translate(${view.tx}px, ${view.ty}px) scale(${view.z})`, transformOrigin: '0 0' } : undefined}
-          onPointerDown={onPointerDown}
-          onPointerMove={onPointerMove}
-          onPointerUp={onPointerUp}
-          onPointerCancel={onPointerUp}
-          onMouseMove={(e) => {
-            if (panEnabled) return; // touch/small screens use pointer handlers + no hover
-            const c = cellFromEvent(e);
-            const occ = c !== null && selectable.has(`${c.x},${c.y}`);
-            // Report the pointed-at cell anywhere on the map, not just over drawn
-            // rooms — empty cells still have a real coordinate (the scanner shows
-            // it as "no signal"). null only when the cursor leaves the map.
-            onHoverCell?.(area.id, c, occ ? roomEdits[roomKeyAt(c!)] : undefined);
-            if (editing) {
-              setHover(c);
-              return;
-            }
-            if (result) return;
-            setHover(occ ? c : null);
-          }}
-          onMouseLeave={() => {
-            setHover(null);
-            onHoverCell?.(area.id, null);
-          }}
-          onClick={(e) => {
-            if (panEnabled) return; // selection handled by the tap detector in onPointerUp
-            const c = cellFromEvent(e);
-            if (!c) return;
-            if (editing) {
-              handleEditClick(c);
-              return;
-            }
-            if (result) return;
-            if (!selectable.has(`${c.x},${c.y}`)) return;
-            onSelect(area.id, c);
-          }}
-        />
-        {panEnabled && view && (
-          <div className="map-zoom">
-            <button className="map-zoom-btn" aria-label="Zoom in" onClick={() => zoomAround(1.5, (scrollRef.current?.clientWidth ?? 0) / 2, (scrollRef.current?.clientHeight ?? 0) / 2)}>
-              +
-            </button>
-            <button className="map-zoom-btn" aria-label="Zoom out" onClick={() => zoomAround(1 / 1.5, (scrollRef.current?.clientWidth ?? 0) / 2, (scrollRef.current?.clientHeight ?? 0) / 2)}>
-              −
-            </button>
-            <button className="map-zoom-btn" aria-label="Fit whole map" onClick={fitView}>
-              ⤢
-            </button>
-          </div>
-        )}
+      <div className="map-viewport" ref={outerRef}>
+        <div
+          className={`map-scroll${panEnabled ? ' pan' : ''}${result ? (!isFinite(result.distance) ? ' shake-wrong' : result.distance >= 10 ? ' shake-far' : '') : ''}`}
+          ref={scrollRef}
+          style={fittedSize ? { width: fittedSize.w, height: fittedSize.h, boxSizing: 'content-box' } : undefined}
+        >
+          {result && <div className="map-scan-sweep" aria-hidden="true" />}
+          {callout && (
+            <div className={`target-callout${targetBlink ? ' alt' : ''}${callout.right ? ' right' : ''}`} style={{ left: callout.x, top: callout.y }} aria-hidden="true">
+              TARGET
+            </div>
+          )}
+          <canvas
+            ref={canvasRef}
+            className={`map-canvas${editing ? ' editing' : ''}${panEnabled ? ' pan' : ''}${showTiles ? ' xray' : ''}`}
+            style={panEnabled && view ? { transform: `translate(${view.tx}px, ${view.ty}px) scale(${view.z})`, transformOrigin: '0 0' } : undefined}
+            onPointerDown={onPointerDown}
+            onPointerMove={onPointerMove}
+            onPointerUp={onPointerUp}
+            onPointerCancel={onPointerUp}
+            onMouseMove={(e) => {
+              if (!hoverCapable) return; // touch screens have no hover (pointer handlers drive them)
+              const c = cellFromEvent(e);
+              const occ = c !== null && selectable.has(`${c.x},${c.y}`);
+              // Report the pointed-at cell anywhere on the map, not just over drawn
+              // rooms — empty cells still have a real coordinate (the scanner shows
+              // it as "no signal"). null only when the cursor leaves the map.
+              onHoverCell?.(area.id, c, occ ? roomEdits[roomKeyAt(c!)] : undefined);
+              if (editing) {
+                setHover(c);
+                return;
+              }
+              if (result) return;
+              setHover(occ ? c : null);
+            }}
+            onMouseLeave={() => {
+              setHover(null);
+              onHoverCell?.(area.id, null);
+            }}
+            onClick={(e) => {
+              if (panEnabled) return; // selection handled by the tap detector in onPointerUp
+              const c = cellFromEvent(e);
+              if (!c) return;
+              if (editing) {
+                handleEditClick(c);
+                return;
+              }
+              if (result) return;
+              if (!selectable.has(`${c.x},${c.y}`)) return;
+              onSelect(area.id, c);
+            }}
+          />
+          {panEnabled && view && (
+            <div className="map-zoom">
+              <button className="map-zoom-btn" aria-label="Zoom in" onClick={() => zoomAround(1.5, (scrollRef.current?.clientWidth ?? 0) / 2, (scrollRef.current?.clientHeight ?? 0) / 2)}>
+                +
+              </button>
+              <button className="map-zoom-btn" aria-label="Zoom out" onClick={() => zoomAround(1 / 1.5, (scrollRef.current?.clientWidth ?? 0) / 2, (scrollRef.current?.clientHeight ?? 0) / 2)}>
+                −
+              </button>
+              <button className="map-zoom-btn" aria-label="Fit whole map" onClick={fitView}>
+                ⤢
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
