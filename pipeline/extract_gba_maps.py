@@ -40,8 +40,9 @@ import numpy as np
 from PIL import Image
 
 from maplib import (E, N, ROOT, S, W, align, apply_cell_overrides,
-                    close_perimeter, components, detect_phase, fallback_cells,
-                    find_ingame_image, load_map_overrides, mask, merge_cells)
+                    apply_cell_removals, close_perimeter, components,
+                    detect_phase, fallback_cells, find_ingame_image,
+                    load_map_overrides, mask, merge_cells)
 
 CELL = 8  # in-game map cell size in source pixels
 
@@ -466,6 +467,7 @@ def main() -> None:
                                     search=range(-16, 33))
             drawn = {(x - dx, y - dy): v for (x, y), v in cells.items()}
             overridden = apply_cell_overrides(drawn, ov)
+            removed = apply_cell_removals(drawn, ov)
             merged, tileless = merge_cells(tiles, drawn)
             undrawn = sum(1 for c in merged if "k" not in c)
             # Trim the render viewport to the tile grid + margin: the source
@@ -484,7 +486,8 @@ def main() -> None:
             print(f"  {area['id']}: {cols}x{rows} map, {len(merged)} cells "
                   f"({undrawn} undrawn), offset ({dx},{dy}), {matches} aligned "
                   f"of {len(cells)} drawn, {ndoors} door pips, {nalt} alt-fill "
-                  f"cells, {closed} edges closed, {overridden} cells overridden")
+                  f"cells, {closed} edges closed, {overridden} cells overridden, "
+                  f"{removed} removed")
             if ladders:
                 print(f"    note: {len(ladders)} ladder cell(s) stripped "
                       f"(hand-place connectors over them): "

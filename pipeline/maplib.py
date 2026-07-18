@@ -119,8 +119,12 @@ def load_map_overrides(game_id: str) -> dict:
     ``cells`` upserts a cell's draw data by (x, y) — used to reclassify a room
     as a stair (`diag`) or to draw rooms the pixel heuristics miss. ``bands``
     replaces the area's whole band list (the auto-fitted stair polygons look
-    rough; these are drawn by hand). Both are applied after alignment, so they
-    are expressed in the same tile coordinates as everything else.
+    rough; these are drawn by hand). ``removeCells`` deletes a cell the pause
+    map draws but shouldn't — a phantom room the source rip charts over blank
+    detail-map space (drop its tile via excludeCells / by not forcing it in;
+    this drops the matching draw data so it isn't kept as a tile-less target).
+    All are applied after alignment, so they are expressed in the same tile
+    coordinates as everything else.
     """
     f = ROOT / "public" / "data" / f"mapOverrides.{game_id}.json"
     return json.loads(f.read_text()) if f.exists() else {}
@@ -140,6 +144,22 @@ def apply_cell_overrides(drawn: dict, ov: dict | None) -> int:
             v["doors"] = c["dr"]
         drawn[(c["x"], c["y"])] = v
     return len(ov["cells"])
+
+
+def apply_cell_removals(drawn: dict, ov: dict | None) -> int:
+    """Delete phantom cells the pause map draws over blank detail-map space.
+
+    The tile is dropped by slice_maps (excludeCells, or simply not forcing a
+    white cell in); this removes the leftover draw data so merge_cells doesn't
+    keep it as a tile-less target. Applied after alignment, in tile coords.
+    """
+    if not ov or "removeCells" not in ov:
+        return 0
+    removed = 0
+    for (x, y) in ov["removeCells"]:
+        if drawn.pop((x, y), None) is not None:
+            removed += 1
+    return removed
 
 
 def _cell_json(x: int, y: int, v: dict | None) -> dict:

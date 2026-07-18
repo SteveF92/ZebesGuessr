@@ -89,8 +89,9 @@ Unlike the four files above (merged at runtime by `loadGameData`), `mapOverrides
 
 - `cells` — upserts a cell's draw data by `(x, y)`, each `{ x, y, k, w, [d] }`. Used to reclassify a room as a stair (`k: "diag"`) or to draw rooms the heuristics miss (Wrecked Ship's `(9,9)`, six Norfair rooms).
 - `bands` — replaces the area's whole `map.bands` list. The auto-fitted stair polygons (`extract_diag_bands`) overshoot and look rough; these are clean hand-drawn ones (fractional cells). The extractor still runs its own fit first (its sliver-deletion side effect is kept), then this array wins.
+- `removeCells` — deletes cells the pause map draws but shouldn't, each `[x, y]`. For a phantom the source rip charts over blank detail-map space (Fusion sector-3's `(17,4)`: the vgmaps _detail_ rip left the room white, so its tile is a pure-white screen, yet the pause map still draws it). Drop the tile too (`excludeCells`, or just don't force a white cell in with `includeCells`); this drops the leftover draw data so `merge_cells` doesn't keep it as a tile-less target. Pair it with a `cells` upsert on any neighbour left with a door pip into the now-empty slot.
 
-Both are tile coords and applied **after** alignment, like everything else.
+All three are tile coords and applied **after** alignment, like everything else.
 
 When you re-perfect a diagonal, edit this file — not `<game>.json` — then rerun `extract_ingame_maps.py` + `npm run format`.
 

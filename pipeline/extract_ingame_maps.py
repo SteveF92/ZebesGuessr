@@ -28,9 +28,10 @@ from pathlib import Path
 import numpy as np
 from PIL import Image
 
-from maplib import (E, N, ROOT, S, W, align, apply_cell_overrides, components,
-                    close_perimeter, detect_phase, fallback_cells,
-                    find_ingame_image, load_map_overrides, mask, merge_cells)
+from maplib import (E, N, ROOT, S, W, align, apply_cell_overrides,
+                    apply_cell_removals, components, close_perimeter,
+                    detect_phase, fallback_cells, find_ingame_image,
+                    load_map_overrides, mask, merge_cells)
 
 CELL = 8  # in-game map cell size in source pixels
 
@@ -365,6 +366,7 @@ def main() -> None:
             bands = [{"poly": [[round(px - dx, 3), round(py - dy, 3)]
                                for px, py in b["poly"]]} for b in bands]
             overridden = apply_cell_overrides(drawn, ov)
+            apply_cell_removals(drawn, ov)
             if ov and "bands" in ov:
                 bands = ov["bands"]  # hand-drawn stairs win over the auto-fit
             merged, tileless = merge_cells(tiles, drawn)

@@ -113,6 +113,14 @@ def process_game(game_id: str, game: dict) -> None:
                         tile_dir / f"cell_{x}_{y}.png", optimize=True
                     )
 
+        # Prune tiles for cells that are no longer playable (e.g. a cell newly
+        # dropped via excludeCells), so a rerun leaves no orphaned PNGs behind
+        # and the tiles dir always matches the JSON's cell list.
+        keep = {f"cell_{x}_{y}.png" for x, y in cells}
+        for stale in tile_dir.glob("cell_*.png"):
+            if stale.name not in keep:
+                stale.unlink()
+
         # Downscaled guess map (in-game-map vibe: detail lost, shapes kept).
         # Blank out excluded cells (credits banner, minimap inset) first.
         blank = (255, 255, 255) if bg == "white" else (0, 0, 0)
