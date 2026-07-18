@@ -103,6 +103,10 @@ const S = 16;
  *  this so every cell renders SCALE×S css px. Bump to grow/shrink the whole map
  *  uniformly (cells, walls, glyphs, and the tile overlay together). */
 const SCALE = 2;
+/** deepest zoom-in, expressed as the on-screen size of one map cell (css px).
+ *  The map's base scale draws a cell at S*SCALE (32px), so this is the real
+ *  zoom ceiling; large enough to inspect a single X-Ray screen up close. */
+const MAX_CELL_PX = 176;
 
 /* Marker colors (scan brackets, dot trail, target ring): shared visual
  * language across games, so they live outside the per-style palettes. */
@@ -303,10 +307,10 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
     const ty = sh <= vh ? (vh - sh) / 2 : Math.min(0, Math.max(vh - sh, v.ty));
     return { z: v.z, tx, ty };
   }
-  /** zoom bounds for the current viewport: out to whole-map, in to ~48px cells */
+  /** zoom bounds for the current viewport: out to whole-map, in to MAX_CELL_PX cells */
   function zoomBounds(vw: number, vh: number) {
     const fitZ = Math.min(vw / W0, vh / H0);
-    return { fitZ, maxZ: Math.max(fitZ, 48 / (S * SCALE)) };
+    return { fitZ, maxZ: Math.max(fitZ, MAX_CELL_PX / (S * SCALE)) };
   }
   /** reset to whole-area-visible, centered */
   function fitView() {
