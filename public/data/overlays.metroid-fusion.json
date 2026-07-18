@@ -113,7 +113,7 @@
         "y0": 12,
         "x1": 1,
         "y1": 12,
-        "label": "RESTRICTED AREA"
+        "label": "RESTRICTED"
       }
     ]
   },
@@ -276,8 +276,8 @@
         "y0": 8,
         "x1": 0,
         "y1": 8,
-        "label": "RESTRICTED AREA",
-        "labelPos": "left"
+        "label": "RESTRICTED",
+        "labelPos": "above"
       }
     ]
   }
