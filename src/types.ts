@@ -88,6 +88,12 @@ export interface Connector {
   /** which side of the connector the label sits on (default: "below" for
    *  vertical, "right" for horizontal) */
   labelPos?: 'above' | 'below' | 'left' | 'right';
+  /** orientation override for a single-cell connector, where neither axis
+   *  dominates. Normally the label side breaks the tie (left/right ⇒
+   *  horizontal), but a horizontal stub labelled above/below can't be expressed
+   *  that way — set this explicitly for it. Ignored when the span already picks
+   *  an axis (x0≠x1 or y0≠y1). */
+  horizontal?: boolean;
 }
 
 /**

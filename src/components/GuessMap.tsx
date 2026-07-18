@@ -88,13 +88,16 @@ function connBounds(c: Connector) {
   };
 }
 /** true when the connector runs left-right (wider than it is tall). For a
- *  single cell (neither axis dominates) the label side breaks the tie, so a
- *  1-cell connector labelled left/right renders as a horizontal stub. */
+ *  single cell (neither axis dominates) an explicit `horizontal` wins;
+ *  otherwise the label side breaks the tie, so a 1-cell connector labelled
+ *  left/right renders as a horizontal stub. The override exists for the one
+ *  case the label can't cover: a horizontal stub labelled above/below. */
 function connHorizontal(c: Connector) {
   const b = connBounds(c);
   const dx = b.maxX - b.minX,
     dy = b.maxY - b.minY;
   if (dx !== dy) return dx > dy;
+  if (c.horizontal !== undefined) return c.horizontal;
   return c.labelPos === 'left' || c.labelPos === 'right';
 }
 function connContains(c: Connector, cell: Cell) {
@@ -467,6 +470,15 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
 
   /** every cell of the area, for pointer hit-testing (tile coords) */
   const selectable = useMemo(() => new Set(area.cells.map((c) => `${c.x},${c.y}`)), [area]);
+
+  /** knob cells keyed "x,y" -> wall bits: knobs are sub-cell boxes inset toward
+   *  a connector, so an item drawn on one nudges to the box's real centre (away
+   *  from the rail side) rather than the cell centre. */
+  const knobWalls = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const c of area.cells) if (c.k === 'knob') m.set(`${c.x},${c.y}`, c.w);
+    return m;
+  }, [area]);
 
   // Room walls a diagonal passage opens through, keyed `x,y,dir`. In-game the
   // stairs flow straight into the room they meet, so that room draws no wall
@@ -1084,10 +1096,24 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
       return;
     }
     if (g.t === 'item') {
-      // item blip: small bright dot, like the in-game map's item markers
+      // item blip: small bright dot, like the in-game map's item markers. On a
+      // knob (a sub-cell box inset toward its connector), nudge the dot to the
+      // box's true centre — away from the inset rail side — so it doesn't sit
+      // on the tunnel out.
+      let dotX = cx,
+        dotY = cy;
+      const w = knobWalls.get(`${Math.floor(g.x)},${Math.floor(g.y)}`);
+      if (w !== undefined) {
+        const iN = w & N ? S / 4 : 0,
+          iS = w & SO ? S / 4 : 0,
+          iW = w & W ? S / 4 : 0,
+          iE = w & E ? S / 4 : 0;
+        dotX += (iW - iE) / 2;
+        dotY += (iN - iS) / 2;
+      }
       ctx.fillStyle = COL.item;
       ctx.beginPath();
-      ctx.arc(cx, cy, S * 0.16, 0, Math.PI * 2);
+      ctx.arc(dotX, dotY, S * 0.16, 0, Math.PI * 2);
       ctx.fill();
       return;
     }
@@ -1691,6 +1717,25 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
               >
                 Label: {LABEL_ARROW[overlays.connectors[selConn].labelPos ?? defaultLabelPos(overlays.connectors[selConn])]}
               </button>
+              {(() => {
+                const b = connBounds(overlays.connectors[selConn]);
+                // orientation is only ambiguous (and this override only matters)
+                // for a single-cell connector
+                if (b.maxX !== b.minX || b.maxY !== b.minY) return null;
+                return (
+                  <button
+                    className="btn tiny"
+                    title="Flip a single-cell connector between horizontal and vertical"
+                    onClick={() => {
+                      updateOverlays((o) => ({
+                        connectors: o.connectors.map((c, i) => (i === selConn ? { ...c, horizontal: !connHorizontal(c) } : c))
+                      }));
+                    }}
+                  >
+                    Axis: {connHorizontal(overlays.connectors[selConn]) ? '↔' : '↕'}
+                  </button>
+                );
+              })()}
             </>
           )}
           <button className="btn tiny save" onClick={saveMap}>

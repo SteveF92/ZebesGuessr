@@ -97,7 +97,7 @@
         "y0": 0,
         "x1": 0,
         "y1": 0,
-        "label": "Main Desk",
+        "label": "MAIN DECK",
         "labelPos": "above"
       },
       {
@@ -132,7 +132,7 @@
         "y0": 1,
         "x1": 2,
         "y1": 1,
-        "label": "Main Deck",
+        "label": "MAIN DECK",
         "labelPos": "above"
       },
       {
@@ -156,7 +156,7 @@
         "y0": 8,
         "x1": 17,
         "y1": 8,
-        "label": "Main Deck",
+        "label": "MAIN DECK",
         "labelPos": "right"
       }
     ]
@@ -168,7 +168,7 @@
         "y0": 1,
         "x1": 4,
         "y1": 1,
-        "label": "Main Deck",
+        "label": "MAIN DECK",
         "labelPos": "above"
       },
       {
@@ -196,7 +196,7 @@
         "y0": 3,
         "x1": 20,
         "y1": 3,
-        "label": "Main Deck",
+        "label": "MAIN DECK",
         "labelPos": "above"
       },
       {
@@ -240,7 +240,7 @@
         "y0": 0,
         "x1": 0,
         "y1": 0,
-        "label": "Main Deck",
+        "label": "MAIN DECK",
         "labelPos": "above"
       },
       {
@@ -249,6 +249,14 @@
         "x1": 13,
         "y1": 2,
         "label": "3",
+        "labelPos": "right"
+      },
+      {
+        "x0": 22,
+        "y0": 7,
+        "x1": 22,
+        "y1": 7,
+        "label": "4",
         "labelPos": "right"
       }
     ]
@@ -260,7 +268,7 @@
         "y0": 0,
         "x1": 0,
         "y1": 0,
-        "label": "Main Deck",
+        "label": "MAIN DECK",
         "labelPos": "above"
       },
       {
@@ -285,7 +293,8 @@
         "x1": 0,
         "y1": 8,
         "label": "RESTRICTED",
-        "labelPos": "above"
+        "labelPos": "above",
+        "horizontal": true
       }
     ]
   }
