@@ -24,10 +24,19 @@ interface Props {
 
 type GlyphType = MapGlyph['t'];
 type Tool = GlyphType | 'connector' | 'roomname' | 'difficulty' | 'erase';
+
+/** Station glyphs drawn as a single letter (same meaning across games, styled
+ *  per `mapStyle`). navigation/data are Fusion-only. */
+const GLYPH_LETTERS = { save: 'S', map: 'M', recharge: 'R', navigation: 'N', data: 'D' } as const;
+/** The "letter rooms" Fusion outlines in red — every lettered kind except the
+ *  map-data marker, which the game draws without a red border. */
+const RED_WALL_GLYPHS = new Set<GlyphType>(['save', 'recharge', 'navigation', 'data']);
 const TOOLS: { id: Tool; label: string }[] = [
   { id: 'save', label: 'Save (S)' },
   { id: 'map', label: 'Map (M)' },
   { id: 'recharge', label: 'Recharge (R)' },
+  { id: 'navigation', label: 'Nav' },
+  { id: 'data', label: 'Data' },
   { id: 'ship', label: 'Ship' },
   { id: 'boss', label: 'Boss' },
   { id: 'item', label: 'Item' },
@@ -135,6 +144,11 @@ const SNES_COL = {
   wall: '#a0f8f8',
   map: '#00f858',
   ship: '#f88838',
+  /** landmark-letter text color (S/M/R…) */
+  letter: '#00f858',
+  /** wall color of a "letter room" — Fusion outlines them red; SNES has no
+   *  such rooms, so this is never drawn (kept equal to `wall`). */
+  special: '#a0f8f8',
   /** room-fill variants (`CellDraw.f` indexes this; [0] === room) */
   fills: ['#d83890'],
   /** door-pip colors by letter (`CellDraw.dr`; gba style only) */
@@ -152,6 +166,8 @@ const GBA_COL: typeof SNES_COL = {
   wall: '#f8f8f8',
   map: '#20c068',
   ship: '#f82048',
+  letter: '#f8f800', // Fusion draws station letters in yellow
+  special: '#f82048', // Fusion outlines "letter rooms" (Save/Nav/Data/Recharge) in red
   fills: ['#f800f8', '#20c068'],
   doors: { r: '#f82048', y: '#f8f800', g: '#10f880', b: '#0000f8' },
   ...MARKERS
@@ -403,6 +419,14 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
   const [tool, setTool] = useState<Tool>('save');
   const [saveMsg, setSaveMsg] = useState('');
   const glyphs = edits[area.id] ?? area.map.glyphs;
+  // Cells whose walls draw red because a "letter room" glyph sits on them
+  // (Fusion only — see RED_WALL_GLYPHS and drawCell's wall color).
+  const specialCells = useMemo(() => {
+    const s = new Set<string>();
+    if (mapStyle !== 'gba') return s;
+    for (const g of glyphs) if (RED_WALL_GLYPHS.has(g.t)) s.add(`${Math.floor(g.x)},${Math.floor(g.y)}`);
+    return s;
+  }, [glyphs, mapStyle]);
 
   // editable copy of every area's connectors (like `edits`)
   const [overlayEdits, setOverlayEdits] = useState<Record<string, Overlays>>(() => {
@@ -990,7 +1014,9 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
     // walls — skipping any edge a diagonal passage opens through (see
     // openWalls): there the room flows straight into the stairs, no wall.
     const open = (dir: string) => openWalls.has(`${c.x},${c.y},${dir}`);
-    ctx.fillStyle = COL.wall;
+    // Fusion "letter rooms" outline their walls in red (not their doors — those
+    // keep their pip color below); every other cell draws plain white walls.
+    ctx.fillStyle = specialCells.has(`${c.x},${c.y}`) ? COL.special : COL.wall;
     if (c.w & N && !open('N')) ctx.fillRect(x, y, S, 2);
     if (c.w & SO && !open('SO')) ctx.fillRect(x, y + S - 2, S, 2);
     if (c.w & W && !open('W')) ctx.fillRect(x, y, 2, S);
@@ -1069,14 +1095,13 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
       }
       return;
     }
-    const letters: Record<'save' | 'map' | 'recharge', string> = { save: 'S', map: 'M', recharge: 'R' };
-    const colors: Record<'save' | 'map' | 'recharge', string> = { save: COL.map, map: COL.map, recharge: COL.map };
-    const t = g.t as 'save' | 'map' | 'recharge';
-    ctx.fillStyle = colors[t];
+    // Station letter (S/M/R/N/D). Same meaning across games; Super draws them
+    // green, Fusion yellow (paired with the red room outline in drawCell).
+    ctx.fillStyle = COL.letter;
     ctx.font = `bold ${S - 4}px monospace`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(letters[t], cx, cy + 1);
+    ctx.fillText(GLYPH_LETTERS[g.t], cx, cy + 1);
   }
 
   /** A transit connector: twin cyan rails with a dashed pink core, in either

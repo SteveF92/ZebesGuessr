@@ -147,9 +147,13 @@ npm run format     # includes the regenerated public/data/*.json
 2. **Room names**: `roomNames.<game>.json` via the in-app editor's Name tool
    (for Fusion/ZM there may be a community source to derive from, as Map
    Rando's data was for Super Metroid).
-3. **Glyphs**: `glyphs.<game>.json` via the editor. Fusion wants new glyph
-   types (Navigation/Data/Recharge stations) — extend `MapGlyph['t']` when
-   that session happens.
+3. **Glyphs**: `glyphs.<game>.json` via the editor. `MapGlyph['t']` now
+   carries the Fusion-only `navigation` and `data` station kinds (alongside
+   the shared save/map/recharge/ship/boss/item); the editor has **Nav**/**Data**
+   tools for them. Station letters are drawn per `mapStyle` — Super green,
+   Fusion yellow — and Fusion additionally outlines its Save/Nav/Data/Recharge
+   "letter rooms" in red (`GuessMap`'s `specialCells` / `COL.special`). Placing
+   the actual Fusion glyphs in the editor is still to do.
 4. **Connectors**: `overlays.<game>.json` via the editor (Fusion: the six
    numbered Main Deck elevators + per-sector return stubs).
 5. **Flavor**: game-conditional menu/reveal text if wanted ("SECTOR ZEBES"

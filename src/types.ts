@@ -59,7 +59,10 @@ export interface MapGlyph {
   /** fractional tile-cell coordinates of the glyph centre */
   x: number;
   y: number;
-  t: 'save' | 'map' | 'ship' | 'boss' | 'item' | 'recharge';
+  /** landmark kind. `navigation` (talk-to-computer + save) and `data`
+   *  (ability download) are Fusion-only; the rest are shared across games,
+   *  drawn per `mapStyle`. */
+  t: 'save' | 'map' | 'ship' | 'boss' | 'item' | 'recharge' | 'navigation' | 'data';
 }
 
 /**
