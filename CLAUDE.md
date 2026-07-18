@@ -10,6 +10,8 @@ ZebesGuessr — GeoGuessr for 2D Metroid. Players see a cropped screen from the 
 
 Unless the user asks for it, never use the browser tools to test or manually verify a change — it's too slow, and this is a simple app the user can check visually themselves faster than the agent can drive a browser session. This applies regardless of how confident you are in the change, overriding the general browser-verification workflow for this repo. Still verify with typecheck/build/tests where those are cheap and relevant, and still test anything you're genuinely unsure about via those means.
 
+At the end of a long working session, commit the work (unless the user says otherwise). This leaves a clear boundary so any subsequent tweaks by the user appear as separate commits on top, rather than getting lost in a unified changeset.
+
 ## Commands
 
 ```
