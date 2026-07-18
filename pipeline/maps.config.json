@@ -6,6 +6,26 @@
     "guessMapCellPx": 14,
     "areas": [
       {
+        "id": "ceres",
+        "name": "Ceres Space Colony",
+        "url": "https://vgmaps.com/Atlas/SuperNES/SuperMetroid-SpaceColony.png",
+        "ingameUrl": "https://vgmaps.com/Atlas/SuperNES/SuperMetroid-SpaceColony(In-GameMap).png",
+        "offsetX": 0,
+        "offsetY": 0,
+        "excludeCells": [
+          [1, 0],
+          [2, 0],
+          [3, 0],
+          [4, 0],
+          [5, 0],
+          [6, 0],
+          [7, 0],
+          [8, 0],
+          [7, 1],
+          [8, 1]
+        ]
+      },
+      {
         "id": "crateria",
         "name": "Crateria",
         "url": "https://www.snesmaps.com/maps/SuperMetroid/SuperMetroidMapCrateria.png",
@@ -137,26 +157,6 @@
           [1, 0],
           [0, 1],
           [1, 1]
-        ]
-      },
-      {
-        "id": "ceres",
-        "name": "Ceres Space Colony",
-        "url": "https://vgmaps.com/Atlas/SuperNES/SuperMetroid-SpaceColony.png",
-        "ingameUrl": "https://vgmaps.com/Atlas/SuperNES/SuperMetroid-SpaceColony(In-GameMap).png",
-        "offsetX": 0,
-        "offsetY": 0,
-        "excludeCells": [
-          [1, 0],
-          [2, 0],
-          [3, 0],
-          [4, 0],
-          [5, 0],
-          [6, 0],
-          [7, 0],
-          [8, 0],
-          [7, 1],
-          [8, 1]
         ]
       }
     ]
@@ -329,15 +329,6 @@
         ]
       },
       {
-        "id": "kraid",
-        "name": "Kraid",
-        "url": "https://vgmaps.com/Atlas/GBA/Metroid-ZeroMission-Kraid.png",
-        "ingameUrl": "https://vgmaps.com/Atlas/GBA/Metroid-ZeroMission-Kraid(In-GameMap).png",
-        "offsetX": 0,
-        "offsetY": 0,
-        "excludeCells": [[16, 14]]
-      },
-      {
         "id": "norfair",
         "name": "Norfair",
         "url": "https://vgmaps.com/Atlas/GBA/Metroid-ZeroMission-Norfair.png",
@@ -375,6 +366,32 @@
         }
       },
       {
+        "id": "crateria",
+        "name": "Crateria",
+        "url": "https://vgmaps.com/Atlas/GBA/Metroid-ZeroMission-Crateria.png",
+        "ingameUrl": "https://vgmaps.com/Atlas/GBA/Metroid-ZeroMission-Crateria(In-GameMap).png",
+        "offsetX": 0,
+        "offsetY": 0,
+        "excludeCells": [[21, 12]],
+        "keepTiles": [
+          [14, 1],
+          [15, 1],
+          [16, 1],
+          [17, 1],
+          [18, 1],
+          [19, 1]
+        ]
+      },
+      {
+        "id": "kraid",
+        "name": "Kraid",
+        "url": "https://vgmaps.com/Atlas/GBA/Metroid-ZeroMission-Kraid.png",
+        "ingameUrl": "https://vgmaps.com/Atlas/GBA/Metroid-ZeroMission-Kraid(In-GameMap).png",
+        "offsetX": 0,
+        "offsetY": 0,
+        "excludeCells": [[16, 14]]
+      },
+      {
         "id": "ridley",
         "name": "Ridley",
         "url": "https://vgmaps.com/Atlas/GBA/Metroid-ZeroMission-Ridley.png",
@@ -408,23 +425,6 @@
           [3, 9],
           [4, 9],
           [5, 9]
-        ]
-      },
-      {
-        "id": "crateria",
-        "name": "Crateria",
-        "url": "https://vgmaps.com/Atlas/GBA/Metroid-ZeroMission-Crateria.png",
-        "ingameUrl": "https://vgmaps.com/Atlas/GBA/Metroid-ZeroMission-Crateria(In-GameMap).png",
-        "offsetX": 0,
-        "offsetY": 0,
-        "excludeCells": [[21, 12]],
-        "keepTiles": [
-          [14, 1],
-          [15, 1],
-          [16, 1],
-          [17, 1],
-          [18, 1],
-          [19, 1]
         ]
       },
       {

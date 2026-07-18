@@ -6,6 +6,97 @@
   "guessMapCellPx": 14,
   "areas": [
     {
+      "id": "ceres",
+      "name": "Ceres Space Colony",
+      "cols": 9,
+      "rows": 4,
+      "mapImage": "tiles/super-metroid/ceres/map.png",
+      "cells": [
+        {
+          "x": 0,
+          "y": 0,
+          "k": "room",
+          "w": 11
+        },
+        {
+          "x": 0,
+          "y": 1,
+          "k": "room",
+          "w": 10
+        },
+        {
+          "x": 0,
+          "y": 2,
+          "k": "room",
+          "w": 14
+        },
+        {
+          "x": 1,
+          "y": 2,
+          "k": "room",
+          "w": 13
+        },
+        {
+          "x": 2,
+          "y": 2,
+          "k": "room",
+          "w": 7
+        },
+        {
+          "x": 3,
+          "y": 2,
+          "k": "room",
+          "w": 11
+        },
+        {
+          "x": 3,
+          "y": 3,
+          "k": "room",
+          "w": 14
+        },
+        {
+          "x": 4,
+          "y": 3,
+          "k": "room",
+          "w": 13
+        },
+        {
+          "x": 5,
+          "y": 3,
+          "k": "room",
+          "w": 7
+        },
+        {
+          "x": 6,
+          "y": 3,
+          "k": "room",
+          "w": 13
+        },
+        {
+          "x": 7,
+          "y": 3,
+          "k": "room",
+          "w": 7
+        },
+        {
+          "x": 8,
+          "y": 3,
+          "k": "room",
+          "w": 15
+        }
+      ],
+      "map": {
+        "cols": 13,
+        "rows": 9,
+        "dx": 2,
+        "dy": 3,
+        "glyphs": [],
+        "bands": [],
+        "connectors": [],
+        "source": "ingame"
+      }
+    },
+    {
       "id": "crateria",
       "name": "Crateria",
       "cols": 51,
@@ -7756,97 +7847,6 @@
         "rows": 19,
         "dx": 10,
         "dy": 5,
-        "glyphs": [],
-        "bands": [],
-        "connectors": [],
-        "source": "ingame"
-      }
-    },
-    {
-      "id": "ceres",
-      "name": "Ceres Space Colony",
-      "cols": 9,
-      "rows": 4,
-      "mapImage": "tiles/super-metroid/ceres/map.png",
-      "cells": [
-        {
-          "x": 0,
-          "y": 0,
-          "k": "room",
-          "w": 11
-        },
-        {
-          "x": 0,
-          "y": 1,
-          "k": "room",
-          "w": 10
-        },
-        {
-          "x": 0,
-          "y": 2,
-          "k": "room",
-          "w": 14
-        },
-        {
-          "x": 1,
-          "y": 2,
-          "k": "room",
-          "w": 13
-        },
-        {
-          "x": 2,
-          "y": 2,
-          "k": "room",
-          "w": 7
-        },
-        {
-          "x": 3,
-          "y": 2,
-          "k": "room",
-          "w": 11
-        },
-        {
-          "x": 3,
-          "y": 3,
-          "k": "room",
-          "w": 14
-        },
-        {
-          "x": 4,
-          "y": 3,
-          "k": "room",
-          "w": 13
-        },
-        {
-          "x": 5,
-          "y": 3,
-          "k": "room",
-          "w": 7
-        },
-        {
-          "x": 6,
-          "y": 3,
-          "k": "room",
-          "w": 13
-        },
-        {
-          "x": 7,
-          "y": 3,
-          "k": "room",
-          "w": 7
-        },
-        {
-          "x": 8,
-          "y": 3,
-          "k": "room",
-          "w": 15
-        }
-      ],
-      "map": {
-        "cols": 13,
-        "rows": 9,
-        "dx": 2,
-        "dy": 3,
         "glyphs": [],
         "bands": [],
         "connectors": [],

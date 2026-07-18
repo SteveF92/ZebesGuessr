@@ -15,13 +15,13 @@ export const GAMES = [
  */
 const ENABLED_AREAS: Record<string, Record<string, boolean>> = {
   'super-metroid': {
+    ceres: true,
     crateria: true,
     brinstar: true,
     norfair: true,
     'wrecked-ship': true,
     maridia: true,
-    tourian: true,
-    ceres: true
+    tourian: true
   },
   'metroid-fusion': {
     'main-deck': true,
@@ -34,11 +34,11 @@ const ENABLED_AREAS: Record<string, Record<string, boolean>> = {
   },
   'metroid-zero-mission': {
     brinstar: true,
-    kraid: true,
     norfair: true,
+    crateria: true,
+    kraid: true,
     ridley: true,
     tourian: true,
-    crateria: true,
     chozodia: true
   }
 };
