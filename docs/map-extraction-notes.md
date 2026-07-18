@@ -193,15 +193,46 @@ bookkeeping. What it reads per cell:
   `(32,192,104)`. What the two colors _mean_ in the source is still an open
   question — they're preserved per cell and rendered as-is.
 - **Walls** (`w`): ≥4 px of white + door color on the two lines straddling a
-  boundary. Every cell is a `room`; Fusion's pause map has no shafts and no
-  diagonals, so `bands` is always empty and the SNES machinery never runs.
+  boundary. Fusion's pause map has no SNES-style shafts and no diagonals, so
+  `bands` is always empty and the SNES machinery never runs.
+- **Ladders (stripped)**: elevator shafts are striped ladders — alternating
+  1px fill/white rungs, at most 2px of fill across. Any occupied cell whose
+  fill matches (narrow bbox, ≥3 fill/empty alternations along the run) loses
+  its draw data entirely; connectors are hand-placed over those cells in the
+  icon editor, exactly like Super Metroid's shafts. The dashed lines + numbers
+  below the stubs are white-only and never occupy a cell in the first place.
+- **Knob passages** (`k:"knob"`): a few rooms are drawn as a sub-cell box
+  inset from the cell boundary, joined to neighbours by narrow twin-rail
+  tunnels (main deck (13,16); each sector has 2–3). The tell is **background
+  pixels on the cell's own perimeter ring** — an ordinary room covers its
+  whole cell, so its ring never shows background (threshold: ≥4 of 28 ring
+  px). For a knob, `w` is repurposed: its bits mark the sides where the box
+  is inset and rails bridge the gap (a port side whose edge line still shows
+  background), and `dr` holds a plain `"n"` pip per port — a side whose edge
+  line shows the twin-rail signature (two white runs separated by a ≤4 px
+  gap).
 - **Doors** (`dr`): drawn in the source as a _gap in the white wall line_ —
   the room fill showing through for a normal hatch, a colored pip
-  (red/yellow/green/blue) for locked doors. Detection: a 2–5 px non-white run
-  on the wall line **bounded by white on both ends**, classified by dominant
-  door color (`"n"` if none). The bounded-run rule is what filters the baked
-  caption boxes ("N:S:R" station labels): their solid outlines cross cell
-  borders as full-width or edge-touching runs, never as white-bounded gaps.
+  (red/yellow/green/blue) for locked doors. Where two rooms abut, the
+  boundary carries **two** wall lines (one per room), and the gap can be
+  drawn on only one of them: an **asymmetric door**, which belongs to one
+  room only and must stay one-sided. So when both lines are wall-quality,
+  each cell reads only its _own_ line; when just one is, that line is the
+  shared outline and both cells classify from it. Detection on the chosen
+  line: a 2–5 px non-white run **bounded by white on both ends**, classified
+  by dominant door color (`"n"` if none). The bounded-run rule is what
+  filters the baked caption boxes ("N:S:R" station labels): their solid
+  outlines cross cell borders as full-width or edge-touching runs, never as
+  white-bounded gaps. Colored hatches are drawn in the source as small
+  H shapes (a jamb bar inside each room + a crossbar through the gap);
+  `GuessMap.drawCell` mirrors that, each cell drawing its half of the H.
+- **Ship**: the docked ship sprite is drawn in door-yellow _inside_ its
+  room's fill. Its pixels land on cell-boundary columns where the room
+  outline's corner pixels already contribute 2 white px — together they cross
+  the wall threshold and split the docking bay. Any yellow blob bigger than a
+  door pip or station letter (those stay within ~4×5) is stripped from the
+  door mask before wall/door detection; it still counts toward occupancy via
+  the icon rule.
 
 Two empirical facts about the rips: all seven share the tile-grid alignment
 offset (11,5), and each frames the map in a wide border of empty lattice

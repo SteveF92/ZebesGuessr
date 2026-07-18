@@ -948,6 +948,42 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
       ctx.fillRect(x, y + S / 2 - 2, S, 4);
       return;
     }
+    if (c.k === 'knob') {
+      // Sub-cell passage (gba style): a small outlined box, inset from the
+      // cell edge on each w-bit side (there twin rails bridge the gap), with
+      // an opening per dr pip. See MapCellKind.
+      const fill = COL.fills[c.f ?? 0] ?? COL.room;
+      const iN = c.w & N ? S / 4 : 0;
+      const iS = c.w & SO ? S / 4 : 0;
+      const iW = c.w & W ? S / 4 : 0;
+      const iE = c.w & E ? S / 4 : 0;
+      ctx.fillStyle = COL.wall;
+      ctx.fillRect(x + iW, y + iN, S - iW - iE, S - iN - iS);
+      ctx.fillStyle = fill;
+      ctx.fillRect(x + iW + 2, y + iN + 2, S - iW - iE - 4, S - iN - iS - 4);
+      for (const p of c.dr ?? []) {
+        ctx.fillStyle = fill;
+        if (p[0] === 'N') ctx.fillRect(x + S / 2 - 2, y + iN, 4, 2);
+        else if (p[0] === 'S') ctx.fillRect(x + S / 2 - 2, y + S - iS - 2, 4, 2);
+        else if (p[0] === 'W') ctx.fillRect(x + iW, y + S / 2 - 2, 2, 4);
+        else if (p[0] === 'E') ctx.fillRect(x + S - iE - 2, y + S / 2 - 2, 2, 4);
+        ctx.fillStyle = COL.wall;
+        if (p[0] === 'N' && iN) {
+          ctx.fillRect(x + S / 2 - 4, y, 2, iN);
+          ctx.fillRect(x + S / 2 + 2, y, 2, iN);
+        } else if (p[0] === 'S' && iS) {
+          ctx.fillRect(x + S / 2 - 4, y + S - iS, 2, iS);
+          ctx.fillRect(x + S / 2 + 2, y + S - iS, 2, iS);
+        } else if (p[0] === 'W' && iW) {
+          ctx.fillRect(x, y + S / 2 - 4, iW, 2);
+          ctx.fillRect(x, y + S / 2 + 2, iW, 2);
+        } else if (p[0] === 'E' && iE) {
+          ctx.fillRect(x + S - iE, y + S / 2 - 4, iE, 2);
+          ctx.fillRect(x + S - iE, y + S / 2 + 2, iE, 2);
+        }
+      }
+      return;
+    }
     const fill = COL.fills[c.f ?? 0] ?? COL.room;
     ctx.fillStyle = fill;
     ctx.fillRect(x, y, S, S);
@@ -961,14 +997,22 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
     if (c.w & E && !open('E')) ctx.fillRect(x + S - 2, y, 2, S);
     // doors (gba style): a small gap in the wall — the room fill showing
     // through for a normal hatch, the lock color for a colored one. 2 source
-    // px of gap = 4 logical px, centered on the wall segment.
+    // px of gap = 4 logical px, centered on the wall segment. A colored
+    // hatch also gets its jamb bar just inside the wall — two adjacent cells
+    // compose the game's H shape, an asymmetric door yields a half-H.
     if (c.dr) {
       for (const p of c.dr) {
-        ctx.fillStyle = p[1] === 'n' ? fill : (COL.doors[p[1]] ?? COL.wall);
+        const colored = p[1] !== 'n';
+        ctx.fillStyle = colored ? (COL.doors[p[1]] ?? COL.wall) : fill;
         if (p[0] === 'N') ctx.fillRect(x + S / 2 - 2, y, 4, 2);
         else if (p[0] === 'S') ctx.fillRect(x + S / 2 - 2, y + S - 2, 4, 2);
         else if (p[0] === 'W') ctx.fillRect(x, y + S / 2 - 2, 2, 4);
         else if (p[0] === 'E') ctx.fillRect(x + S - 2, y + S / 2 - 2, 2, 4);
+        if (!colored) continue;
+        if (p[0] === 'N') ctx.fillRect(x + S / 2 - 4, y + 2, 8, 2);
+        else if (p[0] === 'S') ctx.fillRect(x + S / 2 - 4, y + S - 4, 8, 2);
+        else if (p[0] === 'W') ctx.fillRect(x + 2, y + S / 2 - 4, 2, 8);
+        else if (p[0] === 'E') ctx.fillRect(x + S - 4, y + S / 2 - 4, 2, 8);
       }
     }
   }

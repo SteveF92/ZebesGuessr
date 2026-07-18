@@ -4,7 +4,13 @@ export interface Cell {
   y: number;
 }
 
-export type MapCellKind = 'room' | 'vshaft' | 'hshaft' | 'diag';
+/**
+ * 'knob' ('gba' style) is a sub-cell passage: a small outlined box inset from
+ * the cell boundary. Its `w` bits mark the sides where the box is inset and
+ * twin rails bridge the gap to the cell edge (not walls), and its `dr` pips
+ * (always "n") mark the sides with openings.
+ */
+export type MapCellKind = 'room' | 'vshaft' | 'hshaft' | 'diag' | 'knob';
 
 /**
  * Which pause-map art style a game uses — dispatches both the pipeline

@@ -12,20 +12,26 @@ exact-color bookkeeping — no PCA band fitting, no fuzzy annotation heuristics.
 Reads Images/raw/<game>/ingame/<area>.* and, for each area:
   1. auto-detects the 8px cell grid phase (edge-energy voting),
   2. marks occupied cells (room fill or a baked station icon displacing it),
-  3. records each cell's fill variant (magenta vs green in Fusion),
-  4. reads white wall segments per cell side (NESW bitmask) and door pips
-     (side + color) on those same borders,
-  5. auto-aligns the map grid to the sliced tile grid (mask cross-correlation),
-  6. patches public/data/<game>.json with a per-area "map" object.
+  3. drops striped elevator-ladder cells and classifies sub-cell "knob"
+     passages (see below),
+  4. records each cell's fill variant (magenta vs green in Fusion),
+  5. reads white wall segments per cell side (NESW bitmask) and door pips
+     (side + color) on the cell's *own* border line — a gap drawn on only
+     one room's line is an asymmetric door, and stays one-sided,
+  6. auto-aligns the map grid to the sliced tile grid (mask cross-correlation),
+  7. patches public/data/<game>.json with a per-area "map" object.
 
 Run for one game with `python pipeline/extract_gba_maps.py <game-id>`.
 
 The rips frame the map in a wide border of empty lattice squares; the render
 viewport is trimmed to the aligned tile grid plus a small margin, since that
-framing is the ripper's, not the game's. Elevator stubs (dashed lines +
-numbers) and captions are drawn in white/icon colors only, never in room
-fill, so they don't become cells; elevators are hand-placed later as
-connectors in overlays.<game>.json, same as Super Metroid.
+framing is the ripper's, not the game's. Elevator shafts (striped ladder
+cells, dashed lines + numbers) never keep draw data: the ladder stripes are
+detected and stripped, the dashed runs are white-only and never occupy a
+cell, and the shafts are hand-placed later as connectors in
+overlays.<game>.json, same as Super Metroid. The docked ship sprite (drawn
+in door-yellow) is stripped from the door mask so it can't fake a wall and
+split its room.
 """
 import json
 import sys
@@ -34,7 +40,7 @@ import numpy as np
 from PIL import Image
 
 from maplib import (E, N, ROOT, S, W, align, apply_cell_overrides,
-                    close_perimeter, detect_phase, fallback_cells,
+                    close_perimeter, components, detect_phase, fallback_cells,
                     find_ingame_image, load_map_overrides, mask, merge_cells)
 
 CELL = 8  # in-game map cell size in source pixels
@@ -47,6 +53,9 @@ DOORS = {"r": (248, 32, 72), "y": (248, 248, 0), "g": (16, 248, 128), "b": (0, 0
 # their cell, so their colors count toward occupancy — same bug class as Super
 # Metroid's green map-station letters
 ICONS = [(248, 32, 72), (248, 248, 0)]
+# empty-canvas colors (navy lattice lines + dark cell interiors); their
+# presence on a cell's own perimeter ring marks a sub-cell "knob" passage
+BACKGROUND = [(0, 0, 144), (32, 32, 72)]
 
 # interior room fill needed to occupy a cell (of the 6x6=36 inner pixels);
 # solid fills score ~36, so this only has to reject stray caption strokes
@@ -72,24 +81,39 @@ def side_pixels(m: np.ndarray, x0: int, y0: int, side: int, h: int, w: int) -> i
     return max((int(m[s].sum()) for s in side_lines(x0, y0, side, h, w)), default=0)
 
 
+def own_line(x0: int, y0: int, side: int):
+    """The boundary line belonging to this cell: the outermost pixel row/col
+    inside the cell itself (its own room outline)."""
+    if side == N: return np.s_[y0, x0:x0 + CELL]
+    if side == S: return np.s_[y0 + CELL - 1, x0:x0 + CELL]
+    if side == W: return np.s_[y0:y0 + CELL, x0]
+    return np.s_[y0:y0 + CELL, x0 + CELL - 1]
+
+
 def side_door(doors: dict, wall: np.ndarray, x0: int, y0: int,
               side: int, h: int, w: int) -> str | None:
     """Doors are drawn as a small gap in the white wall line: empty for a
     normal hatch, filled with a colored pip for locked/special doors.
 
-    Scan the boundary's wall line for a 2-5px run of non-white bounded by
+    Where two rooms abut, the boundary carries *two* wall lines — one per
+    room — and a door gap can be drawn on only one of them: an asymmetric
+    door (the hatch belongs to one room only), which must stay one-sided.
+    So when both lines are wall-quality, each cell reads only its own line;
+    when just one is (the other shows room fill or background), that line
+    is the shared outline and both cells classify from it.
+
+    Scan the chosen wall line for a 2-5px run of non-white bounded by
     white on both sides, then classify the run by its dominant door color
     ("n" if none — a plain opening). Requiring white on both ends rejects
     the baked caption boxes ("N:S:R"), whose solid outlines cross cell
     borders as long runs or edge-touching stubs.
     """
-    lines = side_lines(x0, y0, side, h, w)
-    if not lines:
-        return None
-    line = max(lines, key=lambda s: int(wall[s].sum()))
-    wl = wall[line]
-    if int(wl.sum()) < 4:
+    walled = [s for s in side_lines(x0, y0, side, h, w)
+              if int(wall[s].sum()) >= 4]
+    if not walled:
         return None  # no wall here, so nothing to be a door in
+    line = own_line(x0, y0, side) if len(walled) == 2 else walled[0]
+    wl = wall[line]
     dls = {c: dm[line] for c, dm in doors.items()}
     run_start = None
     for i in range(len(wl) + 1):
@@ -110,6 +134,83 @@ def side_door(doors: dict, wall: np.ndarray, x0: int, y0: int,
     return None
 
 
+def is_ladder(sub_fill: np.ndarray) -> bool:
+    """Elevator shafts are striped ladders: a run of alternating 1px
+    fill/white rungs, at most 2px across. Ladder cells lose their draw data
+    entirely (connectors are hand-placed over them, like Super Metroid's
+    shafts). Checked both ways so a horizontal variant would match too."""
+    ys, xs = np.nonzero(sub_fill)
+    if len(xs) == 0:
+        return False
+    wid = int(xs.max() - xs.min()) + 1
+    hei = int(ys.max() - ys.min()) + 1
+    if wid <= 2 and hei >= 5:
+        rungs = [bool(r.any()) for r in sub_fill]
+    elif hei <= 2 and wid >= 5:
+        rungs = [bool(c.any()) for c in sub_fill.T]
+    else:
+        return False
+    return sum(1 for a, b in zip(rungs, rungs[1:]) if a != b) >= 3
+
+
+def knob_geometry(bg: np.ndarray, wall: np.ndarray,
+                  x0: int, y0: int) -> tuple[int, list[str]] | None:
+    """Sub-cell "knob" passages: a small outlined box inset from the cell
+    boundary, joined to its neighbours by narrow twin-rail tunnels. Ordinary
+    rooms cover their whole cell, so background pixels on the cell's own
+    perimeter ring are the tell (Fusion main deck: 8/28 ring pixels on the
+    knob at (13,16), zero on every real room).
+
+    Returns (inset_bits, ports) — or None for a normal cell. A "port" is a
+    side whose edge line shows the twin-rail signature (two white runs
+    separated by a small gap); it becomes a plain-door pip so the renderer
+    knows where the openings are. A port side that still shows background
+    on the edge is where the box is *inset* and the rails bridge the gap;
+    a port side without background opens flush into the neighbour."""
+    ring = np.concatenate([
+        bg[y0, x0:x0 + CELL], bg[y0 + CELL - 1, x0:x0 + CELL],
+        bg[y0 + 1:y0 + CELL - 1, x0], bg[y0 + 1:y0 + CELL - 1, x0 + CELL - 1]])
+    if int(ring.sum()) < 4:
+        return None
+    inset = 0
+    ports = []
+    for side, letter in ((N, "N"), (E, "E"), (S, "S"), (W, "W")):
+        edge = own_line(x0, y0, side)
+        wl = wall[edge]
+        runs = []
+        start = None
+        for i in range(CELL + 1):
+            on = i < CELL and wl[i]
+            if on and start is None:
+                start = i
+            elif not on and start is not None:
+                runs.append((start, i))
+                start = None
+        if len(runs) == 2 and 1 <= runs[1][0] - runs[0][1] <= 4:
+            ports.append(letter + "n")
+            if bg[edge].any():
+                inset |= side
+    return inset, ports
+
+
+def strip_ship(ymask: np.ndarray) -> bool:
+    """The docked ship is a door-yellow sprite drawn *inside* its room's
+    fill. Its pixels land on cell-boundary columns, where the room outline's
+    corner pixels already contribute 2 white — together they cross the wall
+    threshold and fake a wall that splits the room. Any yellow blob bigger
+    than a door pip or a station letter (both stay within ~4x5, 10px) is the
+    ship: drop it from the door mask. Occupancy still counts it via ICONS."""
+    stripped = False
+    for comp in components(ymask, diagonal=True):
+        ys = [p[0] for p in comp]
+        xs = [p[1] for p in comp]
+        if len(comp) > 15 or max(xs) - min(xs) >= 6 or max(ys) - min(ys) >= 6:
+            for y, x in comp:
+                ymask[y, x] = False
+            stripped = True
+    return stripped
+
+
 def extract_area(img_path):
     im = np.asarray(Image.open(img_path).convert("RGB")).astype(int)
     h, w = im.shape[:2]
@@ -117,15 +218,21 @@ def extract_area(img_path):
     anyfill = np.logical_or.reduce(fills)
     wall = mask(im, WALL)
     doors = {k: mask(im, c) for k, c in DOORS.items()}
+    strip_ship(doors["y"])
     anydoor = np.logical_or.reduce(list(doors.values()))
     icon = np.zeros_like(wall)
     for c in ICONS:
         icon |= mask(im, c)
+    bg = np.zeros_like(wall)
+    for c in BACKGROUND:
+        bg |= mask(im, c)
     ox, oy = detect_phase(anyfill | wall, CELL)
     cols, rows = (w - ox) // CELL, (h - oy) // CELL
 
     cells = {}
     icon_only = []
+    ladders = []
+    knobs = []
     for y in range(rows):
         for x in range(cols):
             x0, y0 = ox + x * CELL, oy + y * CELL
@@ -134,11 +241,25 @@ def extract_area(img_path):
             nicon = int(icon[inner].sum())
             if nfill < FILL_MIN and (nfill + nicon) < ICON_MIN:
                 continue
+            if is_ladder(anyfill[y0:y0 + CELL, x0:x0 + CELL]):
+                ladders.append((x, y))
+                continue
             if nfill < FILL_MIN:
                 icon_only.append((x, y))
             # fill variant: majority vote (icon-only cells default to 0)
             counts = [int(f[inner].sum()) for f in fills]
             variant = counts.index(max(counts)) if max(counts) else 0
+            knob = knob_geometry(bg, wall, x0, y0)
+            if knob is not None:
+                inset, ports = knob
+                cell = {"kind": "knob", "walls": inset}
+                if variant:
+                    cell["fill"] = variant
+                if ports:
+                    cell["doors"] = ports
+                knobs.append((x, y))
+                cells[(x, y)] = cell
+                continue
             walls = 0
             pips = []
             for side, letter in ((N, "N"), (E, "E"), (S, "S"), (W, "W")):
@@ -155,7 +276,7 @@ def extract_area(img_path):
             if pips:
                 cell["doors"] = pips
             cells[(x, y)] = cell
-    return cols, rows, cells, icon_only
+    return cols, rows, cells, icon_only, ladders, knobs
 
 
 def main() -> None:
@@ -192,7 +313,7 @@ def main() -> None:
                 patched_areas.append((area, cells, mapobj))
                 print(f"  {area['id']}: no in-game image, using fallback grid")
                 continue
-            cols, rows, cells, icon_only = extract_area(img)
+            cols, rows, cells, icon_only, ladders, knobs = extract_area(img)
             closed = close_perimeter(cells)
             # the rips' empty-lattice frame can exceed the SNES search window
             dx, dy, matches = align(cells, cols, rows, tiles,
@@ -219,6 +340,13 @@ def main() -> None:
                   f"({undrawn} undrawn), offset ({dx},{dy}), {matches} aligned "
                   f"of {len(cells)} drawn, {ndoors} door pips, {nalt} alt-fill "
                   f"cells, {closed} edges closed, {overridden} cells overridden")
+            if ladders:
+                print(f"    note: {len(ladders)} ladder cell(s) stripped "
+                      f"(hand-place connectors over them): "
+                      f"{[(x - dx, y - dy) for (x, y) in ladders]}")
+            if knobs:
+                print(f"    note: knob passage cell(s): "
+                      f"{[(x - dx, y - dy) for (x, y) in knobs]}")
             if icon_only:
                 print(f"    note: icon-only cells (fill displaced by a station "
                       f"icon): {[(x - dx, y - dy) for (x, y) in icon_only]}")

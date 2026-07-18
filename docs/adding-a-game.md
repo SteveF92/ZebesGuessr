@@ -169,7 +169,15 @@ npm run format     # includes the regenerated public/data/*.json
 - **Doors are gaps in the wall line**: fill color showing through = normal
   hatch (`"n"`), colored pip = locked door. Caption boxes ("N:S:R") cross
   borders as long/edge-touching runs — the gap-bounded-by-white rule filters
-  them.
+  them. A gap drawn on only one of a boundary's two wall lines is an
+  **asymmetric door** (it belongs to one room only) — each cell reads its own
+  line, so it stays one-sided in the data and the render.
+- **Elevator ladders** (striped 1px fill/white rungs) are stripped to bare
+  tiles — hand-place connectors over them, same as Super. **Knob passages**
+  (sub-cell inset boxes with twin-rail tunnels) become `k:"knob"` cells and
+  stay selectable. The docked **ship sprite** (door-yellow, inside room fill)
+  is stripped from the door mask so it can't fake a wall.
+  Details for all three in `docs/map-extraction-notes.md`.
 - What magenta vs green fill _means_ in the source rips is still unknown
   (preserved per cell as `f`); ZM should clarify whether it's per-state or
   per-area coloring.
