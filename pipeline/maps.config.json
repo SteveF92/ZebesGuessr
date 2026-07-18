@@ -138,6 +138,26 @@
           [0, 1],
           [1, 1]
         ]
+      },
+      {
+        "id": "ceres",
+        "name": "Ceres Space Colony",
+        "url": "https://vgmaps.com/Atlas/SuperNES/SuperMetroid-SpaceColony.png",
+        "ingameUrl": "https://vgmaps.com/Atlas/SuperNES/SuperMetroid-SpaceColony(In-GameMap).png",
+        "offsetX": 0,
+        "offsetY": 0,
+        "excludeCells": [
+          [1, 0],
+          [2, 0],
+          [3, 0],
+          [4, 0],
+          [5, 0],
+          [6, 0],
+          [7, 0],
+          [8, 0],
+          [7, 1],
+          [8, 1]
+        ]
       }
     ]
   },
