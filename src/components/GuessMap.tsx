@@ -632,9 +632,10 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
     if (view) {
       // viewport rendering: the canvas is the viewport, so the anchor comes
       // from the view transform (canvas sits at the scroll box's origin)
-      ax = view.tx + (result.target.cell.x + dx + 0.5) * S * SCALE * xScale * view.z;
-      ay = view.ty + (result.target.cell.y + dy + 0.5) * S * SCALE * view.z;
-      gap = 8 * view.z * SCALE * xScale + 10; // clear the dashed ring + tail
+      const sv = snapView(view); // mirror the snapped draw transform exactly
+      ax = (sv.tx + (result.target.cell.x + dx + 0.5) * sv.cw) / sv.dpr;
+      ay = (sv.ty + (result.target.cell.y + dy + 0.5) * sv.ch) / sv.dpr;
+      gap = (8 / S) * (sv.cw / sv.dpr) + 10; // clear the dashed ring + tail (8 logical px, in css px)
     } else {
       // editing (legacy full-map canvas, CSS-fitted): rect proportions
       ax = cr.left - sr.left + sc.scrollLeft + ((result.target.cell.x + dx + 0.5) / cols) * cr.width;
@@ -652,6 +653,24 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
     return { x: right ? ax + gap : ax - gap, y, right };
   }
   const callout = calloutPos();
+
+  /** The view quantized to whole device pixels per cell (plus a rounded pan
+   *  offset), so every cell edge lands exactly on a device pixel. Fractional
+   *  edges antialias, and adjacent cells' partial coverage lets the layer
+   *  underneath bleed through as hairline seams between tiles. Rendering,
+   *  hit-testing (cellFromPoint) and the callout anchor must all use these
+   *  SAME numbers — mixing snapped and unsnapped math drifts by up to half a
+   *  device px per column across the map. */
+  function snapView(v: { z: number; tx: number; ty: number }) {
+    const dpr = window.devicePixelRatio || 1;
+    return {
+      dpr,
+      cw: Math.max(1, Math.round(v.z * SCALE * xScale * S * dpr)), // device px per cell
+      ch: Math.max(1, Math.round(v.z * SCALE * S * dpr)),
+      tx: Math.round(v.tx * dpr),
+      ty: Math.round(v.ty * dpr)
+    };
+  }
 
   function draw() {
     const canvas = canvasRef.current;
@@ -675,24 +694,19 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
       // xScale (X-Ray's GBA 3:2 stretch) rides the same transform.
       const sc = scrollRef.current;
       if (!sc) return;
-      const dpr = window.devicePixelRatio || 1;
-      const vw = sc.clientWidth,
-        vh = sc.clientHeight;
-      const bw = Math.round(vw * dpr),
-        bh = Math.round(vh * dpr);
+      const sv = snapView(view);
+      const bw = Math.round(sc.clientWidth * sv.dpr),
+        bh = Math.round(sc.clientHeight * sv.dpr);
       if (canvas.width !== bw) canvas.width = bw;
       if (canvas.height !== bh) canvas.height = bh;
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.clearRect(0, 0, bw, bh); // letterbox around the map shows .map-scroll's bg
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      ctx.translate(view.tx, view.ty);
-      ctx.scale(view.z * SCALE * xScale, view.z * SCALE);
-      const cw = view.z * SCALE * xScale * S,
-        ch = view.z * SCALE * S; // css px per map cell
-      gx0 = Math.max(0, Math.floor(-view.tx / cw));
-      gy0 = Math.max(0, Math.floor(-view.ty / ch));
-      gx1 = Math.min(cols - 1, Math.floor((vw - view.tx) / cw));
-      gy1 = Math.min(rows - 1, Math.floor((vh - view.ty) / ch));
+      // device-snapped: sv.cw/sv.ch device px per cell, origin at (sv.tx, sv.ty)
+      ctx.setTransform(sv.cw / S, 0, 0, sv.ch / S, sv.tx, sv.ty);
+      gx0 = Math.max(0, Math.floor(-sv.tx / sv.cw));
+      gy0 = Math.max(0, Math.floor(-sv.ty / sv.ch));
+      gx1 = Math.min(cols - 1, Math.floor((bw - sv.tx) / sv.cw));
+      gy1 = Math.min(rows - 1, Math.floor((bh - sv.ty) / sv.ch));
     } else {
       // Editing (desktop-only dev mode, no pan/zoom): legacy full-map backing,
       // CSS-fitted. xScale widens it while X-Ray is engaged.
@@ -1148,7 +1162,7 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
     // cell reads as a clean minimap. Magnified (zoomed to/past native res),
     // smoothing would blur, so it flips off for authentic sharp pixels.
     ctx.imageSmoothingQuality = 'high';
-    const cellDevW = (view ? view.z * (window.devicePixelRatio || 1) : 1) * S * SCALE * xScale; // device px per cell
+    const cellDevW = view ? snapView(view).cw : S * SCALE * xScale; // device px per cell
     for (const c of area.cells) {
       if (c.x < vis.x0 || c.x > vis.x1 || c.y < vis.y0 || c.y > vis.y1) continue;
       const img = tileCache.current.get(tileUrl(data, { areaId: area.id, cell: c }));
@@ -1195,8 +1209,9 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
     const rect = canvas.getBoundingClientRect();
     let x: number, y: number;
     if (view) {
-      x = Math.floor((clientX - rect.left - view.tx) / (view.z * S * SCALE * xScale));
-      y = Math.floor((clientY - rect.top - view.ty) / (view.z * S * SCALE));
+      const sv = snapView(view); // mirror the snapped draw transform exactly
+      x = Math.floor(((clientX - rect.left) * sv.dpr - sv.tx) / sv.cw);
+      y = Math.floor(((clientY - rect.top) * sv.dpr - sv.ty) / sv.ch);
     } else {
       x = Math.floor(((clientX - rect.left) / rect.width) * area.map.cols);
       y = Math.floor(((clientY - rect.top) / rect.height) * area.map.rows);
