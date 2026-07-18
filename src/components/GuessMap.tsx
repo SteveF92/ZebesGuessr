@@ -1184,32 +1184,38 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
     ctx.restore();
   }
 
-  /** the destination label, positioned on any of the connector's four sides */
+  /** the destination label, positioned on any of the connector's four sides.
+   *  A literal `\n` (or a real newline) in the label splits it into stacked
+   *  lines — the escape is how the plain-text editor input holds a break. */
   function drawConnectorLabel(ctx: CanvasRenderingContext2D, c: Connector, b: ReturnType<typeof connBounds>) {
     const midX = ((b.minX + b.maxX + 1) / 2) * S;
     const midY = ((b.minY + b.maxY + 1) / 2) * S;
+    const lines = c.label!.split(/\\n|\r?\n/);
+    const lineH = S - 4;
     ctx.fillStyle = COL.wall;
     ctx.font = `bold ${S - 6}px monospace`;
+    const draw = (x: number, yTop: number) => lines.forEach((ln, i) => ctx.fillText(ln, x, yTop + i * lineH));
     switch (c.labelPos ?? defaultLabelPos(c)) {
       case 'above':
         ctx.textAlign = 'center';
         ctx.textBaseline = 'bottom';
-        ctx.fillText(c.label!, midX, b.minY * S - 2);
+        // the block grows upward, its last line hugging the connector
+        draw(midX, b.minY * S - 2 - (lines.length - 1) * lineH);
         break;
       case 'below':
         ctx.textAlign = 'center';
         ctx.textBaseline = 'top';
-        ctx.fillText(c.label!, midX, (b.maxY + 1) * S + 2);
+        draw(midX, (b.maxY + 1) * S + 2);
         break;
       case 'left':
         ctx.textAlign = 'right';
         ctx.textBaseline = 'middle';
-        ctx.fillText(c.label!, b.minX * S - 2, midY);
+        draw(b.minX * S - 2, midY - ((lines.length - 1) / 2) * lineH);
         break;
       case 'right':
         ctx.textAlign = 'left';
         ctx.textBaseline = 'middle';
-        ctx.fillText(c.label!, (b.maxX + 1) * S + 2, midY);
+        draw((b.maxX + 1) * S + 2, midY - ((lines.length - 1) / 2) * lineH);
         break;
     }
   }

@@ -156,8 +156,9 @@
         "y0": 8,
         "x1": 17,
         "y1": 8,
-        "label": "MAIN DECK",
-        "labelPos": "right"
+        "label": "MAIN\\nDECK",
+        "labelPos": "right",
+        "horizontal": true
       }
     ]
   },
