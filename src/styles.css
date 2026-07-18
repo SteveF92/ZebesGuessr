@@ -1504,6 +1504,13 @@ a:hover {
 .map-canvas.editing {
   cursor: cell;
 }
+/* X-Ray overlay minifies detailed game screens into tiny cells; let the
+   browser smooth the fit-to-viewport downscale too (drawTiles already
+   area-averages into the backing store) so small viewports don't re-alias
+   the tiles back to nearest-neighbor. */
+.map-canvas.xray {
+  image-rendering: auto;
+}
 
 /* One-shot scan-visor sweep across the map viewport when a reveal starts.
    The wrapper clips; the ::after bar (30% of the viewport tall) traverses

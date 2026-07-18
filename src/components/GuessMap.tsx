@@ -1026,7 +1026,12 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
   function drawTiles(ctx: CanvasRenderingContext2D) {
     ctx.save();
     ctx.globalAlpha = tileP; // step two: the real screens fade in over the stretched cells
-    ctx.imageSmoothingEnabled = false;
+    // Each native screen (SNES 256², GBA 240×160) is minified hard into its map
+    // cell (~32² / 48×32 px). Nearest-neighbor point-samples one source pixel per
+    // ~5×5–8×8 block and aliases fine art into mud (worst on GBA); high-quality
+    // smoothing area-averages instead, so the cell reads as a clean minimap.
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
     for (const c of area.cells) {
       const img = tileCache.current.get(tileUrl(data, { areaId: area.id, cell: c }));
       if (!img || !img.complete || img.naturalWidth === 0) continue;
@@ -1465,7 +1470,7 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
         )}
         <canvas
           ref={canvasRef}
-          className={`map-canvas${editing ? ' editing' : ''}${panEnabled ? ' pan' : ''}`}
+          className={`map-canvas${editing ? ' editing' : ''}${panEnabled ? ' pan' : ''}${showTiles ? ' xray' : ''}`}
           style={panEnabled && view ? { transform: `translate(${view.tx}px, ${view.ty}px) scale(${view.z})`, transformOrigin: '0 0' } : undefined}
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
