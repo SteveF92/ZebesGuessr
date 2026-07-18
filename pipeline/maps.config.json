@@ -227,7 +227,8 @@
         "url": "https://vgmaps.com/Atlas/GBA/MetroidFusion-Sector2(TRO).png",
         "ingameUrl": "https://vgmaps.com/Atlas/GBA/MetroidFusion-Sector2(TRO)(In-GameMap).png",
         "offsetX": 0,
-        "offsetY": 0
+        "offsetY": 0,
+        "keepTiles": [[14, 13]]
       },
       {
         "id": "sector-3",
@@ -235,7 +236,11 @@
         "url": "https://vgmaps.com/Atlas/GBA/MetroidFusion-Sector3(PYR).png",
         "ingameUrl": "https://vgmaps.com/Atlas/GBA/MetroidFusion-Sector3(PYR)(In-GameMap).png",
         "offsetX": 0,
-        "offsetY": 0
+        "offsetY": 0,
+        "keepTiles": [
+          [11, 11],
+          [15, 0]
+        ]
       },
       {
         "id": "sector-4",

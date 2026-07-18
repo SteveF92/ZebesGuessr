@@ -38,6 +38,8 @@ Order matters: `slice_maps.py` writes the base JSON (the tile list — one entry
 
 The extractor never drops a cell. If the pause map draws something the sliced map has no tile for, it keeps it and prints a **WARNING** naming the cells — fix it by adding them to `includeCells` in `maps.config.json` (a dark room under `slice_maps.py`'s fill threshold, usually). It should always be zero; the old behaviour was to silently delete those targets, which cost a long line of "recover room X as a valid tile" commits.
 
+`slice_maps.py` re-generates every tile PNG for a game each run and **prunes** any cell PNG no longer playable (so removed cells leave no orphans and `public/tiles/<game>/<area>/` always matches the JSON). A handful of tiles are hand-painted to fill a partial source screen (a room clipped by the sheet edge, or a game-side quirk) — list those cells in an area's `keepTiles` so the re-slice doesn't overwrite the committed PNG. The cell stays playable and in the JSON; only its tile write is skipped (a first run with no PNG yet still writes the base to edit from).
+
 The pipeline is reproducible: rerunning it (then `npm run format`) reproduces the committed `<game>.json` — no hand-edits live in that file. Both scripts write `json.dumps(..., indent=2)` so Prettier keeps objects expanded (one field per line); the extractor bakes in `mapOverrides.<game>.json` (see below) so the diagonals it can't fit stay correct. `extract_ingame_maps.py` globs `public/data/*.json` and skips any file lacking a top-level `game`/`areas` key, so the sidecar files (`glyphs.*`, `overlays.*`, `difficulty.*`, `roomNames.*`, `mapOverrides.*`) are left untouched.
 
 ## One cell list, one coordinate system

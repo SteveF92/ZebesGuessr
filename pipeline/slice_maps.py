@@ -92,6 +92,13 @@ def process_game(game_id: str, game: dict) -> None:
         # tile shows the actual room, not the empty grid slot it maps to.
         crop_offsets = {tuple(int(v) for v in k.split(",")): tuple(o)
                         for k, o in area.get("cellCropOffsets", {}).items()}
+        # Hand-edited tiles: cells whose source screen is a partial view (a
+        # room clipped by the sheet edge, or a game-side quirk) that was
+        # hand-painted to fill the frame. Their committed PNG must not be
+        # regenerated from source, or the edit is lost on every refresh. The
+        # cell stays playable and in the JSON; only the tile write is skipped
+        # (a first run with no PNG yet still writes the base to edit from).
+        kept = {tuple(c) for c in area.get("keepTiles", [])}
         cells = []
         for y in range(rows):
             for x in range(cols):
@@ -107,10 +114,13 @@ def process_game(game_id: str, game: dict) -> None:
                     continue
                 if (x, y) in forced or cell_playable(gray, x0, y0, cw, ch, bg):
                     cells.append([x, y])
+                    tile_path = tile_dir / f"cell_{x}_{y}.png"
+                    if (x, y) in kept and tile_path.exists():
+                        continue  # preserve the hand-edited tile
                     dxp, dyp = crop_offsets.get((x, y), (0, 0))
                     img.crop((x0 + dxp, y0 + dyp,
                               x0 + dxp + cw, y0 + dyp + ch)).save(
-                        tile_dir / f"cell_{x}_{y}.png", optimize=True
+                        tile_path, optimize=True
                     )
 
         # Prune tiles for cells that are no longer playable (e.g. a cell newly
