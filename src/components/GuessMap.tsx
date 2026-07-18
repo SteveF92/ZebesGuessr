@@ -179,6 +179,41 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
   const [areaId, setAreaId] = useState(data.areas[0].id);
   const area = data.areas.find((a) => a.id === areaId)!;
 
+  // GBA screens are 3:2 but their pause-map cells are square (true to the
+  // game), so the X-Ray tile overlay smushes the screenshots. When X-Ray
+  // engages we stretch the whole map horizontally to the screen's aspect, then
+  // fade the real screens in. `aspect` is 1 for SNES (no stretch, instant).
+  const aspect = mapStyle === 'gba' && data.cellWidth && data.cellHeight ? data.cellWidth / data.cellHeight : 1;
+  // Engage timeline: 0 = square map, 1 = fully stretched with screens shown.
+  const [xrayP, setXrayP] = useState(0);
+  const easeOut = (t: number) => 1 - Math.pow(1 - t, 3);
+  // Two-step: cells widen over the first 60% of the timeline, then the screens
+  // fade in over the last 40% (and reverse cleanly on disengage).
+  const stretchP = easeOut(Math.min(1, Math.max(0, xrayP / 0.6)));
+  const tileP = easeOut(Math.min(1, Math.max(0, (xrayP - 0.6) / 0.4)));
+  const xScale = 1 + (aspect - 1) * stretchP; // current horizontal scale (1 → aspect)
+  // Animate xrayP toward showTiles. SNES has nothing to stretch, so it snaps
+  // instantly (preserving the original instant toggle). Re-toggling mid-anim
+  // eases from the current value.
+  useEffect(() => {
+    const to = showTiles ? 1 : 0;
+    if (aspect === 1 || xrayP === to) {
+      setXrayP(to);
+      return;
+    }
+    let raf = 0;
+    const from = xrayP;
+    const start = performance.now();
+    const step = (t: number) => {
+      const k = Math.min(1, (t - start) / 500);
+      setXrayP(from + (to - from) * k);
+      if (k < 1) raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showTiles]);
+
   useEffect(() => {
     onAreaChange?.(areaId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -212,8 +247,9 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
   }, []);
   const panEnabled = smallScreen && !editing; // editing is a desktop-only dev mode
 
-  // canvas' natural CSS size (backing store is 1:1 with CSS px): cols*S*SCALE
-  const W0 = area.map.cols * S * SCALE;
+  // canvas' natural CSS size (backing store is 1:1 with CSS px): cols*S*SCALE.
+  // xScale widens it while X-Ray is engaged so the pan fit math tracks the map.
+  const W0 = area.map.cols * S * SCALE * xScale;
   const H0 = area.map.rows * S * SCALE;
 
   // view transform applied to the canvas: displayed = translate(tx,ty) scale(z)
@@ -283,7 +319,7 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
     ro.observe(el);
     return () => ro.disconnect();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [panEnabled, area.id]);
+  }, [panEnabled, area.id, showTiles]);
 
   // Actual-game-screen overlay (showTiles): cache of the per-cell tile PNGs,
   // keyed by URL. Bumping tileVersion as they stream in triggers a repaint.
@@ -431,7 +467,7 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
     // only the same-area miss draws a trail; cross-area reveals refit anyway
     if (!isFinite(result.distance) || result.distance <= 0 || result.guess.areaId !== result.target.areaId) return;
     const { dx, dy } = area.map;
-    const sx = v.tx + (result.target.cell.x + dx + 0.5) * S * SCALE * v.z;
+    const sx = v.tx + (result.target.cell.x + dx + 0.5) * S * SCALE * xScale * v.z;
     const sy = v.ty + (result.target.cell.y + dy + 0.5) * S * SCALE * v.z;
     const m = 12; // nearly-offscreen counts as hidden
     followTip.current = sx < m || sx > el.clientWidth - m || sy < m || sy > el.clientHeight - m;
@@ -448,9 +484,9 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
     const p = lockMs > 0 ? Math.min(1, revealT / lockMs) : 1;
     const e = 1 - Math.pow(1 - p, 3);
     const { dx, dy } = area.map;
-    const gx = (result.guess.cell.x + dx + 0.5) * S * SCALE;
+    const gx = (result.guess.cell.x + dx + 0.5) * S * SCALE * xScale;
     const gy = (result.guess.cell.y + dy + 0.5) * S * SCALE;
-    const tx = (result.target.cell.x + dx + 0.5) * S * SCALE;
+    const tx = (result.target.cell.x + dx + 0.5) * S * SCALE * xScale;
     const ty = (result.target.cell.y + dy + 0.5) * S * SCALE;
     const tipX = gx + (tx - gx) * e;
     const tipY = gy + (ty - gy) * e;
@@ -547,12 +583,16 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
     const { cols, rows, dx, dy } = area.map;
     const w = cols * S,
       h = rows * S; // logical dims (all draw math)
-    const bw = w * SCALE,
+    // xScale widens the backing store (and the base transform below) while
+    // X-Ray is engaged, turning square cells into the GBA screen's 3:2 so the
+    // tile overlay isn't smushed. Every draw funnels through this one transform,
+    // and cellFromPoint normalizes against the canvas rect, so nothing else changes.
+    const bw = Math.round(w * SCALE * xScale),
       bh = h * SCALE; // backing/displayed px
     if (canvas.width !== bw) canvas.width = bw;
     if (canvas.height !== bh) canvas.height = bh;
     const ctx = canvas.getContext('2d')!;
-    ctx.setTransform(SCALE, 0, 0, SCALE, 0, 0); // 1 logical unit -> SCALE css px
+    ctx.setTransform(SCALE * xScale, 0, 0, SCALE, 0, 0); // 1 logical unit -> SCALE css px (x widened by xScale)
 
     // background: the pause screen's empty-space treatment. SNES draws a
     // purple dot lattice on black; GBA draws a grid of dark squares on navy
@@ -586,7 +626,7 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
     for (const c of overlays.connectors) drawConnector(ctx, c, false);
     if (editing) drawOverlayEditing(ctx);
     for (const g of glyphs) drawGlyph(ctx, g);
-    if (showTiles) drawTiles(ctx);
+    if (tileP > 0) drawTiles(ctx);
     if (editing) (tool === 'difficulty' ? drawDiffTint : drawRoomTint)(ctx);
 
     // Prime scan-visor brackets: four corner Ls around a cell, in place of a
@@ -985,6 +1025,7 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
    *  Drawn under the Diff tint (which stays translucent) and the markers. */
   function drawTiles(ctx: CanvasRenderingContext2D) {
     ctx.save();
+    ctx.globalAlpha = tileP; // step two: the real screens fade in over the stretched cells
     ctx.imageSmoothingEnabled = false;
     for (const c of area.cells) {
       const img = tileCache.current.get(tileUrl(data, { areaId: area.id, cell: c }));
