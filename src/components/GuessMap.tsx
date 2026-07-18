@@ -46,6 +46,12 @@ const TOOLS: { id: Tool; label: string }[] = [
   { id: 'erase', label: 'Erase' }
 ];
 
+/** Map a game id onto the ship/boss sprite filename prefix in public/assets. */
+const SPRITE_PREFIX: Record<string, string> = {
+  'super-metroid': 'super',
+  'metroid-fusion': 'fusion'
+};
+
 /** Diff-tool overlay colors, rating 1 (easy) → 5 (hard); 6 = never served. */
 const RATING_COLORS: Record<number, string> = {
   1: '46, 204, 113',
@@ -602,18 +608,23 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
     };
   }, [result]);
 
-  // Load ship and boss images
+  // Load per-game ship and boss sprites. Assets are named by a short prefix
+  // (super-ship.png, fusion-boss.png, …); map the game id onto it.
   useEffect(() => {
+    const prefix = SPRITE_PREFIX[data.game] ?? 'super';
+    setShipLoaded(false);
+    setBossLoaded(false);
+
     const img = new Image();
     img.onload = () => setShipLoaded(true);
-    img.src = `${import.meta.env.BASE_URL}assets/ship.png`;
+    img.src = `${import.meta.env.BASE_URL}assets/${prefix}-ship.png`;
     shipImageRef.current = img;
 
     const bossImg = new Image();
     bossImg.onload = () => setBossLoaded(true);
-    bossImg.src = `${import.meta.env.BASE_URL}assets/boss.png`;
+    bossImg.src = `${import.meta.env.BASE_URL}assets/${prefix}-boss.png`;
     bossImageRef.current = bossImg;
-  }, []);
+  }, [data.game]);
 
   // Lazily fetch the actual game screens for the current area while showTiles
   // is on; each arrival repaints so the overlay fills in progressively.
@@ -1049,9 +1060,12 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
     if (g.t === 'boss') {
       const img = bossImageRef.current;
       if (img && bossLoaded) {
-        const bossWidth = S * 1.2;
+        const bossWidth = S * 0.7;
         const bossHeight = (img.height / img.width) * bossWidth;
+        // Pixel-art source (a few px square) — nearest-neighbor keeps it sharp.
+        ctx.imageSmoothingEnabled = false;
         ctx.drawImage(img, cx - bossWidth / 2, cy - bossHeight / 2, bossWidth, bossHeight);
+        ctx.imageSmoothingEnabled = true;
       } else {
         // Fallback: orange diamond with dark core
         ctx.fillStyle = COL.ship;
@@ -1080,9 +1094,13 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
     if (g.t === 'ship') {
       const img = shipImageRef.current;
       if (img && shipLoaded) {
-        const shipWidth = S * 1.8;
+        const shipWidth = S * 0.95;
         const shipHeight = (img.height / img.width) * shipWidth;
-        ctx.drawImage(img, cx - shipWidth / 2, cy - shipHeight / 2, shipWidth, shipHeight);
+        // Pixel-art source (16×9 / 8×5) — nearest-neighbor keeps it sharp.
+        ctx.imageSmoothingEnabled = false;
+        // Nudge the ship one pixel left — reads better centered in both games.
+        ctx.drawImage(img, cx - shipWidth / 2 - 1, cy - shipHeight / 2, shipWidth, shipHeight);
+        ctx.imageSmoothingEnabled = true;
       } else {
         // Fallback triangle if image not loaded
         ctx.fillStyle = COL.ship;
