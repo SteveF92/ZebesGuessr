@@ -66,6 +66,16 @@ ICON_MIN = 12
 # empty-cell viewport margin around the aligned tile grid
 VIEW_MARGIN = 2
 
+# defeated-boss skull icon, baked into the room fill in wall-white
+BOSS_ICON = np.array([[c == "W" for c in row] for row in (
+    ".W..W.",
+    ".WWWW.",
+    "WWWWWW",
+    "W.WW.W",
+    ".WWWW.",
+    ".W..W.",
+)])
+
 
 def side_lines(x0: int, y0: int, side: int, h: int, w: int):
     """The two pixel rows/cols straddling a cell boundary, as slices."""
@@ -90,7 +100,8 @@ def own_line(x0: int, y0: int, side: int):
     return np.s_[y0:y0 + CELL, x0 + CELL - 1]
 
 
-def side_door(doors: dict, wall: np.ndarray, x0: int, y0: int,
+def side_door(doors: dict, wall: np.ndarray, anydoor: np.ndarray,
+              anyfill: np.ndarray, x0: int, y0: int,
               side: int, h: int, w: int) -> str | None:
     """Doors are drawn as a small gap in the white wall line: empty for a
     normal hatch, filled with a colored pip for locked/special doors.
@@ -111,7 +122,7 @@ def side_door(doors: dict, wall: np.ndarray, x0: int, y0: int,
     walled = [s for s in side_lines(x0, y0, side, h, w)
               if int(wall[s].sum()) >= 4]
     if not walled:
-        return None  # no wall here, so nothing to be a door in
+        return station_door(wall, anydoor, anyfill, x0, y0, side, h, w)
     line = own_line(x0, y0, side) if len(walled) == 2 else walled[0]
     wl = wall[line]
     dls = {c: dm[line] for c, dm in doors.items()}
@@ -131,6 +142,35 @@ def side_door(doors: dict, wall: np.ndarray, x0: int, y0: int,
                         best, best_n = c, n
                 return best if best_n >= 2 else "n"
             run_start = None
+    return None
+
+
+def station_door(wall: np.ndarray, anydoor: np.ndarray, anyfill: np.ndarray,
+                 x0: int, y0: int, side: int, h: int, w: int) -> str | None:
+    """Doors between two adjacent lettered station rooms (the N/S/R line at
+    each sector's start, and the main deck's block).
+
+    Those rooms are drawn as one baked caption box: their shared border is
+    box-red, not wall-white, so no line on the boundary is wall-quality and
+    the normal scan never runs. The door is a dotted separator — white pip,
+    room fill showing through the gap, white pip. If the boundary still
+    reads as solid counting the door-colored pixels (the same test the wall
+    bit uses), a short fill run bounded by white on the cell's own line is
+    that door; stations only ever get plain hatches.
+    """
+    if all(int(wall[s].sum()) + int(anydoor[s].sum()) < 4
+           for s in side_lines(x0, y0, side, h, w)):
+        return None  # not a solid boundary at all
+    line = own_line(x0, y0, side)
+    wl = wall[line]
+    fl = anyfill[line]
+    for i in range(1, len(fl) - 1):
+        if fl[i] and not fl[i - 1]:
+            j = i
+            while j < len(fl) and fl[j]:
+                j += 1
+            if 2 <= j - i <= 5 and wl[i - 1] and j < len(wl) and wl[j]:
+                return "n"
     return None
 
 
@@ -211,12 +251,30 @@ def strip_ship(ymask: np.ndarray) -> bool:
     return stripped
 
 
+def strip_boss_icon(wall: np.ndarray) -> list[tuple[int, int]]:
+    """Defeated-boss rooms bake a small skull icon into the room fill, drawn
+    in wall-white. In a one-cell-wide room its pixels land on the cell's
+    border rows, where together with the room outline they cross the wall
+    threshold — faking a wall (whose eye gaps then read as a door) across
+    what the map draws as one continuous room. Exact-match the 6x6 skull in
+    the wall mask and drop it; marking the boss is the hand-placed glyph's
+    job. Returns the matches' top-left pixel positions."""
+    windows = np.lib.stride_tricks.sliding_window_view(wall, BOSS_ICON.shape)
+    hits = [(int(y), int(x))
+            for y, x in zip(*np.nonzero((windows == BOSS_ICON).all(axis=(2, 3))))]
+    th, tw = BOSS_ICON.shape
+    for y, x in hits:
+        wall[y:y + th, x:x + tw] &= ~BOSS_ICON
+    return hits
+
+
 def extract_area(img_path):
     im = np.asarray(Image.open(img_path).convert("RGB")).astype(int)
     h, w = im.shape[:2]
     fills = [mask(im, c) for c in FILLS]
     anyfill = np.logical_or.reduce(fills)
     wall = mask(im, WALL)
+    skulls = strip_boss_icon(wall)
     doors = {k: mask(im, c) for k, c in DOORS.items()}
     strip_ship(doors["y"])
     anydoor = np.logical_or.reduce(list(doors.values()))
@@ -267,7 +325,8 @@ def extract_area(img_path):
                 if side_pixels(wall, x0, y0, side, h, w) \
                         + side_pixels(anydoor, x0, y0, side, h, w) >= 4:
                     walls |= side
-                door = side_door(doors, wall, x0, y0, side, h, w)
+                door = side_door(doors, wall, anydoor, anyfill,
+                                 x0, y0, side, h, w)
                 if door is not None:
                     pips.append(letter + door)
             cell = {"kind": "room", "walls": walls}
@@ -276,7 +335,10 @@ def extract_area(img_path):
             if pips:
                 cell["doors"] = pips
             cells[(x, y)] = cell
-    return cols, rows, cells, icon_only, ladders, knobs
+    # report skulls in cell coords so the note lines up with the others
+    skull_cells = sorted({((px - ox) // CELL, (py - oy) // CELL)
+                          for (py, px) in skulls})
+    return cols, rows, cells, icon_only, ladders, knobs, skull_cells
 
 
 def main() -> None:
@@ -313,7 +375,7 @@ def main() -> None:
                 patched_areas.append((area, cells, mapobj))
                 print(f"  {area['id']}: no in-game image, using fallback grid")
                 continue
-            cols, rows, cells, icon_only, ladders, knobs = extract_area(img)
+            cols, rows, cells, icon_only, ladders, knobs, skulls = extract_area(img)
             closed = close_perimeter(cells)
             # the rips' empty-lattice frame can exceed the SNES search window
             dx, dy, matches = align(cells, cols, rows, tiles,
@@ -347,6 +409,9 @@ def main() -> None:
             if knobs:
                 print(f"    note: knob passage cell(s): "
                       f"{[(x - dx, y - dy) for (x, y) in knobs]}")
+            if skulls:
+                print(f"    note: boss skull icon(s) stripped from the wall "
+                      f"mask: {[(x - dx, y - dy) for (x, y) in skulls]}")
             if icon_only:
                 print(f"    note: icon-only cells (fill displaced by a station "
                       f"icon): {[(x - dx, y - dy) for (x, y) in icon_only]}")
