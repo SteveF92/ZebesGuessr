@@ -85,7 +85,9 @@ export default function App() {
     return out;
   });
   const [difficultyId, setDifficultyId] = useState<string>(() => (loadedSeed ? DIFFICULTIES[loadedSeed.diffIndex]?.id : null) ?? localStorage.getItem('zg-difficulty') ?? 'tallon');
-  const [selectedGameId, setSelectedGameId] = useState<string>(() => (loadedSeed ? GAMES[loadedSeed.gameIndex]?.id : null) ?? localStorage.getItem('zg-game') ?? GAMES.find((g) => g.available)?.id ?? GAMES[0].id);
+  const [selectedGameId, setSelectedGameId] = useState<string>(
+    () => (loadedSeed ? GAMES[loadedSeed.gameIndex]?.id : null) ?? localStorage.getItem('zg-game') ?? GAMES.find((g) => g.available)?.id ?? GAMES[0].id
+  );
   const [debug, setDebug] = useState(false);
   const [editIcons, setEditIcons] = useState(false);
   const [showTiles, setShowTiles] = useState(false);
@@ -307,12 +309,7 @@ export default function App() {
 
           <div className="game-list">
             {GAMES.map((g) => (
-              <button
-                key={g.id}
-                className={`game-btn ${g.id === selectedGameId ? 'active' : ''}`}
-                disabled={!g.available || phase === 'loading' || !!loadedSeed}
-                onClick={() => pickGame(g.id)}
-              >
+              <button key={g.id} className={`game-btn ${g.id === selectedGameId ? 'active' : ''}`} disabled={!g.available || phase === 'loading' || !!loadedSeed} onClick={() => pickGame(g.id)}>
                 <span className="game-title">{g.title}</span>
                 {!g.available ? <span className="standby">STANDBY</span> : bests[g.id] > 0 ? <span className="game-pb">◆ {bests[g.id].toLocaleString()}</span> : null}
               </button>
