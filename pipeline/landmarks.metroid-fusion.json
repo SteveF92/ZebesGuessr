@@ -6,11 +6,6 @@
       "y": 3364
     },
     {
-      "sprite": "objects/ship.png",
-      "x": 4352,
-      "y": 2134
-    },
-    {
       "sprite": "characters/samus-terminal.png",
       "x": 1708,
       "y": 423

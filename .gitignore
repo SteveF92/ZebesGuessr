@@ -4,10 +4,10 @@ dist/
 Images/raw/
 Images/sheets/
 pipeline/debug/
-logic_database/
 *.log
 *.tsbuildinfo
 .DS_Store
 Thumbs.db
 __pycache__/
 .worktrees/
+randovania/
