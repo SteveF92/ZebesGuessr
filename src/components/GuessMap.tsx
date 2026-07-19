@@ -1304,7 +1304,15 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
         // Pixel-art source (16×9 / 8×5) — nearest-neighbor keeps it sharp.
         ctx.imageSmoothingEnabled = false;
         // Nudge the ship one pixel left — reads better centered in both games.
-        ctx.drawImage(img, cx - shipWidth / 2 - 1, cy - shipHeight / 2, shipWidth, shipHeight);
+        // Zero Mission's Crateria ship also reads better nudged two pixels down.
+        const shipYNudge = data.game === 'metroid-zero-mission' && area.id === 'crateria' ? 2 : 0;
+        ctx.drawImage(
+          img,
+          cx - shipWidth / 2 - 1,
+          cy - shipHeight / 2 + shipYNudge,
+          shipWidth,
+          shipHeight
+        );
         ctx.imageSmoothingEnabled = true;
       } else {
         // Fallback triangle if image not loaded
