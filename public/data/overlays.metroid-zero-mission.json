@@ -65,6 +65,13 @@
         "y1": 7,
         "label": "KRAID",
         "labelPos": "left"
+      },
+      {
+        "x0": 12,
+        "y0": 15,
+        "x1": 12,
+        "y1": 15,
+        "label": "RIDLEY"
       }
     ]
   }
