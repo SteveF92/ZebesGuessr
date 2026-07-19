@@ -33,6 +33,13 @@ Fusion sources, for reference: full maps by zerofighter & rocktyt, in-game
 maps by Narasumas, URLs like
 `https://vgmaps.com/Atlas/GBA/MetroidFusion-Sector1(SRX)(In-GameMap).png`.
 
+Check whether the full maps draw the bosses/ship/landmarks in their rooms.
+The Super Metroid sheets do; the Fusion ones don't, which made every boss
+arena an anonymous empty room. If they're missing, plan on a
+`composite_landmarks.py` pass (see step 3½) — sprite poses cut from
+[The Spriters Resource](https://www.spriters-resource.com) sheets (credit the
+rippers in README + AboutModal, same as the mapmakers).
+
 ## 2. Config entry
 
 Add the game to `pipeline/maps.config.json`:
@@ -61,6 +68,26 @@ python pipeline/download_maps.py <game-id>
 Writes `Images/raw/<game>/<area>.<ext>` + `ingame/<area>.<ext>` (extension
 follows the URL). `Images/raw/` is gitignored — every machine that reruns the
 pipeline re-downloads.
+
+## 3½. Landmarks (only if the rip draws arenas empty)
+
+```
+python pipeline/composite_landmarks.py <game-id>
+```
+
+Runs between download and slice; no-op unless `pipeline/landmarks.<game>.json`
+exists. Stamps alpha-transparent sprite poses (`pipeline/sprites/<game>/`)
+onto the raw area maps at pixel positions listed in the manifest, so bosses /
+the ship / other landmarks flow into the sliced tiles (both the mystery screen
+and the X-Ray overlay render those). The pristine download is kept in
+`Images/raw/<game>/pristine/` and stamping always restarts from it, so reruns
+are idempotent and moving a stamp leaves no ghost. Two ways to tweak a
+placement: edit the manifest's `x`/`y` and rerun this + `slice_maps.py`, or
+hand-layer the sprites onto the area PNG in an image editor and pin it via
+`localSource` (then delete that area's manifest entries). A stamp landing on a
+`keepTiles` cell won't reach that tile — apply it to the committed tile PNG by
+hand at the same in-tile offset (Fusion's Zazabi on sector-2 `(14,13)` is the
+one live example).
 
 ## 4. Slice
 

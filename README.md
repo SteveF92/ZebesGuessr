@@ -69,6 +69,13 @@ file** (dev server only) and commit the JSON.
   Maps Of The Month, August 2008), and the Zero Mission in-game map screens by
   Eggie — all hosted at VGMaps. The mapmakers are not affiliated with or
   involved in this project.
+- **Landmark sprites**: the Fusion rips draw boss arenas empty, so the pipeline
+  composites boss/ship/animal poses onto them (`pipeline/composite_landmarks.py`).
+  Those sprites were ripped by greiga master, Lexou Duck, Katuko, Gussprint,
+  Ngamer01, Aquarius, and Leix — hosted at
+  [The Spriters Resource](https://www.spriters-resource.com) — with the
+  assembled Zazabi from [Metroid Wiki](https://www.metroidwiki.org). The
+  rippers are not affiliated with or involved in this project.
 - **Metroid, Samus Aran, and all game imagery** © Nintendo / developed by
   Nintendo R&D1 and Intelligent Systems. This project is not affiliated with,
   endorsed by, or connected to Nintendo in any way.

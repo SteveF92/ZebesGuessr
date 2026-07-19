@@ -29,10 +29,24 @@ There is no lint setup. The map pipeline (Python, needs `pip install pillow nump
 
 ```
 python pipeline/download_maps.py [game]       # fetch source maps into Images/raw/ (gitignored)
+python pipeline/composite_landmarks.py [game] # stamp boss/ship/landmark sprites onto the raw maps (no-op without a landmarks.<game>.json)
 python pipeline/slice_maps.py [game]          # slice per-screen tiles, write base public/data/<game>.json
 python pipeline/extract_ingame_maps.py [game] # patch that JSON with per-area "map" objects (mapStyle "snes")
 python pipeline/extract_gba_maps.py [game]    # same, for mapStyle "gba" (Metroid Fusion / Zero Mission)
 ```
+
+The composite step exists because the Fusion rips draw boss arenas empty (the
+Super rip had bosses/ship drawn in). `pipeline/landmarks.<game>.json` holds the
+placements (`{ sprite, x, y }` in raw source-map px, sprite top-left);
+`pipeline/sprites/<game>/` holds the alpha-transparent poses (Spriters
+Resource rips — credited in README + AboutModal). It re-stamps from a pristine
+copy it keeps in `Images/raw/<game>/pristine/`, so it's idempotent and a moved
+stamp leaves no ghost. Tweak placements by editing the manifest and rerunning
+it + `slice_maps.py` — or hand-layer sprites onto an area PNG in an image
+editor and pin it via `localSource`, deleting that area's manifest entries.
+One trap: a stamp under a `keepTiles` cell never reaches the tile PNG (the
+kept tile wins), so mirror it into the committed tile by hand at the same
+in-tile offset — Fusion's Zazabi on sector-2 `(14,13)` is the live example.
 
 `Images/raw/` is gitignored because it's re-downloadable — except when it isn't. An area flagged `"localSource": true` in `maps.config.json` has a hand-fixed source map that supersedes the web rip (the download was wrong or incomplete); its committed copy lives in `pipeline/source-maps/<game>/<area>.png` and `download_maps.py` seeds `Images/raw/` from there instead of fetching. That committed PNG is the source of truth, so a fresh clone reproduces the corrected data. `background` is normally a game-wide key but can be overridden per area — Fusion's sector-3 is a `"black"`-void detail rip among white-void siblings, so its fill-threshold polarity is set on the area, not the game.
 

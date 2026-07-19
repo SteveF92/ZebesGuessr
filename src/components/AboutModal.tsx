@@ -40,6 +40,11 @@ export function AboutModal({ onClose }: { onClose: () => void }) {
           map rips by <strong>Eggie</strong>. All via the <a href="https://www.vgmaps.com">VGMaps</a> community.
         </p>
         <p>
+          The Fusion boss and landmark sprites drawn into those maps were ripped by <strong>greiga master</strong>, <strong>Lexou Duck</strong>, <strong>Katuko</strong>, <strong>Gussprint</strong>,{' '}
+          <strong>Ngamer01</strong>, <strong>Aquarius</strong>, and <strong>Leix</strong> (via <a href="https://www.spriters-resource.com">The Spriters Resource</a>), with Zazabi from{' '}
+          <a href="https://www.metroidwiki.org">Metroid Wiki</a>.
+        </p>
+        <p>
           Room names come from the fan communities that mapped these games out: Metroid Fusion's are from the <a href="https://randovania.org">Randovania</a> project and the Fusion community, and
           Super Metroid's are from <a href="https://maprando.com">Map Rando</a> and the Super Metroid community.
         </p>
