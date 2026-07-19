@@ -6,41 +6,6 @@
       "y": 3364
     },
     {
-      "sprite": "characters/samus-terminal.png",
-      "x": 1708,
-      "y": 423
-    },
-    {
-      "sprite": "creatures/dachora.png",
-      "x": 1662,
-      "y": 407
-    },
-    {
-      "sprite": "creatures/dachora-jr.png",
-      "x": 1668,
-      "y": 437
-    },
-    {
-      "sprite": "creatures/dachora-jr.png",
-      "x": 1648,
-      "y": 437
-    },
-    {
-      "sprite": "creatures/etecoon.png",
-      "x": 1586,
-      "y": 427
-    },
-    {
-      "sprite": "creatures/etecoon.png",
-      "x": 1610,
-      "y": 427
-    },
-    {
-      "sprite": "creatures/etecoon.png",
-      "x": 1634,
-      "y": 427
-    },
-    {
       "sprite": "characters/sa-x-stand-r.png",
       "x": 30,
       "y": 3464
@@ -112,19 +77,9 @@
   ],
   "sector-3": [
     {
-      "sprite": "bosses/core-x.png",
-      "x": 811,
-      "y": 1310
-    },
-    {
       "sprite": "bosses/box.png",
       "x": 3994,
       "y": 573
-    },
-    {
-      "sprite": "characters/scientist.png",
-      "x": 853,
-      "y": 1389
     }
   ],
   "sector-4": [

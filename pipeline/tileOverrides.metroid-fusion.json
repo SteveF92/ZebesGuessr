@@ -143,6 +143,22 @@
       "sx": 32,
       "sy": 32,
       "note": "'Main Deck55.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 20,
+      "y": 17,
+      "image": "tile-sources/metroid-fusion/main-deck/silo-scaffolding.png",
+      "sx": 32,
+      "sy": 192,
+      "note": "'Main Deck51.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 21,
+      "y": 18,
+      "image": "tile-sources/metroid-fusion/main-deck/silo-scaffolding.png",
+      "sx": 272,
+      "sy": 352,
+      "note": "'Main Deck51.png' from the randovania checkout, committed unmodified"
     }
   ],
   "sector-1": [
@@ -305,6 +321,174 @@
       "sx": 32,
       "sy": 192,
       "note": "'Sector 113.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 4,
+      "y": 2,
+      "image": "tile-sources/metroid-fusion/sector-1/entrance-lobby.png",
+      "sx": 32,
+      "sy": 192,
+      "note": "'Sector 10.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 5,
+      "y": 2,
+      "image": "tile-sources/metroid-fusion/sector-1/entrance-lobby.png",
+      "sx": 272,
+      "sy": 192,
+      "note": "'Sector 10.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 5,
+      "y": 1,
+      "image": "tile-sources/metroid-fusion/sector-1/entrance-lobby.png",
+      "sx": 272,
+      "sy": 32,
+      "note": "'Sector 10.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 4,
+      "y": 1,
+      "image": "tile-sources/metroid-fusion/sector-1/entrance-lobby.png",
+      "sx": 32,
+      "sy": 32,
+      "note": "'Sector 10.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 6,
+      "y": 2,
+      "image": "tile-sources/metroid-fusion/sector-1/yameba-corridor.png",
+      "sx": 32,
+      "sy": 32,
+      "note": "'Sector 13.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 7,
+      "y": 2,
+      "image": "tile-sources/metroid-fusion/sector-1/yameba-corridor.png",
+      "sx": 272,
+      "sy": 32,
+      "note": "'Sector 13.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 11,
+      "y": 2,
+      "image": "tile-sources/metroid-fusion/sector-1/hornoad-hole.png",
+      "sx": 32,
+      "sy": 32,
+      "note": "'Sector 15.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 12,
+      "y": 2,
+      "image": "tile-sources/metroid-fusion/sector-1/hornoad-hole.png",
+      "sx": 272,
+      "sy": 32,
+      "note": "'Sector 15.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 12,
+      "y": 3,
+      "image": "tile-sources/metroid-fusion/sector-1/moto-motorway.png",
+      "sx": 992,
+      "sy": 32,
+      "note": "'Sector 17.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 11,
+      "y": 3,
+      "image": "tile-sources/metroid-fusion/sector-1/moto-motorway.png",
+      "sx": 752,
+      "sy": 32,
+      "note": "'Sector 17.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 10,
+      "y": 3,
+      "image": "tile-sources/metroid-fusion/sector-1/moto-motorway.png",
+      "sx": 512,
+      "sy": 32,
+      "note": "'Sector 17.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 8,
+      "y": 3,
+      "image": "tile-sources/metroid-fusion/sector-1/moto-motorway.png",
+      "sx": 32,
+      "sy": 32,
+      "note": "'Sector 17.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 9,
+      "y": 3,
+      "image": "tile-sources/metroid-fusion/sector-1/moto-motorway.png",
+      "sx": 272,
+      "sy": 32,
+      "note": "'Sector 17.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 8,
+      "y": 11,
+      "image": "tile-sources/metroid-fusion/sector-1/tourian-tower.png",
+      "sx": 32,
+      "sy": 352,
+      "note": "'Sector 118.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 8,
+      "y": 10,
+      "image": "tile-sources/metroid-fusion/sector-1/tourian-tower.png",
+      "sx": 32,
+      "sy": 192,
+      "note": "'Sector 118.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 8,
+      "y": 9,
+      "image": "tile-sources/metroid-fusion/sector-1/tourian-tower.png",
+      "sx": 32,
+      "sy": 32,
+      "note": "'Sector 118.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 8,
+      "y": 12,
+      "image": "tile-sources/metroid-fusion/sector-1/tourian-tower.png",
+      "sx": 32,
+      "sy": 512,
+      "note": "'Sector 118.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 2,
+      "y": 11,
+      "image": "tile-sources/metroid-fusion/sector-1/ripper-maze.png",
+      "sx": 32,
+      "sy": 192,
+      "note": "'Sector 130.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 2,
+      "y": 10,
+      "image": "tile-sources/metroid-fusion/sector-1/ripper-maze.png",
+      "sx": 32,
+      "sy": 32,
+      "note": "'Sector 130.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 3,
+      "y": 10,
+      "image": "tile-sources/metroid-fusion/sector-1/ripper-maze.png",
+      "sx": 272,
+      "sy": 32,
+      "note": "'Sector 130.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 3,
+      "y": 11,
+      "image": "tile-sources/metroid-fusion/sector-1/ripper-maze.png",
+      "sx": 272,
+      "sy": 192,
+      "note": "'Sector 130.png' from the randovania checkout, committed unmodified"
     }
   ],
   "sector-4": [
@@ -555,6 +739,300 @@
       "sx": 32,
       "sy": 32,
       "note": "'Sector 45.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 17,
+      "y": 6,
+      "image": "tile-sources/metroid-fusion/sector-4/powamp-playhouse.png",
+      "sx": 32,
+      "sy": 192,
+      "note": "'Sector 43.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 18,
+      "y": 6,
+      "image": "tile-sources/metroid-fusion/sector-4/powamp-playhouse.png",
+      "sx": 272,
+      "sy": 192,
+      "note": "'Sector 43.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 18,
+      "y": 5,
+      "image": "tile-sources/metroid-fusion/sector-4/powamp-playhouse.png",
+      "sx": 272,
+      "sy": 32,
+      "note": "'Sector 43.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 17,
+      "y": 5,
+      "image": "tile-sources/metroid-fusion/sector-4/powamp-playhouse.png",
+      "sx": 32,
+      "sy": 32,
+      "note": "'Sector 43.png' from the randovania checkout, committed unmodified"
+    }
+  ],
+  "sector-5": [
+    {
+      "x": 6,
+      "y": 3,
+      "image": "tile-sources/metroid-fusion/sector-5/training-grounds.png",
+      "sx": 32,
+      "sy": 512,
+      "note": "'Sector 53.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 7,
+      "y": 3,
+      "image": "tile-sources/metroid-fusion/sector-5/training-grounds.png",
+      "sx": 272,
+      "sy": 512,
+      "note": "'Sector 53.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 8,
+      "y": 3,
+      "image": "tile-sources/metroid-fusion/sector-5/training-grounds.png",
+      "sx": 512,
+      "sy": 512,
+      "note": "'Sector 53.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 8,
+      "y": 2,
+      "image": "tile-sources/metroid-fusion/sector-5/training-grounds.png",
+      "sx": 512,
+      "sy": 352,
+      "note": "'Sector 53.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 7,
+      "y": 2,
+      "image": "tile-sources/metroid-fusion/sector-5/training-grounds.png",
+      "sx": 272,
+      "sy": 352,
+      "note": "'Sector 53.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 6,
+      "y": 2,
+      "image": "tile-sources/metroid-fusion/sector-5/training-grounds.png",
+      "sx": 32,
+      "sy": 352,
+      "note": "'Sector 53.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 6,
+      "y": 1,
+      "image": "tile-sources/metroid-fusion/sector-5/training-grounds.png",
+      "sx": 32,
+      "sy": 192,
+      "note": "'Sector 53.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 6,
+      "y": 0,
+      "image": "tile-sources/metroid-fusion/sector-5/training-grounds.png",
+      "sx": 32,
+      "sy": 32,
+      "note": "'Sector 53.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 7,
+      "y": 0,
+      "image": "tile-sources/metroid-fusion/sector-5/training-grounds.png",
+      "sx": 272,
+      "sy": 32,
+      "note": "'Sector 53.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 8,
+      "y": 1,
+      "image": "tile-sources/metroid-fusion/sector-5/training-grounds.png",
+      "sx": 512,
+      "sy": 192,
+      "note": "'Sector 53.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 7,
+      "y": 1,
+      "image": "tile-sources/metroid-fusion/sector-5/training-grounds.png",
+      "sx": 272,
+      "sy": 192,
+      "note": "'Sector 53.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 8,
+      "y": 0,
+      "image": "tile-sources/metroid-fusion/sector-5/training-grounds.png",
+      "sx": 512,
+      "sy": 32,
+      "note": "'Sector 53.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 9,
+      "y": 3,
+      "image": "tile-sources/metroid-fusion/sector-5/arctic-containment.png",
+      "sx": 32,
+      "sy": 32,
+      "note": "'Sector 57.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 10,
+      "y": 3,
+      "image": "tile-sources/metroid-fusion/sector-5/arctic-containment.png",
+      "sx": 272,
+      "sy": 32,
+      "note": "'Sector 57.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 10,
+      "y": 4,
+      "image": "tile-sources/metroid-fusion/sector-5/arctic-containment.png",
+      "sx": 272,
+      "sy": 192,
+      "note": "'Sector 57.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 9,
+      "y": 4,
+      "image": "tile-sources/metroid-fusion/sector-5/arctic-containment.png",
+      "sx": 32,
+      "sy": 192,
+      "note": "'Sector 57.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 9,
+      "y": 5,
+      "image": "tile-sources/metroid-fusion/sector-5/arctic-containment.png",
+      "sx": 32,
+      "sy": 352,
+      "note": "'Sector 57.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 10,
+      "y": 5,
+      "image": "tile-sources/metroid-fusion/sector-5/arctic-containment.png",
+      "sx": 272,
+      "sy": 352,
+      "note": "'Sector 57.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 11,
+      "y": 5,
+      "image": "tile-sources/metroid-fusion/sector-5/arctic-containment.png",
+      "sx": 512,
+      "sy": 352,
+      "note": "'Sector 57.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 11,
+      "y": 6,
+      "image": "tile-sources/metroid-fusion/sector-5/arctic-containment.png",
+      "sx": 512,
+      "sy": 512,
+      "note": "'Sector 57.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 10,
+      "y": 6,
+      "image": "tile-sources/metroid-fusion/sector-5/arctic-containment.png",
+      "sx": 272,
+      "sy": 512,
+      "note": "'Sector 57.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 9,
+      "y": 6,
+      "image": "tile-sources/metroid-fusion/sector-5/arctic-containment.png",
+      "sx": 32,
+      "sy": 512,
+      "note": "'Sector 57.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 9,
+      "y": 7,
+      "image": "tile-sources/metroid-fusion/sector-5/arctic-containment.png",
+      "sx": 32,
+      "sy": 672,
+      "note": "'Sector 57.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 10,
+      "y": 7,
+      "image": "tile-sources/metroid-fusion/sector-5/arctic-containment.png",
+      "sx": 272,
+      "sy": 672,
+      "note": "'Sector 57.png' from the randovania checkout, committed unmodified"
+    }
+  ],
+  "sector-6": [
+    {
+      "x": 4,
+      "y": 1,
+      "image": "tile-sources/metroid-fusion/sector-6/entrance-lobby.png",
+      "sx": 272,
+      "sy": 32,
+      "note": "'Sector 60.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 5,
+      "y": 1,
+      "image": "tile-sources/metroid-fusion/sector-6/entrance-lobby.png",
+      "sx": 512,
+      "sy": 32,
+      "note": "'Sector 60.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 5,
+      "y": 2,
+      "image": "tile-sources/metroid-fusion/sector-6/entrance-lobby.png",
+      "sx": 512,
+      "sy": 192,
+      "note": "'Sector 60.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 4,
+      "y": 2,
+      "image": "tile-sources/metroid-fusion/sector-6/entrance-lobby.png",
+      "sx": 272,
+      "sy": 192,
+      "note": "'Sector 60.png' from the randovania checkout, committed unmodified"
+    }
+  ],
+  "sector-2": [
+    {
+      "x": 8,
+      "y": 2,
+      "image": "tile-sources/metroid-fusion/sector-2/security-corridor.png",
+      "sx": 32,
+      "sy": 32,
+      "note": "'Sector 24.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 9,
+      "y": 2,
+      "image": "tile-sources/metroid-fusion/sector-2/security-corridor.png",
+      "sx": 272,
+      "sy": 32,
+      "note": "'Sector 24.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 4,
+      "y": 13,
+      "image": "tile-sources/metroid-fusion/sector-2/puyo-corridor.png",
+      "sx": 272,
+      "sy": 32,
+      "note": "'Sector 211.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 5,
+      "y": 13,
+      "image": "tile-sources/metroid-fusion/sector-2/puyo-corridor.png",
+      "sx": 512,
+      "sy": 32,
+      "note": "'Sector 211.png' from the randovania checkout, committed unmodified"
     }
   ]
 }
