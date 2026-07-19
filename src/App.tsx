@@ -336,7 +336,7 @@ export default function App() {
 
         {phase === 'loading' && (
           <p className="init">
-            INITIALIZING ARCHIVE<span className="cursor">_</span>
+            INITIALIZING OBSERVATORY<span className="cursor">_</span>
           </p>
         )}
         <div className="menu-actions">
