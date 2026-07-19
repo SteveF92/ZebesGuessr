@@ -74,5 +74,48 @@
         "label": "RIDLEY"
       }
     ]
+  },
+  "crateria": {
+    "connectors": [
+      {
+        "x0": 21,
+        "y0": 2,
+        "x1": 21,
+        "y1": 2,
+        "label": "CHOZODIA",
+        "labelPos": "above",
+        "horizontal": true
+      },
+      {
+        "x0": 21,
+        "y0": 6,
+        "x1": 21,
+        "y1": 6,
+        "label": "CHOZODIA",
+        "horizontal": true,
+        "labelPos": "below"
+      },
+      {
+        "x0": 12,
+        "y0": 7,
+        "x1": 12,
+        "y1": 7,
+        "label": "NORFAIR"
+      },
+      {
+        "x0": 6,
+        "y0": 10,
+        "x1": 6,
+        "y1": 10,
+        "label": "BRINSTAR"
+      },
+      {
+        "x0": 0,
+        "y0": 12,
+        "x1": 0,
+        "y1": 12,
+        "label": "TOURIAN"
+      }
+    ]
   }
 }
