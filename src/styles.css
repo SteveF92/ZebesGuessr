@@ -1788,6 +1788,35 @@ a:hover {
   font-size: 0.85rem;
   margin-bottom: 0.35rem;
 }
+/* Room state tool: tall renders (a ZM shaft is 13 screens) scroll in place */
+.roomstate-scroll {
+  max-height: 70vh;
+  overflow: auto;
+}
+.roomstate-scroll .landmark-canvas {
+  cursor: pointer;
+}
+.roomstate-compare {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 0.35rem;
+}
+.roomstate-compare figure {
+  margin: 0;
+}
+.roomstate-compare canvas,
+.roomstate-compare img {
+  display: block;
+  max-width: 100%;
+  image-rendering: pixelated;
+  border: 1px solid var(--line);
+}
+.roomstate-compare figcaption {
+  font-size: 0.8rem;
+  opacity: 0.75;
+  margin-top: 0.15rem;
+}
 .btn.tiny {
   padding: 0.2rem 0.55rem;
   font-size: 0.9rem;

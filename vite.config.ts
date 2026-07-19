@@ -1,6 +1,6 @@
 import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
-import { readFile, readdir, writeFile } from 'node:fs/promises';
+import { copyFile, mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { spawn } from 'node:child_process';
@@ -226,7 +226,189 @@ function landmarkEditor(): Plugin {
   };
 }
 
+// Dev-only endpoints for the editor's Room state tool (GBA games only), which
+// previews Randovania's per-room renders as tile-override candidates. Like
+// landmarks, tile overrides are PIPELINE INPUT: saving writes
+// pipeline/tileOverrides.<game>.json and copies each referenced render
+// byte-identical from the vendored checkout (randovania/<dir>/assets/maps/,
+// gitignored) into the committed pipeline/tile-sources/<game>/<area>/ — so a
+// fresh clone reproduces the bake without the checkout. Bake reuses
+// /__bake-landmarks (composite_landmarks.py applies overrides too).
+function roomStateEditor(): Plugin {
+  const AREA_RE = /^[a-z0-9-]+$/;
+  const FILE_RE = /^[a-z0-9-]+\.png$/;
+  // Randovania render/region basenames are letters+digits+spaces ("Main
+  // Deck46", "Sector 1 SRX") — no "." or slashes, so traversal can't match.
+  const MAP_NAME_RE = /^[A-Za-z0-9 ]+$/;
+  const IMG_RE = /^tile-sources\/[a-z0-9-]+\/[a-z0-9-]+\/[a-z0-9-]+\.png$/;
+  // our game id -> vendored checkout dir under randovania/
+  const RANDO_DIR: Record<string, string> = {
+    'metroid-fusion': 'fusion',
+    'metroid-zero-mission': 'zero_mission'
+  };
+  // our areaId -> logic-database region basename (mirrors the AREAS tables in
+  // pipeline/import_*_room_names.py; region keys are the render room names)
+  const REGION: Record<string, Record<string, string>> = {
+    'metroid-fusion': {
+      'main-deck': 'Main Deck',
+      'sector-1': 'Sector 1 SRX',
+      'sector-2': 'Sector 2 TRO',
+      'sector-3': 'Sector 3 PYR',
+      'sector-4': 'Sector 4 AQA',
+      'sector-5': 'Sector 5 ARC',
+      'sector-6': 'Sector 6 NOC'
+    },
+    'metroid-zero-mission': {
+      brinstar: 'Brinstar',
+      kraid: 'Kraid',
+      norfair: 'Norfair',
+      ridley: 'Ridley',
+      tourian: 'Tourian',
+      crateria: 'Crateria',
+      chozodia: 'Chozodia'
+    }
+  };
+  return {
+    name: 'zg-room-state-editor',
+    apply: 'serve',
+    configureServer(server) {
+      // GET /__room-state/<game> -> tileOverrides manifest + slicing metadata
+      server.middlewares.use('/__room-state', async (req, res) => {
+        try {
+          const game = (req.url ?? '').replace(/^\//, '').split('?')[0];
+          const dir = RANDO_DIR[game];
+          if (!dir) throw new Error('room-state editor only supports GBA games');
+          const config = JSON.parse(await readFile(resolve(__dirname, 'pipeline/maps.config.json'), 'utf8'));
+          if (!config[game]) throw new Error('unknown game');
+          const manifestPath = resolve(__dirname, 'pipeline', `tileOverrides.${game}.json`);
+          const manifest = existsSync(manifestPath) ? JSON.parse(await readFile(manifestPath, 'utf8')) : {};
+          const areas: Record<string, unknown> = {};
+          for (const a of config[game].areas) {
+            areas[a.id] = {
+              offsetX: a.offsetX ?? 0,
+              offsetY: a.offsetY ?? 0,
+              cellCropOffsets: a.cellCropOffsets ?? {},
+              keepTiles: a.keepTiles ?? []
+            };
+          }
+          res.setHeader('Content-Type', 'application/json');
+          res.end(
+            JSON.stringify({
+              manifest,
+              areas,
+              cellWidth: config[game].cellWidth ?? config[game].cellSize,
+              cellHeight: config[game].cellHeight ?? config[game].cellSize,
+              randovaniaPresent: existsSync(resolve(__dirname, 'randovania', dir, 'assets/maps'))
+            })
+          );
+        } catch (e) {
+          res.statusCode = 400;
+          res.end(String(e instanceof Error ? e.message : e));
+        }
+      });
+      // GET /__room-map-name/<game>/<area>?room=<encoded room name> ->
+      // { mapName } from the logic database (extra.map_name = render basename)
+      server.middlewares.use('/__room-map-name', async (req, res) => {
+        try {
+          const url = new URL(req.url ?? '', 'http://x');
+          const [game, area] = url.pathname.replace(/^\//, '').split('/');
+          const room = url.searchParams.get('room') ?? '';
+          const dir = RANDO_DIR[game];
+          const region = REGION[game]?.[area ?? ''];
+          if (!dir || !region || !AREA_RE.test(area)) throw new Error('bad path');
+          const db = JSON.parse(await readFile(resolve(__dirname, 'randovania', dir, 'logic_database', `${region}.json`), 'utf8'));
+          const mapName = db.areas?.[room]?.extra?.map_name;
+          if (typeof mapName !== 'string') {
+            res.statusCode = 404;
+            return res.end(`room "${room}" not in ${region}.json — sidecar name drifted from the logic DB?`);
+          }
+          res.setHeader('Content-Type', 'application/json');
+          res.end(JSON.stringify({ mapName }));
+        } catch (e) {
+          res.statusCode = 400;
+          res.end(String(e instanceof Error ? e.message : e));
+        }
+      });
+      // GET /__room-render/<game>/<mapName>.png -> the vendored room render
+      server.middlewares.use('/__room-render', async (req, res) => {
+        try {
+          const parts = (req.url ?? '').replace(/^\//, '').split('?')[0].split('/');
+          const game = parts[0];
+          const file = decodeURIComponent(parts.slice(1).join('/'));
+          const dir = RANDO_DIR[game];
+          if (!dir || !file.endsWith('.png') || !MAP_NAME_RE.test(file.slice(0, -4))) throw new Error('bad path');
+          res.setHeader('Content-Type', 'image/png');
+          res.end(await readFile(resolve(__dirname, 'randovania', dir, 'assets/maps', file)));
+        } catch {
+          res.statusCode = 404;
+          res.end('not found (is the randovania/ checkout in place?)');
+        }
+      });
+      // POST /__save-tile-overrides { game, manifest, copies } — copies each
+      // { area, mapName, file } render into pipeline/tile-sources/ first, then
+      // validates that every manifest image exists and writes the manifest.
+      server.middlewares.use('/__save-tile-overrides', (req, res) => {
+        if (req.method !== 'POST') {
+          res.statusCode = 405;
+          return res.end('POST only');
+        }
+        let body = '';
+        req.on('data', (c) => (body += c));
+        req.on('end', async () => {
+          try {
+            const { game, manifest, copies } = JSON.parse(body);
+            const dir = RANDO_DIR[game];
+            if (!dir) throw new Error('bad game id');
+            if (typeof manifest !== 'object' || manifest === null) throw new Error('bad manifest');
+            const copied: string[] = [];
+            for (const c of copies ?? []) {
+              if (!AREA_RE.test(c.area ?? '') || !FILE_RE.test(c.file ?? '') || !MAP_NAME_RE.test(c.mapName ?? '')) throw new Error(`bad copy entry ${JSON.stringify(c)}`);
+              const src = resolve(__dirname, 'randovania', dir, 'assets/maps', `${c.mapName}.png`);
+              if (!existsSync(src)) throw new Error(`no render ${c.mapName}.png in the randovania checkout`);
+              const destDir = resolve(__dirname, 'pipeline/tile-sources', game, c.area);
+              await mkdir(destDir, { recursive: true });
+              await copyFile(src, resolve(destDir, c.file));
+              copied.push(`tile-sources/${game}/${c.area}/${c.file}`);
+            }
+            const referenced = new Set<string>();
+            for (const [areaId, entries] of Object.entries(manifest)) {
+              if (!AREA_RE.test(areaId) || !Array.isArray(entries)) throw new Error(`bad area ${areaId}`);
+              for (const o of entries) {
+                if (typeof o.x !== 'number' || typeof o.y !== 'number') throw new Error(`bad cell in ${areaId}`);
+                if (o.sx !== undefined && typeof o.sx !== 'number') throw new Error(`bad sx in ${areaId}`);
+                if (o.sy !== undefined && typeof o.sy !== 'number') throw new Error(`bad sy in ${areaId}`);
+                if (typeof o.image !== 'string' || !IMG_RE.test(o.image)) throw new Error(`bad image path in ${areaId}: ${o.image}`);
+                if (!existsSync(resolve(__dirname, 'pipeline', o.image))) throw new Error(`missing source ${o.image}`);
+                referenced.add(o.image);
+              }
+            }
+            // report (never delete) committed tile-sources no longer referenced
+            const orphans: string[] = [];
+            const srcRoot = resolve(__dirname, 'pipeline/tile-sources', game);
+            if (existsSync(srcRoot)) {
+              for (const a of await readdir(srcRoot, { withFileTypes: true })) {
+                if (!a.isDirectory()) continue;
+                for (const f of await readdir(resolve(srcRoot, a.name))) {
+                  const rel = `tile-sources/${game}/${a.name}/${f}`;
+                  if (!referenced.has(rel)) orphans.push(rel);
+                }
+              }
+            }
+            const file = resolve(__dirname, 'pipeline', `tileOverrides.${game}.json`);
+            await writeFile(file, JSON.stringify(manifest, null, 2) + '\n');
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify({ ok: true, file, copied, orphans }));
+          } catch (e) {
+            res.statusCode = 400;
+            res.end(String(e instanceof Error ? e.message : e));
+          }
+        });
+      });
+    }
+  };
+}
+
 export default defineConfig({
-  plugins: [react(), glyphSaver(), landmarkEditor()],
+  plugins: [react(), glyphSaver(), landmarkEditor(), roomStateEditor()],
   base: '/'
 });

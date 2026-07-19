@@ -3,6 +3,7 @@ import type { AreaCell, AreaData, Cell, Connector, DiagBand, GameData, MapGlyph,
 import { cellKey, tileUrl } from '../data';
 import { DEFAULT_RATING, EXCLUDED_RATING } from '../scoring';
 import LandmarkEditor from './LandmarkEditor';
+import RoomStateExplorer from './RoomStateExplorer';
 
 interface Props {
   data: GameData;
@@ -24,7 +25,7 @@ interface Props {
 }
 
 type GlyphType = MapGlyph['t'];
-type Tool = GlyphType | 'connector' | 'roomname' | 'difficulty' | 'landmark' | 'erase';
+type Tool = GlyphType | 'connector' | 'roomname' | 'difficulty' | 'landmark' | 'roomstate' | 'erase';
 
 /** Subset of the dev /__landmarks/<game> payload the Landmark tint needs to map
  *  each raw-pixel sprite stamp back onto its map cell (mirrors LandmarkEditor). */
@@ -56,6 +57,7 @@ const TOOLS: { id: Tool; label: string }[] = [
   { id: 'roomname', label: 'Name' },
   { id: 'difficulty', label: 'Diff' },
   { id: 'landmark', label: 'Landmark' },
+  { id: 'roomstate', label: 'Room state' },
   { id: 'erase', label: 'Erase' }
 ];
 
@@ -481,6 +483,14 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
   const [landmarkCell, setLandmarkCell] = useState<Cell | null>(null);
   // a cell is only meaningful within its area — close the panel on area switch
   useEffect(() => setLandmarkCell(null), [area.id]);
+  // cell whose Randovania room render the Room state panel is exploring
+  const [roomStateCell, setRoomStateCell] = useState<Cell | null>(null);
+  useEffect(() => setRoomStateCell(null), [area.id]);
+  // the tool is GBA-only (its toolbar button is hidden elsewhere) — drop it if
+  // a non-GBA game arrives with it still selected
+  useEffect(() => {
+    if (tool === 'roomstate' && mapStyle !== 'gba') setTool('save');
+  }, [tool, mapStyle]);
   const overlays = overlayEdits[area.id] ?? { connectors: area.map.connectors };
 
   // editable room-name map: flat "areaId:tileX,tileY" -> name, seeded from data.
@@ -551,6 +561,34 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
     }
     return s;
   }, [landmarkData, landmarkDims, area]);
+
+  // Room-state tint data: the saved tileOverrides manifest (dev-only endpoint),
+  // fetched lazily the first time the Room state tool is picked — tints cells
+  // that already carry a baked override so the curator sees coverage.
+  const [roomStateTint, setRoomStateTint] = useState<Record<string, { x: number; y: number }[]> | null>(null);
+  useEffect(() => {
+    if (!editing || tool !== 'roomstate' || roomStateTint) return;
+    fetch(`/__room-state/${data.game}`)
+      .then((r) => (r.ok ? r.json() : Promise.reject()))
+      .then((d: { manifest: Record<string, { x: number; y: number }[]> }) => setRoomStateTint(d.manifest))
+      .catch(() => {});
+  }, [editing, tool, data.game, roomStateTint]);
+
+  /** cells of the area sharing the explored cell's room name (live Name-tool
+   *  edits included) — the Room state panel derives the room's origin from them */
+  const roomStateCells = useMemo(() => {
+    if (!roomStateCell) return [];
+    const name = roomEdits[cellKey(area.id, roomStateCell)];
+    if (!name) return [];
+    const prefix = `${area.id}:`;
+    const out: Cell[] = [];
+    for (const [key, n] of Object.entries(roomEdits)) {
+      if (n !== name || !key.startsWith(prefix)) continue;
+      const [x, y] = key.slice(prefix.length).split(',').map(Number);
+      out.push({ x, y });
+    }
+    return out;
+  }, [roomEdits, area.id, roomStateCell]);
 
   /** every cell of the area, for pointer hit-testing (tile coords) */
   const selectable = useMemo(() => new Set(area.cells.map((c) => `${c.x},${c.y}`)), [area]);
@@ -895,6 +933,7 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
       if (tool === 'difficulty') drawDiffTint(ctx);
       else if (tool === 'roomname') drawRoomTint(ctx);
       else if (tool === 'landmark') drawLandmarkTint(ctx);
+      else if (tool === 'roomstate') drawRoomStateTint(ctx);
     }
 
     // Prime scan-visor brackets: four corner Ls around a cell, in place of a
@@ -1388,6 +1427,15 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
     ctx.restore();
   }
 
+  /** Edit-mode overlay for the Room state tool: tint cells that already carry
+   *  a saved tile override (green, matching the panel's ✓ badge). */
+  function drawRoomStateTint(ctx: CanvasRenderingContext2D) {
+    ctx.save();
+    ctx.fillStyle = 'rgba(57, 255, 20, 0.25)';
+    for (const o of roomStateTint?.[area.id] ?? []) ctx.fillRect(o.x * S, o.y * S, S, S);
+    ctx.restore();
+  }
+
   /** showTiles overlay: paint each playable cell's actual game screen (the
    *  sliced tile PNG) into its map position, so difficulty ratings can be
    *  judged against the real imagery. Images stream in asynchronously; cells
@@ -1663,6 +1711,7 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
     if (tool === 'roomname') return placeRoom(c);
     if (tool === 'difficulty') return paintDiff(c);
     if (tool === 'landmark') return setLandmarkCell(c);
+    if (tool === 'roomstate') return setRoomStateCell(c);
     if (tool === 'erase') return eraseAt(c);
     stampGlyph(c, tool); // tool narrows to GlyphType here
   }
@@ -1732,7 +1781,7 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
       </div>
       {editing && (
         <div className="icon-editor">
-          {TOOLS.map((t) => (
+          {TOOLS.filter((t) => t.id !== 'roomstate' || mapStyle === 'gba').map((t) => (
             <button
               key={t.id}
               className={`btn tiny ${tool === t.id ? 'active' : ''}`}
@@ -1743,6 +1792,7 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
                 setRoomAnchor(null);
                 setRoomPending(null);
                 setLandmarkCell(null);
+                setRoomStateCell(null);
               }}
             >
               {t.label}
@@ -1865,6 +1915,7 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
             </>
           )}
           {tool === 'landmark' && !landmarkCell && <span className="edit-msg">click a cell to open its landmark view (X-Ray helps find the arenas)</span>}
+          {tool === 'roomstate' && !roomStateCell && <span className="edit-msg">click a cell to preview its room's Randovania render (X-Ray helps)</span>}
           <button className="btn tiny save" onClick={saveMap}>
             Save to file
           </button>
@@ -1872,6 +1923,9 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
         </div>
       )}
       {editing && tool === 'landmark' && landmarkCell && <LandmarkEditor game={data.game} areaId={area.id} cell={landmarkCell} />}
+      {editing && tool === 'roomstate' && roomStateCell && (
+        <RoomStateExplorer game={data.game} areaId={area.id} cell={roomStateCell} roomName={roomEdits[cellKey(area.id, roomStateCell)]} roomCells={roomStateCells} />
+      )}
       <div className="map-viewport" ref={outerRef}>
         <div
           className={`map-scroll${panEnabled ? ' pan' : ''}${result ? (!isFinite(result.distance) ? ' shake-wrong' : result.distance >= 10 ? ' shake-far' : '') : ''}`}

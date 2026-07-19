@@ -153,7 +153,19 @@ the tile PNG. Rebake with the usual composite → slice → extract → format
 chain; only the targeted `cell_<x>_<y>.png`s (plus the area's `map.png`
 backdrop) should change — the game JSON must not. Known limitation: the
 Landmark tool previews against the pristine map, so overrides only show up
-after a bake.
+there after a bake.
+
+For Fusion and Zero Mission the whole workflow is in-app: the editor's
+**Room state** tool sources renders from the vendored Randovania checkout at
+`randovania/<fusion|zero_mission>/assets/maps/<map_name>.png` (gitignored;
+`map_name` comes from the logic database via the cell's room name, so the cell
+must be named first). Click a cell to see its room's render gridded into
+screens — every render pads the room with 32px of off-camera tiles, and the
+crop math relies on it — then click screens to toggle per-cell overrides
+(✓ = this room's override, ≠ = a different image, orange = keepTiles trap),
+compare the crop against the current baked tile, and **Save** (writes the
+manifest and copies the render byte-identical into `tile-sources/`) or
+**Save + Bake**.
 
 ## 4. Slice
 
@@ -238,7 +250,8 @@ npm run format     # includes the regenerated public/data/*.json
    `pipeline/room-difficulty.<game>.json` base (see
    `docs/tile-difficulty-notes.md`); until then everything rates 3.
 2. **Room names**: `roomNames.<game>.json`. Fusion's are bulk-derived from the
-   **Randovania** logic database (per-region JSON, `areas` keyed by name, each
+   **Randovania** logic database (per-region JSON under the vendored
+   `randovania/<game>/logic_database/` checkout, `areas` keyed by name, each
    with `extra.minimap_coordinates`) mapped onto our cell grid by a per-area
    integer offset — see `pipeline/import_fusion_room_names.py` and the offset
    table in it (Super's came from Map Rando's data the same way). Zero

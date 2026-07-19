@@ -27,9 +27,14 @@ with the smaller bbox — the more specific claim. Writes the flat
 `public/data/roomNames.metroid-zero-mission.json` that `loadGameData` merges
 over the baked names key by key.
 
-Input: drop the Randovania region JSONs into `logic_database/zero-mission/`
-(gitignored, same as Fusion's). Rerun after updating them, then
-`npm run format`.
+Input: the vendored Randovania checkout at
+`randovania/zero_mission/logic_database/` (gitignored, same as Fusion's).
+
+CAUTION: this is a one-shot seeding tool that rewrites the sidecar wholesale.
+The committed file may carry hand-curated names, and the vendored DB drifts
+between checkouts (a 2026-07 rerun already produced ~23 deletions vs the
+committed seed) — review the git diff after a rerun before committing.
+`npm run format` afterwards.
 """
 
 import json
@@ -38,7 +43,7 @@ from collections import deque
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
-DB_DIR = os.path.join(ROOT, "logic_database", "zero-mission")
+DB_DIR = os.path.join(ROOT, "randovania", "zero_mission", "logic_database")
 GAME_JSON = os.path.join(ROOT, "public", "data", "metroid-zero-mission.json")
 OUT_JSON = os.path.join(ROOT, "public", "data",
                         "roomNames.metroid-zero-mission.json")

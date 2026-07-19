@@ -14,14 +14,18 @@ against the placed navigation/save glyphs. This writes the flat
 `public/data/roomNames.metroid-fusion.json` that `loadGameData` merges over the
 baked names key by key.
 
-Input: drop the Randovania region JSONs into `logic_database/` (gitignored, same
-as other large third-party inputs). Only the seven region files are read; the
-`header.json` resource DB is ignored. Rerun after updating them, then
-`npm run format`.
+Input: the vendored Randovania checkout at `randovania/fusion/logic_database/`
+(gitignored, same as other large third-party inputs). Only the seven region
+files are read; the `header.json` resource DB is ignored.
 
-NOTE: Randovania also supports Metroid: Zero Mission, but its logic-database
-format differs -- this importer won't run as-is for ZM. Adapt the offset table
-and (if needed) the coordinate lookup when ZM's MVP lands.
+CAUTION: this is a one-shot seeding tool that rewrites the sidecar wholesale.
+The committed file carries hand-curated names layered on top of the original
+import (and the vendored DB may have drifted since), so review the git diff
+after a rerun — deletions there are usually curation being clobbered, not
+fixes. `npm run format` afterwards.
+
+(Zero Mission's logic-database format differs — see the companion
+`import_zm_room_names.py`.)
 """
 
 import json
@@ -29,7 +33,7 @@ import os
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
-DB_DIR = os.path.join(ROOT, "logic_database")
+DB_DIR = os.path.join(ROOT, "randovania", "fusion", "logic_database")
 GAME_JSON = os.path.join(ROOT, "public", "data", "metroid-fusion.json")
 OUT_JSON = os.path.join(ROOT, "public", "data", "roomNames.metroid-fusion.json")
 
