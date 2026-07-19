@@ -178,8 +178,8 @@ const SNES_COL = {
   doors: {} as Record<string, string>,
   /** gba style: a colored door also draws a jamb bar just inside the wall, so
    *  two adjacent cells compose the game's "H" lock. Fusion does this; Zero
-   *  Mission draws every door — normal or locked — as just the bare pip line,
-   *  so it turns this off. */
+   *  Mission draws its doors as small blocks on the border instead (see
+   *  drawCell), so it turns this off. */
   doorJambs: true,
   ...MARKERS
 };
@@ -214,7 +214,7 @@ const ZM_COL: typeof SNES_COL = {
   room: '#0000f8',
   fills: ['#0000f8', '#20c068', '#f86820'],
   doors: { r: '#f82048', y: '#f8f800', g: '#10f880', b: '#0070f8' },
-  // ZM draws no "H" locks — every door, normal or colored, is a bare pip line.
+  // ZM draws no "H" locks — its doors are small border blocks (see drawCell).
   doorJambs: false
 };
 
@@ -1179,31 +1179,29 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
     if (c.w & SO && !open('SO')) ctx.fillRect(x, y + S - 2, S, 2);
     if (c.w & W && !open('W')) ctx.fillRect(x, y, 2, S);
     if (c.w & E && !open('E')) ctx.fillRect(x + S - 2, y, 2, S);
-    // doors (gba style). Fusion: a small gap in the wall — room fill for a
-    // plain hatch, lock color for a colored one (2 source px = 4 logical,
-    // centered on the wall segment) — and a colored hatch adds a jamb bar just
-    // inside the wall so two adjacent cells compose the game's H lock (an
-    // asymmetric door yields a half-H).
+    // doors (gba style). Fusion draws a small gap in the wall — room fill for a
+    // plain hatch, lock color for a colored one — plus a jamb bar inside the
+    // wall so two adjacent cells compose the game's H lock (asymmetric → half-H).
     //
-    // ZM (COL.doorJambs === false) draws no jambs and splits doors in two:
-    //   - a normal door (plain 'n' or the light-blue 'b') is a bare pip line,
-    //     so the very common one-sided ones read as a single clean mark;
-    //   - a lock (r/g/y) is a 3x3-source-px colored grid on the border, drawn
-    //     as a half (6 logical along × 3 deep, flush to the border) per cell so
-    //     a symmetric pair composes the full square and a rare one-sided lock
-    //     still reads as a block. Each half stays inside its own cell, so
-    //     neither the neighbour's fill nor draw order can clip it.
+    // ZM (COL.doorJambs === false) draws every colored door — the common
+    // light-blue normal door and the rarer r/g/y locks alike — as one small
+    // block on the border: in the source it's a 4x4 mark, 2 px of color capped
+    // top and bottom by the white wall (matched against the raw pause maps).
+    // Rendered as a 4-logical square flush to each cell's own border, so a
+    // symmetric pip pair composes the full straddling block while a one-sided
+    // door (very common on normal doors) reads as a lone block on its room.
+    // Each square stays inside its own cell, so neither the neighbour's fill
+    // nor draw order can clip it. Plain 'n' still shows as a bare gap.
     if (c.dr) {
       for (const p of c.dr) {
         const colored = p[1] !== 'n';
-        if (!COL.doorJambs && colored && p[1] !== 'b') {
-          const G = 6, // grid: 3 source px along the border...
-            D = 3; //      ...× 3 deep — a half-square flush to the border
+        if (!COL.doorJambs && colored) {
+          const B = 4; // 2 source px of color; the white wall forms its end caps
           ctx.fillStyle = COL.doors[p[1]] ?? COL.wall;
-          if (p[0] === 'N') ctx.fillRect(x + S / 2 - G / 2, y, G, D);
-          else if (p[0] === 'S') ctx.fillRect(x + S / 2 - G / 2, y + S - D, G, D);
-          else if (p[0] === 'W') ctx.fillRect(x, y + S / 2 - G / 2, D, G);
-          else if (p[0] === 'E') ctx.fillRect(x + S - D, y + S / 2 - G / 2, D, G);
+          if (p[0] === 'N') ctx.fillRect(x + S / 2 - B / 2, y, B, B);
+          else if (p[0] === 'S') ctx.fillRect(x + S / 2 - B / 2, y + S - B, B, B);
+          else if (p[0] === 'W') ctx.fillRect(x, y + S / 2 - B / 2, B, B);
+          else if (p[0] === 'E') ctx.fillRect(x + S - B, y + S / 2 - B / 2, B, B);
           continue;
         }
         ctx.fillStyle = colored ? (COL.doors[p[1]] ?? COL.wall) : fill;
