@@ -2,20 +2,20 @@
   "kraid": [
     {
       "sprite": "bosses/kraid.png",
-      "x": 1663,
-      "y": 2180
+      "x": 1523,
+      "y": 2151
     }
   ],
   "ridley": [
     {
       "sprite": "bosses/ridley.png",
-      "x": 1384,
-      "y": 1163
+      "x": 1492,
+      "y": 1071
     },
     {
       "sprite": "bosses/imago.png",
-      "x": 2228,
-      "y": 122
+      "x": 2453,
+      "y": 321
     }
   ],
   "tourian": [
@@ -23,13 +23,6 @@
       "sprite": "bosses/mother-brain.png",
       "x": 920,
       "y": 1675
-    }
-  ],
-  "chozodia": [
-    {
-      "sprite": "bosses/mecha-ridley.png",
-      "x": 5365,
-      "y": 206
     }
   ],
   "crateria": [
