@@ -1,0 +1,60 @@
+{
+  "brinstar": [
+    {
+      "sprite": "creatures/etecoon.png",
+      "x": 376,
+      "y": 3105
+    },
+    {
+      "sprite": "creatures/etecoon.png",
+      "x": 632,
+      "y": 3105
+    },
+    {
+      "sprite": "creatures/etecoon.png",
+      "x": 504,
+      "y": 2849
+    },
+    {
+      "sprite": "creatures/dachora.png",
+      "x": 1908,
+      "y": 1801
+    }
+  ],
+  "maridia": [
+    {
+      "sprite": "creatures/turtle.png",
+      "x": 2273,
+      "y": 3846
+    },
+    {
+      "sprite": "creatures/turtle.png",
+      "x": 2535,
+      "y": 3846
+    }
+  ],
+  "norfair": [
+    {
+      "sprite": "creatures/space-pirate.png",
+      "x": 7284,
+      "y": 4341
+    },
+    {
+      "sprite": "creatures/space-pirate.png",
+      "x": 7796,
+      "y": 4341
+    }
+  ],
+  "crateria": [
+    {
+      "sprite": "creatures/space-pirate.png",
+      "x": 1396,
+      "y": 1221
+    },
+    {
+      "sprite": "creatures/space-pirate.png",
+      "x": 1396,
+      "y": 1733
+    }
+  ]
+}
