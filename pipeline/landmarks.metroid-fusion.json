@@ -1,111 +1,111 @@
 {
   "main-deck": [
     {
-      "sprite": "yakuza.png",
-      "x": 4660,
-      "y": 3437
+      "sprite": "bosses/yakuza.png",
+      "x": 4626,
+      "y": 3426
     },
     {
-      "sprite": "ship.png",
+      "sprite": "objects/ship.png",
       "x": 4352,
       "y": 2134
     },
     {
-      "sprite": "dachora.png",
+      "sprite": "creatures/dachora.png",
       "x": 1750,
       "y": 400
     },
     {
-      "sprite": "etecoon.png",
+      "sprite": "creatures/etecoon.png",
       "x": 1805,
       "y": 420
     },
     {
-      "sprite": "etecoon.png",
+      "sprite": "creatures/etecoon.png",
       "x": 1835,
       "y": 420
     },
     {
-      "sprite": "metroid.png",
+      "sprite": "creatures/metroid.png",
       "x": 70,
       "y": 3240
     },
     {
-      "sprite": "metroid.png",
+      "sprite": "creatures/metroid.png",
       "x": 150,
       "y": 3290
     },
     {
-      "sprite": "metroid.png",
+      "sprite": "creatures/metroid.png",
       "x": 95,
       "y": 3420
     },
     {
-      "sprite": "arachnus.png",
+      "sprite": "bosses/arachnus.png",
       "x": 5408,
       "y": 1384
     }
   ],
   "sector-1": [
     {
-      "sprite": "neo-ridley.png",
+      "sprite": "bosses/neo-ridley.png",
       "x": 74,
       "y": 1439
     },
     {
-      "sprite": "charge-core-x.png",
+      "sprite": "bosses/charge-core-x.png",
       "x": 2020,
       "y": 1015
     }
   ],
   "sector-2": [
     {
-      "sprite": "nettori.png",
+      "sprite": "bosses/nettori.png",
       "x": 3324,
       "y": 997
     },
     {
-      "sprite": "zazabi.png",
+      "sprite": "bosses/zazabi.png",
       "x": 3324,
       "y": 2102
     }
   ],
   "sector-3": [
     {
-      "sprite": "core-x.png",
-      "x": 810,
+      "sprite": "bosses/core-x.png",
+      "x": 811,
       "y": 1310
     },
     {
-      "sprite": "box.png",
-      "x": 4000,
-      "y": 582
+      "sprite": "bosses/box.png",
+      "x": 3971,
+      "y": 577
     }
   ],
   "sector-4": [
     {
-      "sprite": "serris.png",
+      "sprite": "bosses/serris.png",
       "x": 2564,
       "y": 206
     }
   ],
   "sector-5": [
     {
-      "sprite": "nightmare.png",
+      "sprite": "bosses/nightmare.png",
       "x": 5340,
       "y": 845
     }
   ],
   "sector-6": [
     {
-      "sprite": "box.png",
-      "x": 1900,
-      "y": 880
+      "sprite": "bosses/box-x.png",
+      "x": 1869,
+      "y": 871
     },
     {
-      "sprite": "core-x-spiked.png",
+      "sprite": "bosses/core-x-spiked.png",
       "x": 2576,
-      "y": 1631
+      "y": 1626
     }
   ]
 }

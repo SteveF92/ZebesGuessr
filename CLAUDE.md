@@ -38,8 +38,13 @@ python pipeline/extract_gba_maps.py [game]    # same, for mapStyle "gba" (Metroi
 The composite step exists because the Fusion rips draw boss arenas empty (the
 Super rip had bosses/ship drawn in). `pipeline/landmarks.<game>.json` holds the
 placements (`{ sprite, x, y }` in raw source-map px, sprite top-left);
-`pipeline/sprites/<game>/` holds the alpha-transparent poses (Spriters
-Resource rips — credited in README + AboutModal). It re-stamps from a pristine
+`pipeline/sprites/<game>/<category>/` holds the alpha-transparent poses
+(Spriters Resource rips — credited in README + AboutModal), organized in
+category subdirs that group the editor's thumbnail palette — the manifest's
+`sprite` field is the category-relative path (`"bosses/box.png"`; flat files
+work too, palette group "other"). Cut new poses with `pipeline/cut_sprite.py`
+(crop + optional `--key` background→alpha + alpha-bbox trim; see
+docs/adding-a-game.md § "Sprite files and categories"). It re-stamps from a pristine
 copy it keeps in `Images/raw/<game>/pristine/`, so it's idempotent and a moved
 stamp leaves no ghost. Tweak placements visually with the editor's **Landmark**
 tool (click a cell for a zoomed WYSIWYG panel — drag/arrow-nudge stamps, **Save

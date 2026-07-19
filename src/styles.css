@@ -1808,6 +1808,55 @@ a:hover {
   padding: 0.2rem 0.5rem;
   font-family: var(--font-body);
 }
+/* Landmark tool: category-grouped sprite thumbnail palette */
+.landmark-palette {
+  border-top: 1px solid var(--line);
+  padding: 0.3rem 0 0.35rem;
+  margin-bottom: 0.35rem;
+}
+.landmark-palette summary {
+  cursor: pointer;
+  font-size: 0.85rem;
+  opacity: 0.85;
+  user-select: none;
+  padding: 0.15rem 0;
+}
+.landmark-thumbs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  padding: 0.2rem 0 0.3rem;
+}
+.landmark-thumb {
+  width: 76px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 0.25rem 0.15rem;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  color: var(--text);
+  cursor: pointer;
+}
+.landmark-thumb:hover {
+  border-color: var(--gold);
+}
+.landmark-thumb img {
+  max-width: 64px;
+  max-height: 48px;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+.landmark-thumb span {
+  font-size: 0.7rem;
+  opacity: 0.8;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
 
 /* ============================================================
    SUMMARY

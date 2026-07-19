@@ -94,6 +94,32 @@ scratch, so the pause-map draw data must be re-patched in. A stamp landing on a
 hand at the same in-tile offset (Fusion's Zazabi on sector-2 `(14,13)` is the
 one live example).
 
+### Sprite files and categories
+
+Sprites live at `pipeline/sprites/<game>/<category>/<name>.png` — the category
+subdirectory (one level, e.g. `bosses/`, `creatures/`, `barriers/`, `objects/`)
+groups the Landmark tool's thumbnail palette, and the manifest's `sprite` field
+is that relative path (`"bosses/box.png"`). A PNG dropped flat into the game
+dir also works and shows up under **other** — handy for quick experiments;
+categorize it later with a `git mv` + manifest path update. Filenames must be
+lowercase `[a-z0-9-]` (the dev endpoints reject anything else).
+
+Adding a sprite of your own:
+
+1. Cut it from a sheet (Spriters Resource rips — add the ripper to the credits
+   in `README.md` + `AboutModal.tsx`):
+   ```
+   python pipeline/cut_sprite.py sheet.png <x> <y> <w> <h> \
+       pipeline/sprites/<game>/<category>/<name>.png [--key AUTO]
+   ```
+   `--key AUTO` color-keys a solid background to alpha (needed for sheets with
+   no/broken alpha); the result is auto-trimmed to its opaque bbox and the
+   final dimensions are printed. Or export an alpha PNG from any image editor.
+2. Hit **↻** in the Landmark panel — the palette re-scans the directory, no
+   dev-server restart (unsaved stamp edits survive the refresh).
+3. Click the new thumbnail to stamp it on the clicked cell, drag/nudge, then
+   **Save + Bake**.
+
 ## 4. Slice
 
 ```

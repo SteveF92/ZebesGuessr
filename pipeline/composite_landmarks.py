@@ -10,8 +10,10 @@ between download and slice, so the landmark art flows into the sliced tiles
     download_maps.py -> composite_landmarks.py -> slice_maps.py -> extract_*.py
 
 Placements live in pipeline/landmarks.<game>.json, keyed by area id, each
-stamp { "sprite": "<file>", "x": <px>, "y": <px> } in raw source-map pixel
-coordinates (sprite top-left). Tweak a placement by editing the numbers and
+stamp { "sprite": "<path>", "x": <px>, "y": <px> } in raw source-map pixel
+coordinates (sprite top-left). "sprite" is relative to pipeline/sprites/<game>/
+with an optional single category level ("bosses/box.png") — the category dirs
+group the editor's thumbnail palette. Tweak a placement by editing the numbers and
 rerunning this + slice_maps.py — or hand-layer the sprites in an image editor
 instead: save the flattened map to pipeline/source-maps/<game>/<area>.png,
 flag the area "localSource": true, and delete its entries here.

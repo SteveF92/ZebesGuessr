@@ -74,7 +74,8 @@ file** (dev server only) and commit the JSON.
   Those sprites were ripped by greiga master, Lexou Duck, Katuko, Gussprint,
   Ngamer01, Aquarius, and Leix — hosted at
   [The Spriters Resource](https://www.spriters-resource.com) — with the
-  assembled Zazabi from [Metroid Wiki](https://www.metroidwiki.org). The
+  assembled Zazabi, B.O.X., and Yakuza poses from
+  [Metroid Wiki](https://www.metroidwiki.org). The
   rippers are not affiliated with or involved in this project.
 - **Metroid, Samus Aran, and all game imagery** © Nintendo / developed by
   Nintendo R&D1 and Intelligent Systems. This project is not affiliated with,

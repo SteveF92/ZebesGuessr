@@ -70,7 +70,10 @@ function glyphSaver(): Plugin {
 function landmarkEditor(): Plugin {
   const GAME_RE = /^[a-z0-9-]+$/;
   const AREA_RE = /^[a-z0-9-]+$/;
-  const SPRITE_RE = /^[a-z0-9-]+\.png$/;
+  // sprite paths are category-relative: "bosses/box.png", or flat "box.png"
+  // (grouped as "other" in the editor). The [a-z0-9-] charset excludes "." and
+  // "\", so ".." and backslash traversal can never match — don't loosen it.
+  const SPRITE_RE = /^(?:[a-z0-9-]+\/)?[a-z0-9-]+\.png$/;
   return {
     name: 'zg-landmark-editor',
     apply: 'serve',
@@ -84,8 +87,20 @@ function landmarkEditor(): Plugin {
           if (!config[game]) throw new Error('unknown game');
           const manifestPath = resolve(__dirname, 'pipeline', `landmarks.${game}.json`);
           const manifest = existsSync(manifestPath) ? JSON.parse(await readFile(manifestPath, 'utf8')) : {};
+          // one category level deep, walked explicitly (readdir{recursive} is
+          // Node>=18.17-only and returns backslashes on Windows)
           const spriteDir = resolve(__dirname, 'pipeline/sprites', game);
-          const sprites = existsSync(spriteDir) ? (await readdir(spriteDir)).filter((f) => SPRITE_RE.test(f)).sort() : [];
+          const sprites: string[] = [];
+          if (existsSync(spriteDir)) {
+            for (const e of await readdir(spriteDir, { withFileTypes: true })) {
+              if (e.isDirectory()) {
+                for (const f of await readdir(resolve(spriteDir, e.name))) {
+                  if (SPRITE_RE.test(`${e.name}/${f}`)) sprites.push(`${e.name}/${f}`);
+                }
+              } else if (SPRITE_RE.test(e.name)) sprites.push(e.name);
+            }
+            sprites.sort();
+          }
           const areas: Record<string, unknown> = {};
           for (const a of config[game].areas) {
             areas[a.id] = {
@@ -110,11 +125,13 @@ function landmarkEditor(): Plugin {
           res.end(String(e instanceof Error ? e.message : e));
         }
       });
-      // GET /__landmark-sprite/<game>/<file>.png
+      // GET /__landmark-sprite/<game>/[<category>/]<file>.png
       server.middlewares.use('/__landmark-sprite', async (req, res) => {
         try {
-          const [game, file] = (req.url ?? '').replace(/^\//, '').split('?')[0].split('/');
-          if (!GAME_RE.test(game) || !SPRITE_RE.test(file ?? '')) throw new Error('bad path');
+          const parts = (req.url ?? '').replace(/^\//, '').split('?')[0].split('/');
+          const game = parts[0];
+          const file = parts.slice(1).join('/');
+          if (!GAME_RE.test(game) || !SPRITE_RE.test(file)) throw new Error('bad path');
           res.setHeader('Content-Type', 'image/png');
           res.end(await readFile(resolve(__dirname, 'pipeline/sprites', game, file)));
         } catch {

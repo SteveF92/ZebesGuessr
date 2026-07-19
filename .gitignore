@@ -2,6 +2,7 @@ node_modules/
 dist/
 .vite/
 Images/raw/
+Images/sheets/
 pipeline/debug/
 logic_database/
 *.log

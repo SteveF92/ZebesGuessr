@@ -27,6 +27,36 @@ interface LandmarkData {
 const MARGIN = 60;
 const SCALE = 2;
 
+/** collapsible thumbnail chooser, one <details> per category subdir of
+ *  pipeline/sprites/<game>/ — clicking a thumbnail stamps it on the cell */
+function SpritePalette({ groups, game, onPick }: { groups: [string, string[]][]; game: string; onPick: (sprite: string) => void }) {
+  if (!groups.length)
+    return (
+      <div className="landmark-palette">
+        <span className="edit-msg">no sprites — drop PNGs into pipeline/sprites/{game}/ and hit ↻</span>
+      </div>
+    );
+  return (
+    <div className="landmark-palette">
+      {groups.map(([cat, sprites]) => (
+        <details key={cat} open>
+          <summary>
+            {cat} ({sprites.length})
+          </summary>
+          <div className="landmark-thumbs">
+            {sprites.map((s) => (
+              <button key={s} type="button" className="landmark-thumb" title={s} onClick={() => onPick(s)}>
+                <img src={`/__landmark-sprite/${game}/${s}`} alt={s} />
+                <span>{s.split('/').pop()!.replace('.png', '')}</span>
+              </button>
+            ))}
+          </div>
+        </details>
+      ))}
+    </div>
+  );
+}
+
 /**
  * Dev-only zoomed placement panel for the editor's Landmark tool. Draws the
  * clicked cell's crop of the PRISTINE source map (served by the dev
@@ -41,17 +71,26 @@ export default function LandmarkEditor({ game, areaId, cell }: { game: string; a
   const [mapImg, setMapImg] = useState<HTMLImageElement | null>(null);
   const [spriteImgs, setSpriteImgs] = useState<Record<string, HTMLImageElement>>({});
   const [selected, setSelected] = useState<number | null>(null);
-  const [addSprite, setAddSprite] = useState('');
+  const [paletteOpen, setPaletteOpen] = useState(true);
   const [msg, setMsg] = useState('');
   const [baking, setBaking] = useState(false);
   const drag = useRef<{ idx: number; dx: number; dy: number } | null>(null);
 
+  /** keepManifest: the ↻ refresh re-scans sprites/areas without discarding
+   *  unsaved stamp edits (the manifest lives in the same state object) */
+  const loadData = useCallback(
+    (keepManifest: boolean) => {
+      fetch(`/__landmarks/${game}`)
+        .then((r) => (r.ok ? r.json() : Promise.reject(new Error('landmark endpoints need the dev server'))))
+        .then((fresh: LandmarkData) => setData((prev) => (keepManifest && prev ? { ...fresh, manifest: prev.manifest } : fresh)))
+        .catch((e) => setMsg(String(e instanceof Error ? e.message : e)));
+    },
+    [game]
+  );
+
   useEffect(() => {
-    fetch(`/__landmarks/${game}`)
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error('landmark endpoints need the dev server'))))
-      .then(setData)
-      .catch((e) => setMsg(String(e instanceof Error ? e.message : e)));
-  }, [game]);
+    loadData(false);
+  }, [loadData]);
 
   useEffect(() => {
     setMapImg(null);
@@ -75,6 +114,17 @@ export default function LandmarkEditor({ game, areaId, cell }: { game: string; a
 
   const meta = data?.areas[areaId];
   const stamps = useMemo(() => data?.manifest[areaId] ?? [], [data, areaId]);
+
+  /** sprites grouped by category subdir; flat files land in "other" (last) */
+  const groups = useMemo(() => {
+    const m = new Map<string, string[]>();
+    for (const s of data?.sprites ?? []) {
+      const cat = s.includes('/') ? s.split('/')[0] : 'other';
+      if (!m.has(cat)) m.set(cat, []);
+      m.get(cat)!.push(s);
+    }
+    return [...m.entries()].sort(([a], [b]) => (a === 'other' ? 1 : b === 'other' ? -1 : a.localeCompare(b)));
+  }, [data]);
 
   /** source-map rect of the clicked cell (slice_maps' crop rect, incl. the
    *  displaced-cluster cellCropOffsets) */
@@ -207,12 +257,12 @@ export default function LandmarkEditor({ game, areaId, cell }: { game: string; a
     setStamps((prev) => prev.map((s, i) => (i === selected ? { ...s, x: s.x + move[0], y: s.y + move[1] } : s)));
   }
 
-  function addStamp() {
-    if (!addSprite || !cellRect) return;
-    const img = spriteImgs[addSprite];
+  function addStamp(sprite: string) {
+    if (!cellRect) return;
+    const img = spriteImgs[sprite];
     const w = img?.width ?? 0;
     const h = img?.height ?? 0;
-    setStamps((prev) => [...prev, { sprite: addSprite, x: Math.round(cellRect.x + (cellRect.w - w) / 2), y: Math.round(cellRect.y + (cellRect.h - h) / 2) }]);
+    setStamps((prev) => [...prev, { sprite, x: Math.round(cellRect.x + (cellRect.w - w) / 2), y: Math.round(cellRect.y + (cellRect.h - h) / 2) }]);
     setSelected(stamps.length);
   }
 
@@ -285,18 +335,13 @@ export default function LandmarkEditor({ game, areaId, cell }: { game: string; a
     <div className="landmark-editor" tabIndex={0} onKeyDown={onKeyDown}>
       <div className="landmark-toolbar">
         <span className="edit-msg">
-          cell ({cell.x},{cell.y}) — drag a sprite, arrows nudge (shift ×8), Del removes
+          cell ({cell.x},{cell.y}) — click a palette sprite to stamp, drag it, arrows nudge (shift ×8), Del removes
         </span>
-        <select className="edit-name" value={addSprite} onChange={(e) => setAddSprite(e.target.value)}>
-          <option value="">add sprite…</option>
-          {data.sprites.map((s) => (
-            <option key={s} value={s}>
-              {s.replace('.png', '')}
-            </option>
-          ))}
-        </select>
-        <button className="btn tiny" onClick={addStamp} disabled={!addSprite}>
-          Add
+        <button className={`btn tiny${paletteOpen ? ' active' : ''}`} onClick={() => setPaletteOpen((v) => !v)}>
+          Sprites {paletteOpen ? '▾' : '▸'}
+        </button>
+        <button className="btn tiny" onClick={() => loadData(true)} title="re-scan pipeline/sprites/ for freshly dropped PNGs (keeps unsaved edits)">
+          ↻
         </button>
         <button className="btn tiny" onClick={removeSelected} disabled={selected === null}>
           Delete
@@ -314,6 +359,7 @@ export default function LandmarkEditor({ game, areaId, cell }: { game: string; a
         )}
         {msg && <span className="edit-msg">{msg}</span>}
       </div>
+      {paletteOpen && <SpritePalette groups={groups} game={game} onPick={addStamp} />}
       {kept && (
         <div className="landmark-warning">
           ⚠ ({cell.x},{cell.y}) is a keepTiles cell: the bake skips its tile PNG — mirror any stamp into the committed tile by hand (see CLAUDE.md).
