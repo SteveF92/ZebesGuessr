@@ -7,6 +7,554 @@
       "sx": 32,
       "sy": 32,
       "note": "Pre-collapse frozen Ridley (standing); the vgmaps rip is endgame state (collapsed). Source: 'Main Deck46.png' from github.com/randovania/randovania, committed unmodified - the render has a 32px border of off-camera tiles around the 480x160 two-screen room. The room's right screen (8,10) deliberately stays on the vgmaps rip: the render draws its hatch in the wrong door color."
+    },
+    {
+      "x": 17,
+      "y": 13,
+      "image": "tile-sources/metroid-fusion/main-deck/docking-bay-hangar.png",
+      "sx": 32,
+      "sy": 32,
+      "note": "'Main Deck0.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 18,
+      "y": 13,
+      "image": "tile-sources/metroid-fusion/main-deck/docking-bay-hangar.png",
+      "sx": 272,
+      "sy": 32,
+      "note": "'Main Deck0.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 16,
+      "y": 13,
+      "image": "tile-sources/metroid-fusion/main-deck/docking-bay-access.png",
+      "sx": 272,
+      "sy": 32,
+      "note": "'Main Deck3.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 15,
+      "y": 13,
+      "image": "tile-sources/metroid-fusion/main-deck/docking-bay-access.png",
+      "sx": 32,
+      "sy": 32,
+      "note": "'Main Deck3.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 15,
+      "y": 20,
+      "image": "tile-sources/metroid-fusion/main-deck/central-reactor-core.png",
+      "sx": 272,
+      "sy": 832,
+      "note": "'Main Deck49.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 14,
+      "y": 20,
+      "image": "tile-sources/metroid-fusion/main-deck/central-reactor-core.png",
+      "sx": 32,
+      "sy": 832,
+      "note": "'Main Deck49.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 14,
+      "y": 19,
+      "image": "tile-sources/metroid-fusion/main-deck/central-reactor-core.png",
+      "sx": 32,
+      "sy": 672,
+      "note": "'Main Deck49.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 15,
+      "y": 19,
+      "image": "tile-sources/metroid-fusion/main-deck/central-reactor-core.png",
+      "sx": 272,
+      "sy": 672,
+      "note": "'Main Deck49.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 15,
+      "y": 18,
+      "image": "tile-sources/metroid-fusion/main-deck/central-reactor-core.png",
+      "sx": 272,
+      "sy": 512,
+      "note": "'Main Deck49.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 14,
+      "y": 18,
+      "image": "tile-sources/metroid-fusion/main-deck/central-reactor-core.png",
+      "sx": 32,
+      "sy": 512,
+      "note": "'Main Deck49.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 14,
+      "y": 17,
+      "image": "tile-sources/metroid-fusion/main-deck/central-reactor-core.png",
+      "sx": 32,
+      "sy": 352,
+      "note": "'Main Deck49.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 15,
+      "y": 17,
+      "image": "tile-sources/metroid-fusion/main-deck/central-reactor-core.png",
+      "sx": 272,
+      "sy": 352,
+      "note": "'Main Deck49.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 15,
+      "y": 16,
+      "image": "tile-sources/metroid-fusion/main-deck/central-reactor-core.png",
+      "sx": 272,
+      "sy": 192,
+      "note": "'Main Deck49.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 14,
+      "y": 16,
+      "image": "tile-sources/metroid-fusion/main-deck/central-reactor-core.png",
+      "sx": 32,
+      "sy": 192,
+      "note": "'Main Deck49.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 14,
+      "y": 15,
+      "image": "tile-sources/metroid-fusion/main-deck/central-reactor-core.png",
+      "sx": 32,
+      "sy": 32,
+      "note": "'Main Deck49.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 15,
+      "y": 15,
+      "image": "tile-sources/metroid-fusion/main-deck/central-reactor-core.png",
+      "sx": 272,
+      "sy": 32,
+      "note": "'Main Deck49.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 13,
+      "y": 16,
+      "image": "tile-sources/metroid-fusion/main-deck/silo-tunnel.png",
+      "sx": 32,
+      "sy": 32,
+      "note": "'Main Deck55.png' from the randovania checkout, committed unmodified"
+    }
+  ],
+  "sector-1": [
+    {
+      "x": 9,
+      "y": 2,
+      "image": "tile-sources/metroid-fusion/sector-1/atmospheric-stabilizer-northwest.png",
+      "sx": 32,
+      "sy": 192,
+      "note": "'Sector 14.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 10,
+      "y": 2,
+      "image": "tile-sources/metroid-fusion/sector-1/atmospheric-stabilizer-northwest.png",
+      "sx": 272,
+      "sy": 192,
+      "note": "'Sector 14.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 10,
+      "y": 1,
+      "image": "tile-sources/metroid-fusion/sector-1/atmospheric-stabilizer-northwest.png",
+      "sx": 272,
+      "sy": 32,
+      "note": "'Sector 14.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 9,
+      "y": 1,
+      "image": "tile-sources/metroid-fusion/sector-1/atmospheric-stabilizer-northwest.png",
+      "sx": 32,
+      "sy": 32,
+      "note": "'Sector 14.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 15,
+      "y": 1,
+      "image": "tile-sources/metroid-fusion/sector-1/atmospheric-stabilizer-northeast.png",
+      "sx": 272,
+      "sy": 32,
+      "note": "'Sector 132.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 14,
+      "y": 1,
+      "image": "tile-sources/metroid-fusion/sector-1/atmospheric-stabilizer-northeast.png",
+      "sx": 32,
+      "sy": 32,
+      "note": "'Sector 132.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 14,
+      "y": 2,
+      "image": "tile-sources/metroid-fusion/sector-1/atmospheric-stabilizer-northeast.png",
+      "sx": 32,
+      "sy": 192,
+      "note": "'Sector 132.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 15,
+      "y": 2,
+      "image": "tile-sources/metroid-fusion/sector-1/atmospheric-stabilizer-northeast.png",
+      "sx": 272,
+      "sy": 192,
+      "note": "'Sector 132.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 11,
+      "y": 4,
+      "image": "tile-sources/metroid-fusion/sector-1/atmospheric-stabilizer-central.png",
+      "sx": 32,
+      "sy": 32,
+      "note": "'Sector 19.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 12,
+      "y": 4,
+      "image": "tile-sources/metroid-fusion/sector-1/atmospheric-stabilizer-central.png",
+      "sx": 272,
+      "sy": 32,
+      "note": "'Sector 19.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 12,
+      "y": 5,
+      "image": "tile-sources/metroid-fusion/sector-1/atmospheric-stabilizer-central.png",
+      "sx": 272,
+      "sy": 192,
+      "note": "'Sector 19.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 11,
+      "y": 5,
+      "image": "tile-sources/metroid-fusion/sector-1/atmospheric-stabilizer-central.png",
+      "sx": 32,
+      "sy": 192,
+      "note": "'Sector 19.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 14,
+      "y": 8,
+      "image": "tile-sources/metroid-fusion/sector-1/atmospheric-stabilizer-southeast.png",
+      "sx": 272,
+      "sy": 32,
+      "note": "'Sector 115.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 13,
+      "y": 8,
+      "image": "tile-sources/metroid-fusion/sector-1/atmospheric-stabilizer-southeast.png",
+      "sx": 32,
+      "sy": 32,
+      "note": "'Sector 115.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 13,
+      "y": 9,
+      "image": "tile-sources/metroid-fusion/sector-1/atmospheric-stabilizer-southeast.png",
+      "sx": 32,
+      "sy": 192,
+      "note": "'Sector 115.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 14,
+      "y": 9,
+      "image": "tile-sources/metroid-fusion/sector-1/atmospheric-stabilizer-southeast.png",
+      "sx": 272,
+      "sy": 192,
+      "note": "'Sector 115.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 9,
+      "y": 8,
+      "image": "tile-sources/metroid-fusion/sector-1/atmospheric-stabilizer-southwest.png",
+      "sx": 32,
+      "sy": 32,
+      "note": "'Sector 113.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 10,
+      "y": 8,
+      "image": "tile-sources/metroid-fusion/sector-1/atmospheric-stabilizer-southwest.png",
+      "sx": 272,
+      "sy": 32,
+      "note": "'Sector 113.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 10,
+      "y": 9,
+      "image": "tile-sources/metroid-fusion/sector-1/atmospheric-stabilizer-southwest.png",
+      "sx": 272,
+      "sy": 192,
+      "note": "'Sector 113.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 9,
+      "y": 9,
+      "image": "tile-sources/metroid-fusion/sector-1/atmospheric-stabilizer-southwest.png",
+      "sx": 32,
+      "sy": 192,
+      "note": "'Sector 113.png' from the randovania checkout, committed unmodified"
+    }
+  ],
+  "sector-4": [
+    {
+      "x": 0,
+      "y": 6,
+      "image": "tile-sources/metroid-fusion/sector-4/pump-control-unit.png",
+      "sx": 32,
+      "sy": 192,
+      "note": "'Sector 433.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 0,
+      "y": 5,
+      "image": "tile-sources/metroid-fusion/sector-4/pump-control-unit.png",
+      "sx": 32,
+      "sy": 32,
+      "note": "'Sector 433.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 1,
+      "y": 5,
+      "image": "tile-sources/metroid-fusion/sector-4/pump-control-unit.png",
+      "sx": 272,
+      "sy": 32,
+      "note": "'Sector 433.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 1,
+      "y": 6,
+      "image": "tile-sources/metroid-fusion/sector-4/pump-control-unit.png",
+      "sx": 272,
+      "sy": 192,
+      "note": "'Sector 433.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 2,
+      "y": 6,
+      "image": "tile-sources/metroid-fusion/sector-4/pump-control-unit.png",
+      "sx": 512,
+      "sy": 192,
+      "note": "'Sector 433.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 2,
+      "y": 5,
+      "image": "tile-sources/metroid-fusion/sector-4/pump-control-unit.png",
+      "sx": 512,
+      "sy": 32,
+      "note": "'Sector 433.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 3,
+      "y": 5,
+      "image": "tile-sources/metroid-fusion/sector-4/pump-control-unit.png",
+      "sx": 752,
+      "sy": 32,
+      "note": "'Sector 433.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 3,
+      "y": 6,
+      "image": "tile-sources/metroid-fusion/sector-4/pump-control-unit.png",
+      "sx": 752,
+      "sy": 192,
+      "note": "'Sector 433.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 4,
+      "y": 5,
+      "image": "tile-sources/metroid-fusion/sector-4/pump-control-access.png",
+      "sx": 32,
+      "sy": 512,
+      "note": "'Sector 421.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 4,
+      "y": 6,
+      "image": "tile-sources/metroid-fusion/sector-4/pump-control-access.png",
+      "sx": 32,
+      "sy": 672,
+      "note": "'Sector 421.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 4,
+      "y": 7,
+      "image": "tile-sources/metroid-fusion/sector-4/pump-control-access.png",
+      "sx": 32,
+      "sy": 832,
+      "note": "'Sector 421.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 5,
+      "y": 6,
+      "image": "tile-sources/metroid-fusion/sector-4/reservoir-west.png",
+      "sx": 32,
+      "sy": 192,
+      "note": "'Sector 420.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 6,
+      "y": 6,
+      "image": "tile-sources/metroid-fusion/sector-4/reservoir-west.png",
+      "sx": 272,
+      "sy": 192,
+      "note": "'Sector 420.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 7,
+      "y": 6,
+      "image": "tile-sources/metroid-fusion/sector-4/reservoir-west.png",
+      "sx": 512,
+      "sy": 192,
+      "note": "'Sector 420.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 5,
+      "y": 5,
+      "image": "tile-sources/metroid-fusion/sector-4/reservoir-west.png",
+      "sx": 32,
+      "sy": 32,
+      "note": "'Sector 420.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 6,
+      "y": 5,
+      "image": "tile-sources/metroid-fusion/sector-4/reservoir-west.png",
+      "sx": 272,
+      "sy": 32,
+      "note": "'Sector 420.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 7,
+      "y": 5,
+      "image": "tile-sources/metroid-fusion/sector-4/reservoir-west.png",
+      "sx": 512,
+      "sy": 32,
+      "note": "'Sector 420.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 8,
+      "y": 5,
+      "image": "tile-sources/metroid-fusion/sector-4/reservoir-west.png",
+      "sx": 752,
+      "sy": 32,
+      "note": "'Sector 420.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 8,
+      "y": 6,
+      "image": "tile-sources/metroid-fusion/sector-4/reservoir-west.png",
+      "sx": 752,
+      "sy": 192,
+      "note": "'Sector 420.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 15,
+      "y": 6,
+      "image": "tile-sources/metroid-fusion/sector-4/drain-pipe.png",
+      "sx": 32,
+      "sy": 32,
+      "note": "'Sector 436.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 16,
+      "y": 6,
+      "image": "tile-sources/metroid-fusion/sector-4/drain-pipe.png",
+      "sx": 272,
+      "sy": 32,
+      "note": "'Sector 436.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 16,
+      "y": 7,
+      "image": "tile-sources/metroid-fusion/sector-4/drain-pipe.png",
+      "sx": 272,
+      "sy": 192,
+      "note": "'Sector 436.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 12,
+      "y": 6,
+      "image": "tile-sources/metroid-fusion/sector-4/reservoir-east.png",
+      "sx": 272,
+      "sy": 352,
+      "note": "'Sector 46.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 12,
+      "y": 5,
+      "image": "tile-sources/metroid-fusion/sector-4/reservoir-east.png",
+      "sx": 272,
+      "sy": 192,
+      "note": "'Sector 46.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 13,
+      "y": 4,
+      "image": "tile-sources/metroid-fusion/sector-4/reservoir-east.png",
+      "sx": 512,
+      "sy": 32,
+      "note": "'Sector 46.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 13,
+      "y": 5,
+      "image": "tile-sources/metroid-fusion/sector-4/reservoir-east.png",
+      "sx": 512,
+      "sy": 192,
+      "note": "'Sector 46.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 12,
+      "y": 4,
+      "image": "tile-sources/metroid-fusion/sector-4/reservoir-east.png",
+      "sx": 272,
+      "sy": 32,
+      "note": "'Sector 46.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 11,
+      "y": 4,
+      "image": "tile-sources/metroid-fusion/sector-4/reservoir-east.png",
+      "sx": 32,
+      "sy": 32,
+      "note": "'Sector 46.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 11,
+      "y": 5,
+      "image": "tile-sources/metroid-fusion/sector-4/reservoir-east.png",
+      "sx": 32,
+      "sy": 192,
+      "note": "'Sector 46.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 11,
+      "y": 6,
+      "image": "tile-sources/metroid-fusion/sector-4/reservoir-east.png",
+      "sx": 32,
+      "sy": 352,
+      "note": "'Sector 46.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 14,
+      "y": 5,
+      "image": "tile-sources/metroid-fusion/sector-4/sciser-stall.png",
+      "sx": 32,
+      "sy": 32,
+      "note": "'Sector 45.png' from the randovania checkout, committed unmodified"
     }
   ]
 }
