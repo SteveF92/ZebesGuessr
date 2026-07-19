@@ -3,7 +3,7 @@
     {
       "sprite": "bosses/yakuza.png",
       "x": 4626,
-      "y": 3426
+      "y": 3364
     },
     {
       "sprite": "objects/ship.png",
@@ -46,11 +46,6 @@
       "y": 427
     },
     {
-      "sprite": "characters/sa-x-stare.png",
-      "x": 1705,
-      "y": 1535
-    },
-    {
       "sprite": "characters/sa-x-stand-r.png",
       "x": 30,
       "y": 3464
@@ -74,6 +69,16 @@
       "sprite": "bosses/arachnus.png",
       "x": 5408,
       "y": 1384
+    },
+    {
+      "sprite": "characters/sa-x-stare.png",
+      "x": 1032,
+      "y": 1357
+    },
+    {
+      "sprite": "barriers/eye-door-l.png",
+      "x": 5005,
+      "y": 1168
     }
   ],
   "sector-1": [
@@ -144,8 +149,8 @@
   "sector-6": [
     {
       "sprite": "bosses/box-x.png",
-      "x": 1813,
-      "y": 891
+      "x": 1803,
+      "y": 892
     },
     {
       "sprite": "bosses/core-x-spiked.png",

@@ -19,18 +19,26 @@
       "sprite": "creatures/dachora.png",
       "x": 1908,
       "y": 1801
-    }
-  ],
-  "maridia": [
-    {
-      "sprite": "creatures/turtle.png",
-      "x": 2273,
-      "y": 3846
     },
     {
-      "sprite": "creatures/turtle.png",
-      "x": 2535,
-      "y": 3846
+      "sprite": "creatures/dachora.png",
+      "x": 1443,
+      "y": 3284
+    },
+    {
+      "sprite": "creatures/etecoon.png",
+      "x": 1618,
+      "y": 3020
+    },
+    {
+      "sprite": "creatures/etecoon.png",
+      "x": 1635,
+      "y": 3020
+    },
+    {
+      "sprite": "creatures/etecoon.png",
+      "x": 1651,
+      "y": 3020
     }
   ],
   "norfair": [
