@@ -1196,7 +1196,16 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
       for (const p of c.dr) {
         const colored = p[1] !== 'n';
         if (!COL.doorJambs && colored) {
-          const B = 4; // 2 source px of color; the white wall forms its end caps
+          const B = 4, // 2 source px of color, flush to the border
+            C = 2; // white wall caps flanking it along the wall (the 4x4's top/bottom rows)
+          // white caps first: the wall's white extends a bit past the lock on
+          // both ends (B deep, C longer than the color on each along-wall side)
+          ctx.fillStyle = COL.wall;
+          if (p[0] === 'N') ctx.fillRect(x + S / 2 - B / 2 - C, y, B + 2 * C, B);
+          else if (p[0] === 'S') ctx.fillRect(x + S / 2 - B / 2 - C, y + S - B, B + 2 * C, B);
+          else if (p[0] === 'W') ctx.fillRect(x, y + S / 2 - B / 2 - C, B, B + 2 * C);
+          else if (p[0] === 'E') ctx.fillRect(x + S - B, y + S / 2 - B / 2 - C, B, B + 2 * C);
+          // then the lock color, inset between the caps
           ctx.fillStyle = COL.doors[p[1]] ?? COL.wall;
           if (p[0] === 'N') ctx.fillRect(x + S / 2 - B / 2, y, B, B);
           else if (p[0] === 'S') ctx.fillRect(x + S / 2 - B / 2, y + S - B, B, B);
