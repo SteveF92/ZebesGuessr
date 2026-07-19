@@ -1,19 +1,14 @@
 {
   "main-deck": [
     {
-      "sprite": "arachnus.png",
-      "x": 4890,
-      "y": 1375
-    },
-    {
       "sprite": "yakuza.png",
       "x": 4660,
       "y": 3437
     },
     {
       "sprite": "ship.png",
-      "x": 4238,
-      "y": 2120
+      "x": 4352,
+      "y": 2134
     },
     {
       "sprite": "dachora.png",
@@ -44,13 +39,18 @@
       "sprite": "metroid.png",
       "x": 95,
       "y": 3420
+    },
+    {
+      "sprite": "arachnus.png",
+      "x": 5408,
+      "y": 1384
     }
   ],
   "sector-1": [
     {
       "sprite": "neo-ridley.png",
-      "x": 45,
-      "y": 1450
+      "x": 74,
+      "y": 1439
     },
     {
       "sprite": "charge-core-x.png",
@@ -60,14 +60,14 @@
   ],
   "sector-2": [
     {
-      "sprite": "zazabi.png",
-      "x": 3450,
-      "y": 2103
-    },
-    {
       "sprite": "nettori.png",
       "x": 3300,
       "y": 1012
+    },
+    {
+      "sprite": "zazabi.png",
+      "x": 3324,
+      "y": 2102
     }
   ],
   "sector-3": [
@@ -85,8 +85,8 @@
   "sector-4": [
     {
       "sprite": "serris.png",
-      "x": 2450,
-      "y": 205
+      "x": 2564,
+      "y": 206
     }
   ],
   "sector-5": [
@@ -98,14 +98,14 @@
   ],
   "sector-6": [
     {
-      "sprite": "core-x-spiked.png",
-      "x": 2713,
-      "y": 1638
-    },
-    {
       "sprite": "box.png",
       "x": 1900,
       "y": 880
+    },
+    {
+      "sprite": "core-x-spiked.png",
+      "x": 2576,
+      "y": 1631
     }
   ]
 }
