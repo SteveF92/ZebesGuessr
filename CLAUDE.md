@@ -47,7 +47,9 @@ landmarks** writes the manifest via the dev-only `/__save-landmarks` middleware
 in `vite.config.ts`; it previews against the pristine map served by
 `/__landmark-image`, so no bake is needed to see a move) or by editing the
 manifest by hand; either way, bake by rerunning it + `slice_maps.py` + the
-extractor (slicing rewrites the JSON, so the extractor must re-patch it). Or
+extractor (slicing rewrites the JSON, so the extractor must re-patch it) —
+the panel's **Save + Bake** button runs that whole chain server-side
+(`/__bake-landmarks`, ~30s) including prettier on the game JSON. Or
 hand-layer sprites onto an area PNG in an image editor and pin it via
 `localSource`, deleting that area's manifest entries.
 One trap: a stamp under a `keepTiles` cell never reaches the tile PNG (the

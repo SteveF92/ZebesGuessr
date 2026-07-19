@@ -43,6 +43,7 @@ export default function LandmarkEditor({ game, areaId, cell }: { game: string; a
   const [selected, setSelected] = useState<number | null>(null);
   const [addSprite, setAddSprite] = useState('');
   const [msg, setMsg] = useState('');
+  const [baking, setBaking] = useState(false);
   const drag = useRef<{ idx: number; dx: number; dy: number } | null>(null);
 
   useEffect(() => {
@@ -91,6 +92,28 @@ export default function LandmarkEditor({ game, areaId, cell }: { game: string; a
   const win = useMemo(() => (cellRect ? { x: cellRect.x - MARGIN, y: cellRect.y - MARGIN, w: cellRect.w + 2 * MARGIN, h: cellRect.h + 2 * MARGIN } : null), [cellRect]);
 
   const kept = meta?.keepTiles.some(([kx, ky]) => kx === cell.x && ky === cell.y) ?? false;
+
+  /** stamps whose rect overlaps a keepTiles cell anywhere in the area — the
+   *  bake skips those tile PNGs, so the overlap must be hand-mirrored into the
+   *  committed tile (this is how a moved Zazabi silently went stale once) */
+  const keptOverlaps = useMemo(() => {
+    if (!data || !meta) return [];
+    const out: string[] = [];
+    for (const [kx, ky] of meta.keepTiles) {
+      const [dxp, dyp] = meta.cellCropOffsets[`${kx},${ky}`] ?? [0, 0];
+      const rx = meta.offsetX + kx * data.cellWidth + dxp;
+      const ry = meta.offsetY + ky * data.cellHeight + dyp;
+      for (const s of stamps) {
+        const img = spriteImgs[s.sprite];
+        if (!img) continue;
+        if (s.x < rx + data.cellWidth && s.x + img.width > rx && s.y < ry + data.cellHeight && s.y + img.height > ry) {
+          out.push(`${s.sprite.replace('.png', '')} → (${kx},${ky})`);
+          break;
+        }
+      }
+    }
+    return out;
+  }, [data, meta, stamps, spriteImgs]);
 
   const setStamps = useCallback(
     (fn: (prev: Stamp[]) => Stamp[]) => {
@@ -199,8 +222,8 @@ export default function LandmarkEditor({ game, areaId, cell }: { game: string; a
     setSelected(null);
   }
 
-  async function save() {
-    if (!data) return;
+  async function save(silent = false): Promise<boolean> {
+    if (!data) return false;
     setMsg('saving…');
     // drop areas emptied by deletes so the file stays minimal
     const out: Manifest = {};
@@ -213,9 +236,45 @@ export default function LandmarkEditor({ game, areaId, cell }: { game: string; a
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ game, manifest: out })
       });
-      setMsg(res.ok ? 'saved ✓ — bake with composite_landmarks + slice_maps + extract, then npm run format' : `error: ${await res.text()}`);
+      if (!res.ok) {
+        setMsg(`error: ${await res.text()}`);
+        return false;
+      }
+      if (!silent) setMsg('saved ✓ — Bake (or run the pipeline) to reach the tiles');
+      return true;
     } catch (e) {
       setMsg(`error: ${e instanceof Error ? e.message : e}`);
+      return false;
+    }
+  }
+
+  /** save the manifest, then run the whole bake chain server-side
+   *  (composite → slice → extract → prettier). ~30-60s. */
+  async function bake() {
+    setBaking(true);
+    const t0 = Date.now();
+    const timer = setInterval(() => setMsg(`baking… ${Math.round((Date.now() - t0) / 1000)}s (composite → slice → extract)`), 500);
+    try {
+      if (!(await save(true))) return;
+      const res = await fetch('/__bake-landmarks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ game })
+      });
+      const text = await res.text();
+      if (!res.ok) {
+        setMsg(`bake error: ${text.slice(0, 300)}`);
+        return;
+      }
+      const { log } = JSON.parse(text) as { log: string };
+      console.log('[bake]', log);
+      const warn = /WARNING/.test(log) ? ' — pipeline WARNINGs, see console' : '';
+      setMsg(`baked ✓ in ${Math.round((Date.now() - t0) / 1000)}s${warn} — reload to see the new tiles`);
+    } catch (e) {
+      setMsg(`bake error: ${e instanceof Error ? e.message : e}`);
+    } finally {
+      clearInterval(timer);
+      setBaking(false);
     }
   }
 
@@ -242,8 +301,11 @@ export default function LandmarkEditor({ game, areaId, cell }: { game: string; a
         <button className="btn tiny" onClick={removeSelected} disabled={selected === null}>
           Delete
         </button>
-        <button className="btn tiny save" onClick={save}>
+        <button className="btn tiny save" onClick={() => save()} disabled={baking}>
           Save landmarks
+        </button>
+        <button className="btn tiny save" onClick={bake} disabled={baking} title="Save the manifest, then run composite → slice → extract → format server-side (~30-60s)">
+          Save + Bake
         </button>
         {sel && (
           <span className="edit-msg">
@@ -255,6 +317,11 @@ export default function LandmarkEditor({ game, areaId, cell }: { game: string; a
       {kept && (
         <div className="landmark-warning">
           ⚠ ({cell.x},{cell.y}) is a keepTiles cell: the bake skips its tile PNG — mirror any stamp into the committed tile by hand (see CLAUDE.md).
+        </div>
+      )}
+      {keptOverlaps.length > 0 && (
+        <div className="landmark-warning">
+          ⚠ stamps overlap keepTiles tile(s) the bake won't touch: {keptOverlaps.join(', ')} — after baking, hand-mirror the overlap into the committed tile PNG (see CLAUDE.md).
         </div>
       )}
       <canvas ref={canvasRef} className="landmark-canvas" onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp} />

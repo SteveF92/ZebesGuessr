@@ -3,6 +3,19 @@ import react from '@vitejs/plugin-react';
 import { readFile, readdir, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { spawn } from 'node:child_process';
+
+/** run a command from the repo root, capturing interleaved stdout+stderr */
+function run(cmd: string, args: string[]): Promise<{ code: number | null; out: string }> {
+  return new Promise((res) => {
+    const p = spawn(cmd, args, { cwd: __dirname });
+    let out = '';
+    p.stdout.on('data', (d) => (out += d));
+    p.stderr.on('data', (d) => (out += d));
+    p.on('close', (code) => res({ code, out }));
+    p.on('error', (e) => res({ code: -1, out: String(e) }));
+  });
+}
 
 // Dev-only endpoint for the in-app icon editor: POST the curated map data and
 // it is written straight into public/data/*.<game>.json, ready to commit —
@@ -125,6 +138,50 @@ function landmarkEditor(): Plugin {
           res.statusCode = 404;
           res.end('not found (run download_maps.py so Images/raw is populated)');
         }
+      });
+      // POST /__bake-landmarks { game } -> run the pipeline chain that turns
+      // the saved manifest into tiles: composite_landmarks -> slice_maps ->
+      // the game's extractor, then prettier on the regenerated game JSON
+      // (matching `npm run format` so the working tree stays commit-ready).
+      // Takes ~30-60s; one bake at a time.
+      let baking = false;
+      server.middlewares.use('/__bake-landmarks', (req, res) => {
+        if (req.method !== 'POST') {
+          res.statusCode = 405;
+          return res.end('POST only');
+        }
+        let body = '';
+        req.on('data', (c) => (body += c));
+        req.on('end', async () => {
+          try {
+            const { game } = JSON.parse(body);
+            if (!GAME_RE.test(game ?? '')) throw new Error('bad game id');
+            if (baking) throw new Error('a bake is already running');
+            baking = true;
+            try {
+              const config = JSON.parse(await readFile(resolve(__dirname, 'pipeline/maps.config.json'), 'utf8'));
+              if (!config[game]) throw new Error('unknown game');
+              const extractor = (config[game].mapStyle ?? 'snes') === 'gba' ? 'extract_gba_maps.py' : 'extract_ingame_maps.py';
+              const logs: string[] = [];
+              for (const script of ['composite_landmarks.py', 'slice_maps.py', extractor]) {
+                const r = await run('python', [`pipeline/${script}`, game]);
+                logs.push(`== ${script}\n${r.out.trim()}`);
+                if (r.code !== 0) throw new Error(`${script} exited ${r.code}:\n${r.out.slice(-2000)}`);
+              }
+              const dataFile = resolve(__dirname, 'public/data', `${game}.json`);
+              const prettier = await import('prettier');
+              const cfg = await prettier.resolveConfig(dataFile);
+              await writeFile(dataFile, await prettier.format(await readFile(dataFile, 'utf8'), { ...cfg, filepath: dataFile }));
+              res.setHeader('Content-Type', 'application/json');
+              res.end(JSON.stringify({ ok: true, log: logs.join('\n') }));
+            } finally {
+              baking = false;
+            }
+          } catch (e) {
+            res.statusCode = 400;
+            res.end(String(e instanceof Error ? e.message : e));
+          }
+        });
       });
       // POST /__save-landmarks { game, manifest } -> pipeline/landmarks.<game>.json
       server.middlewares.use('/__save-landmarks', (req, res) => {
