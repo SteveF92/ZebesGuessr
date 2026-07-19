@@ -11,19 +11,49 @@
       "y": 2134
     },
     {
+      "sprite": "characters/samus-terminal.png",
+      "x": 1708,
+      "y": 423
+    },
+    {
       "sprite": "creatures/dachora.png",
-      "x": 1750,
-      "y": 400
+      "x": 1662,
+      "y": 407
+    },
+    {
+      "sprite": "creatures/dachora-jr.png",
+      "x": 1668,
+      "y": 437
+    },
+    {
+      "sprite": "creatures/dachora-jr.png",
+      "x": 1648,
+      "y": 437
     },
     {
       "sprite": "creatures/etecoon.png",
-      "x": 1805,
-      "y": 420
+      "x": 1586,
+      "y": 427
     },
     {
       "sprite": "creatures/etecoon.png",
-      "x": 1835,
-      "y": 420
+      "x": 1610,
+      "y": 427
+    },
+    {
+      "sprite": "creatures/etecoon.png",
+      "x": 1634,
+      "y": 427
+    },
+    {
+      "sprite": "characters/sa-x-stare.png",
+      "x": 1705,
+      "y": 1535
+    },
+    {
+      "sprite": "characters/sa-x-stand-r.png",
+      "x": 30,
+      "y": 3464
     },
     {
       "sprite": "creatures/metroid.png",
@@ -54,7 +84,7 @@
     },
     {
       "sprite": "bosses/charge-core-x.png",
-      "x": 2051,
+      "x": 2049,
       "y": 987
     }
   ],
@@ -73,6 +103,11 @@
       "sprite": "barriers/eye-door-l.png",
       "x": 3085,
       "y": 1968
+    },
+    {
+      "sprite": "characters/sa-x-run-l.png",
+      "x": 2770,
+      "y": 1039
     }
   ],
   "sector-3": [
@@ -85,6 +120,11 @@
       "sprite": "bosses/box.png",
       "x": 3994,
       "y": 573
+    },
+    {
+      "sprite": "characters/scientist.png",
+      "x": 853,
+      "y": 1389
     }
   ],
   "sector-4": [
@@ -97,8 +137,8 @@
   "sector-5": [
     {
       "sprite": "bosses/nightmare.png",
-      "x": 5340,
-      "y": 845
+      "x": 5360,
+      "y": 799
     }
   ],
   "sector-6": [

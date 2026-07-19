@@ -41,9 +41,10 @@ export function AboutModal({ onClose }: { onClose: () => void }) {
         </p>
         <p>
           The boss, ship, and creature landmark sprites drawn into those maps were ripped by <strong>greiga master</strong>, <strong>Lexou Duck</strong>, <strong>Katuko</strong>,{' '}
-          <strong>Gussprint</strong>, <strong>Ngamer01</strong>, <strong>Aquarius</strong>, <strong>Leix</strong>, <strong>Tommy Lee</strong>, <strong>Barack Obama</strong>, <strong>SkyLights</strong>
-          , <strong>Chaofanatic</strong>, and <strong>Deathbringer</strong> (via <a href="https://www.spriters-resource.com">The Spriters Resource</a>), with the assembled Zazabi, B.O.X., and Yakuza
-          from <a href="https://www.metroidwiki.org">Metroid Wiki</a>.
+          <strong>Gussprint</strong>, <strong>Ngamer01</strong>, <strong>Aquarius</strong>, <strong>Leix</strong>, <strong>Tommy Lee</strong>, <strong>Barack Obama</strong>, <strong>SkyLights</strong>,{' '}
+          <strong>Chaofanatic</strong>, <strong>Deathbringer</strong>, <strong>Zechs</strong>, <strong>Omegakyogre</strong>, and <strong>Vic</strong> (via{' '}
+          <a href="https://www.spriters-resource.com">The Spriters Resource</a>), with the assembled Zazabi, B.O.X., Yakuza, and Nightmare from{' '}
+          <a href="https://www.metroidwiki.org">Metroid Wiki</a>.
         </p>
         <p>
           Room names come from the fan communities that mapped these games out: Metroid Fusion's are from the <a href="https://randovania.org">Randovania</a> project and the Fusion community, and
