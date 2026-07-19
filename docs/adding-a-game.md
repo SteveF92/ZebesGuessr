@@ -120,6 +120,37 @@ Adding a sprite of your own:
 3. Click the new thumbnail to stamp it on the clicked cell, drag/nudge, then
    **Save + Bake**.
 
+### Tile overrides (alternate room states)
+
+A rip captures one moment of the story — Fusion's vgmaps sheets are all
+endgame state, but some rooms are more recognizable earlier (Main Deck's
+Sub-Zero Containment has the frozen Ridley standing tall until mid-game).
+`composite_landmarks.py` also applies whole-screen replacements listed in
+`pipeline/tileOverrides.<game>.json`, keyed by area id:
+
+```json
+{
+  "main-deck": [{ "x": 7, "y": 10, "image": "tile-sources/<game>/main-deck/room.png", "sx": 32, "sy": 32, "note": "why + where the image came from" }]
+}
+```
+
+`x`/`y` are **tile coords** (an override targets a whole cell); `image` is
+relative to `pipeline/`, with sources committed under
+`pipeline/tile-sources/<game>/<area>/` — keep them byte-identical to their
+upstream origin (a Randovania room render, a MAGE export) so provenance stays
+checkable, and crop the `cellWidth`×`cellHeight` screen out of a larger room
+render with `sx`/`sy` (default 0; the crop must be fully opaque). One room
+file can serve several cells — override every screen of a multi-screen room
+from the same render, or the X-Ray overlay will show a mid-room seam.
+Overrides are pasted onto the pristine copy _before_ landmark stamping, so
+stamps land on top, and the paste honors `cellCropOffsets` like the slicer.
+The same `keepTiles` trap applies: an override under a kept cell never reaches
+the tile PNG. Rebake with the usual composite → slice → extract → format
+chain; only the targeted `cell_<x>_<y>.png`s (plus the area's `map.png`
+backdrop) should change — the game JSON must not. Known limitation: the
+Landmark tool previews against the pristine map, so overrides only show up
+after a bake.
+
 ## 4. Slice
 
 ```

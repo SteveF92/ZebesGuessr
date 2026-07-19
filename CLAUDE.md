@@ -61,6 +61,20 @@ One trap: a stamp under a `keepTiles` cell never reaches the tile PNG (the
 kept tile wins), so mirror it into the committed tile by hand at the same
 in-tile offset — Fusion's Zazabi on sector-2 `(14,13)` is the live example.
 
+The composite step also applies **tile overrides** — whole-screen swaps to an
+alternate room state (rips capture one story moment; Fusion's are endgame,
+and e.g. Sub-Zero Containment's frozen Ridley stood tall until mid-game).
+`pipeline/tileOverrides.<game>.json` lists them per area as
+`{ x, y, image, sx, sy }` in **tile coords**; `image` is `pipeline/`-relative,
+committed under `pipeline/tile-sources/<game>/<area>/` byte-identical to its
+upstream origin (Randovania room renders, MAGE exports), with `sx`/`sy`
+cropping the screen out of a larger room render. Pasted from pristine before
+landmark stamping (stamps land on top), honoring `cellCropOffsets`; the
+keepTiles trap applies here too. Override every screen of a multi-screen room
+from the same render or the X-Ray overlay gets a mid-room seam. The script
+no-ops only when a game has _neither_ manifest. See
+docs/adding-a-game.md § "Tile overrides".
+
 `Images/raw/` is gitignored because it's re-downloadable — except when it isn't. An area flagged `"localSource": true` in `maps.config.json` has a hand-fixed source map that supersedes the web rip (the download was wrong or incomplete); its committed copy lives in `pipeline/source-maps/<game>/<area>.png` and `download_maps.py` seeds `Images/raw/` from there instead of fetching. That committed PNG is the source of truth, so a fresh clone reproduces the corrected data. `background` is normally a game-wide key but can be overridden per area — Fusion's sector-3 is a `"black"`-void detail rip among white-void siblings, so its fill-threshold polarity is set on the area, not the game.
 
 Order matters: `slice_maps.py` writes the base JSON (the tile list — one entry per sliced screen), the style-matching extractor patches it in place (folds each cell's draw data onto that list and adds the `map` viewport). `mapStyle` in `maps.config.json` (baked into the JSON) decides which extractor owns a game; each skips the other's, and shared plumbing lives in `pipeline/maplib.py`. Tiles are `cellSize` square (SNES, 256) or `cellWidth`×`cellHeight` (GBA, 240×160 — one screen per map cell). `pipeline/debug/` gets grid-overlay images for checking alignment; fix misalignment via per-area `offsetX`/`offsetY` in `pipeline/maps.config.json`. The whole play-through of adding a game is documented in `docs/adding-a-game.md`.

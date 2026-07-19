@@ -67,8 +67,10 @@ file** (dev server only) and commit the JSON.
   and the Fusion in-game map screens by Narasumas. The Metroid: Zero Mission
   full maps were ripped by rocktyt (Chozodia by zerofighter & rocktyt; VGMaps'
   Maps Of The Month, August 2008), and the Zero Mission in-game map screens by
-  Eggie — all hosted at VGMaps. The mapmakers are not affiliated with or
-  involved in this project.
+  Eggie — all hosted at VGMaps. A few rooms are restored to an earlier story
+  state using per-room renders from the
+  [Randovania](https://randovania.org) project. The mapmakers are not
+  affiliated with or involved in this project.
 - **Landmark sprites**: the GBA rips draw boss arenas empty and the Super
   Metroid map rips omit the animals, so the pipeline composites
   boss/ship/creature poses onto them (`pipeline/composite_landmarks.py`).
