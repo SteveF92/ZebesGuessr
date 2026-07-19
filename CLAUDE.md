@@ -42,7 +42,8 @@ placements (`{ sprite, x, y }` in raw source-map px, sprite top-left);
 Resource rips — credited in README + AboutModal). It re-stamps from a pristine
 copy it keeps in `Images/raw/<game>/pristine/`, so it's idempotent and a moved
 stamp leaves no ghost. Tweak placements by editing the manifest and rerunning
-it + `slice_maps.py` — or hand-layer sprites onto an area PNG in an image
+it + `slice_maps.py` + the extractor (slicing rewrites the JSON, so the
+extractor must re-patch it) — or hand-layer sprites onto an area PNG in an image
 editor and pin it via `localSource`, deleting that area's manifest entries.
 One trap: a stamp under a `keepTiles` cell never reaches the tile PNG (the
 kept tile wins), so mirror it into the committed tile by hand at the same
