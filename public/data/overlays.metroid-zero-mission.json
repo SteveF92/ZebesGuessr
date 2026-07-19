@@ -139,5 +139,58 @@
         "horizontal": true
       }
     ]
+  },
+  "ridley": {
+    "connectors": [
+      {
+        "x0": 13,
+        "y0": 1,
+        "x1": 13,
+        "y1": 1,
+        "label": "NORFAIR",
+        "labelPos": "above"
+      }
+    ]
+  },
+  "tourian": {
+    "connectors": [
+      {
+        "x0": 3,
+        "y0": 1,
+        "x1": 3,
+        "y1": 1,
+        "label": "BRINSTAR",
+        "labelPos": "above"
+      },
+      {
+        "x0": 1,
+        "y0": 0,
+        "x1": 1,
+        "y1": 0,
+        "label": "CRATERIA",
+        "labelPos": "above",
+        "horizontal": false
+      }
+    ]
+  },
+  "chozodia": {
+    "connectors": [
+      {
+        "x0": 1,
+        "y0": 17,
+        "x1": 1,
+        "y1": 17,
+        "label": "CRATERIA",
+        "labelPos": "left"
+      },
+      {
+        "x0": 1,
+        "y0": 21,
+        "x1": 1,
+        "y1": 21,
+        "label": "CRATERIA",
+        "labelPos": "left"
+      }
+    ]
   }
 }
