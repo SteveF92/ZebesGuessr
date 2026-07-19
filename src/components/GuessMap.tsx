@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { AreaCell, AreaData, Cell, Connector, DiagBand, GameData, MapGlyph, RoundResult } from '../types';
 import { cellKey, tileUrl } from '../data';
 import { DEFAULT_RATING, EXCLUDED_RATING } from '../scoring';
+import LandmarkEditor from './LandmarkEditor';
 
 interface Props {
   data: GameData;
@@ -23,7 +24,7 @@ interface Props {
 }
 
 type GlyphType = MapGlyph['t'];
-type Tool = GlyphType | 'connector' | 'roomname' | 'difficulty' | 'erase';
+type Tool = GlyphType | 'connector' | 'roomname' | 'difficulty' | 'landmark' | 'erase';
 
 /** Station glyphs drawn as a single letter (same meaning across games, styled
  *  per `mapStyle`). navigation/data are Fusion-only. */
@@ -45,6 +46,7 @@ const TOOLS: { id: Tool; label: string }[] = [
   { id: 'connector', label: 'Connector' },
   { id: 'roomname', label: 'Name' },
   { id: 'difficulty', label: 'Diff' },
+  { id: 'landmark', label: 'Landmark' },
   { id: 'erase', label: 'Erase' }
 ];
 
@@ -466,6 +468,10 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
   // two-click placement anchor and the selected connector (for naming)
   const [anchor, setAnchor] = useState<Cell | null>(null);
   const [selConn, setSelConn] = useState<number | null>(null);
+  // cell whose landmark stamps the zoomed Landmark panel is editing
+  const [landmarkCell, setLandmarkCell] = useState<Cell | null>(null);
+  // a cell is only meaningful within its area — close the panel on area switch
+  useEffect(() => setLandmarkCell(null), [area.id]);
   const overlays = overlayEdits[area.id] ?? { connectors: area.map.connectors };
 
   // editable room-name map: flat "areaId:tileX,tileY" -> name, seeded from data.
@@ -1582,6 +1588,7 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
     if (tool === 'connector') return placeConnector(c);
     if (tool === 'roomname') return placeRoom(c);
     if (tool === 'difficulty') return paintDiff(c);
+    if (tool === 'landmark') return setLandmarkCell(c);
     if (tool === 'erase') return eraseAt(c);
     stampGlyph(c, tool); // tool narrows to GlyphType here
   }
@@ -1661,6 +1668,7 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
                 setSelConn(null);
                 setRoomAnchor(null);
                 setRoomPending(null);
+                setLandmarkCell(null);
               }}
             >
               {t.label}
@@ -1782,12 +1790,14 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
               })()}
             </>
           )}
+          {tool === 'landmark' && !landmarkCell && <span className="edit-msg">click a cell to open its landmark view (X-Ray helps find the arenas)</span>}
           <button className="btn tiny save" onClick={saveMap}>
             Save to file
           </button>
           {saveMsg && <span className="edit-msg">{saveMsg}</span>}
         </div>
       )}
+      {editing && tool === 'landmark' && landmarkCell && <LandmarkEditor game={data.game} areaId={area.id} cell={landmarkCell} />}
       <div className="map-viewport" ref={outerRef}>
         <div
           className={`map-scroll${panEnabled ? ' pan' : ''}${result ? (!isFinite(result.distance) ? ' shake-wrong' : result.distance >= 10 ? ' shake-far' : '') : ''}`}

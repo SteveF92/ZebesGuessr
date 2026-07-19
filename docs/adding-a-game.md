@@ -81,10 +81,12 @@ onto the raw area maps at pixel positions listed in the manifest, so bosses /
 the ship / other landmarks flow into the sliced tiles (both the mystery screen
 and the X-Ray overlay render those). The pristine download is kept in
 `Images/raw/<game>/pristine/` and stamping always restarts from it, so reruns
-are idempotent and moving a stamp leaves no ghost. Two ways to tweak a
-placement: edit the manifest's `x`/`y` and rerun this + `slice_maps.py`, or
-hand-layer the sprites onto the area PNG in an image editor and pin it via
-`localSource` (then delete that area's manifest entries). Either way, follow
+are idempotent and moving a stamp leaves no ghost. Three ways to tweak a
+placement: the editor's **Landmark** tool (dev server; click a cell, drag or
+arrow-nudge the stamp in the zoomed panel, **Save landmarks**), editing the
+manifest's `x`/`y` by hand, or hand-layering the sprites onto the area PNG in
+an image editor and pinning it via `localSource` (then delete that area's
+manifest entries). Either way, follow
 the slice with the extractor (step 5) — slicing rewrites the game JSON from
 scratch, so the pause-map draw data must be re-patched in. A stamp landing on a
 `keepTiles` cell won't reach that tile — apply it to the committed tile PNG by

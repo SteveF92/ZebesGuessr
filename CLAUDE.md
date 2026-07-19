@@ -41,10 +41,15 @@ placements (`{ sprite, x, y }` in raw source-map px, sprite top-left);
 `pipeline/sprites/<game>/` holds the alpha-transparent poses (Spriters
 Resource rips — credited in README + AboutModal). It re-stamps from a pristine
 copy it keeps in `Images/raw/<game>/pristine/`, so it's idempotent and a moved
-stamp leaves no ghost. Tweak placements by editing the manifest and rerunning
-it + `slice_maps.py` + the extractor (slicing rewrites the JSON, so the
-extractor must re-patch it) — or hand-layer sprites onto an area PNG in an image
-editor and pin it via `localSource`, deleting that area's manifest entries.
+stamp leaves no ghost. Tweak placements visually with the editor's **Landmark**
+tool (click a cell for a zoomed WYSIWYG panel — drag/arrow-nudge stamps, **Save
+landmarks** writes the manifest via the dev-only `/__save-landmarks` middleware
+in `vite.config.ts`; it previews against the pristine map served by
+`/__landmark-image`, so no bake is needed to see a move) or by editing the
+manifest by hand; either way, bake by rerunning it + `slice_maps.py` + the
+extractor (slicing rewrites the JSON, so the extractor must re-patch it). Or
+hand-layer sprites onto an area PNG in an image editor and pin it via
+`localSource`, deleting that area's manifest entries.
 One trap: a stamp under a `keepTiles` cell never reaches the tile PNG (the
 kept tile wins), so mirror it into the committed tile by hand at the same
 in-tile offset — Fusion's Zazabi on sector-2 `(14,13)` is the live example.

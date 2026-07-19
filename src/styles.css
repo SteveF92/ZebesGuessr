@@ -1750,6 +1750,34 @@ a:hover {
   border-radius: 6px;
   background: rgba(255, 210, 77, 0.06);
 }
+/* Landmark tool: zoomed WYSIWYG stamp-placement panel (dev only) */
+.landmark-editor {
+  margin-top: 0.35rem;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid var(--gold);
+  border-radius: 6px;
+  background: rgba(255, 210, 77, 0.06);
+  outline: none;
+}
+.landmark-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  margin-bottom: 0.35rem;
+}
+.landmark-canvas {
+  display: block;
+  max-width: 100%;
+  image-rendering: pixelated;
+  cursor: grab;
+  touch-action: none;
+}
+.landmark-warning {
+  color: #ffb347;
+  font-size: 0.85rem;
+  margin-bottom: 0.35rem;
+}
 .btn.tiny {
   padding: 0.2rem 0.55rem;
   font-size: 0.9rem;
