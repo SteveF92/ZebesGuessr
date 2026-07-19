@@ -561,6 +561,16 @@ a:hover {
   color: var(--text);
   margin: 0 0 12px;
 }
+.modal ul {
+  font-size: 15.5px;
+  line-height: 1.65;
+  color: var(--text);
+  margin: 0 0 12px;
+  padding-left: 22px;
+}
+.modal li {
+  margin: 0 0 4px;
+}
 .modal-close {
   position: absolute;
   top: 12px;

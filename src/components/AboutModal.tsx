@@ -34,13 +34,14 @@ export function AboutModal({ onClose }: { onClose: () => void }) {
         </button>
         <h2>ABOUT ZEBESGUESSR</h2>
         <p>ZebesGuessr is GeoGuessr for 2D Metroid: you are shown a single screen from a game and your job is to identify where it is on a recreation of the in-game pause map.</p>
+        <p>I would not have been able to create this were it not for the fantastic efforts of the online Metroid community, most notably:</p>
+        <ul>
+          <li>The Super Metroid maps are by <strong>Rick Bruns</strong> of <a href="https://www.snesmaps.com">snesmaps.com</a>.</li>
+          <li>The Metroid Fusion maps are by <strong>zerofighter</strong> and{' '}<strong>rocktyt</strong>, with in-game map rips by <strong>Narasumas</strong>, via <a href="https://www.vgmaps.com">VGMaps</a>.</li>
+          <li>The Metroid: Zero Mission maps are also by <strong>zerofighter</strong> and{' '}<strong>rocktyt</strong>, with in-game map rips by <strong>Eggie</strong>, again via <a href="https://www.vgmaps.com">VGMaps</a>.</li>
+        </ul>
         <p>
-          The Super Metroid maps are by <strong>Rick Bruns</strong> (<a href="https://www.snesmaps.com">snesmaps.com</a>). The Metroid Fusion maps are by <strong>zerofighter</strong> and{' '}
-          <strong>rocktyt</strong>, with in-game map rips by <strong>Narasumas</strong>. The Metroid: Zero Mission maps are by <strong>rocktyt</strong> and <strong>zerofighter</strong>, with in-game
-          map rips by <strong>Eggie</strong>. All via the <a href="https://www.vgmaps.com">VGMaps</a> community.
-        </p>
-        <p>
-          The boss, ship, and creature landmark sprites drawn into those maps were ripped by the community at{' '}
+          In addition, the boss, ship, and creature landmark sprites drawn into those maps were ripped by the community at{' '}
           <a href="https://www.spriters-resource.com">The Spriters Resource</a>, with assembled boss poses from{' '}
           <a href="https://www.metroidwiki.org">Metroid Wiki</a> and its community. The individual rippers are credited by name in the{' '}
           <a href="https://github.com/SteveF92/zebesguessr">project README</a>.
