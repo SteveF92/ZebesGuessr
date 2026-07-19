@@ -1179,16 +1179,33 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
     if (c.w & SO && !open('SO')) ctx.fillRect(x, y + S - 2, S, 2);
     if (c.w & W && !open('W')) ctx.fillRect(x, y, 2, S);
     if (c.w & E && !open('E')) ctx.fillRect(x + S - 2, y, 2, S);
-    // doors (gba style): a small gap in the wall — the room fill showing
-    // through for a normal hatch, the lock color for a colored one. 2 source
-    // px of gap = 4 logical px, centered on the wall segment. Where the style
-    // draws them (Fusion), a colored hatch also gets its jamb bar just inside
-    // the wall — two adjacent cells compose the game's H shape, an asymmetric
-    // door yields a half-H. ZM draws no jambs: every door is a bare pip line
-    // (COL.doorJambs), so one-sided doors read as a single clean mark.
+    // doors (gba style). Fusion: a small gap in the wall — room fill for a
+    // plain hatch, lock color for a colored one (2 source px = 4 logical,
+    // centered on the wall segment) — and a colored hatch adds a jamb bar just
+    // inside the wall so two adjacent cells compose the game's H lock (an
+    // asymmetric door yields a half-H).
+    //
+    // ZM (COL.doorJambs === false) draws no jambs and splits doors in two:
+    //   - a normal door (plain 'n' or the light-blue 'b') is a bare pip line,
+    //     so the very common one-sided ones read as a single clean mark;
+    //   - a lock (r/g/y) is a 3x3-source-px colored grid on the border, drawn
+    //     as a half (6 logical along × 3 deep, flush to the border) per cell so
+    //     a symmetric pair composes the full square and a rare one-sided lock
+    //     still reads as a block. Each half stays inside its own cell, so
+    //     neither the neighbour's fill nor draw order can clip it.
     if (c.dr) {
       for (const p of c.dr) {
         const colored = p[1] !== 'n';
+        if (!COL.doorJambs && colored && p[1] !== 'b') {
+          const G = 6, // grid: 3 source px along the border...
+            D = 3; //      ...× 3 deep — a half-square flush to the border
+          ctx.fillStyle = COL.doors[p[1]] ?? COL.wall;
+          if (p[0] === 'N') ctx.fillRect(x + S / 2 - G / 2, y, G, D);
+          else if (p[0] === 'S') ctx.fillRect(x + S / 2 - G / 2, y + S - D, G, D);
+          else if (p[0] === 'W') ctx.fillRect(x, y + S / 2 - G / 2, D, G);
+          else if (p[0] === 'E') ctx.fillRect(x + S - D, y + S / 2 - G / 2, D, G);
+          continue;
+        }
         ctx.fillStyle = colored ? (COL.doors[p[1]] ?? COL.wall) : fill;
         if (p[0] === 'N') ctx.fillRect(x + S / 2 - 2, y, 4, 2);
         else if (p[0] === 'S') ctx.fillRect(x + S / 2 - 2, y + S - 2, 4, 2);
