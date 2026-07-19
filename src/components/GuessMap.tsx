@@ -176,6 +176,11 @@ const SNES_COL = {
   fills: ['#d83890'],
   /** door-pip colors by letter (`CellDraw.dr`; gba style only) */
   doors: {} as Record<string, string>,
+  /** gba style: a colored door also draws a jamb bar just inside the wall, so
+   *  two adjacent cells compose the game's "H" lock. Fusion does this; Zero
+   *  Mission draws every door — normal or locked — as just the bare pip line,
+   *  so it turns this off. */
+  doorJambs: true,
   ...MARKERS
 };
 
@@ -193,6 +198,7 @@ const GBA_COL: typeof SNES_COL = {
   special: '#f82048', // GBA games outline "letter rooms" (Save/Map/Nav/Data/Recharge) in red
   fills: ['#f800f8', '#20c068'],
   doors: { r: '#f82048', y: '#f8f800', g: '#10f880', b: '#0000f8' },
+  doorJambs: true,
   ...MARKERS
 };
 
@@ -207,7 +213,9 @@ const ZM_COL: typeof SNES_COL = {
   dot: '#202820', // empty-cell square interiors
   room: '#0000f8',
   fills: ['#0000f8', '#20c068', '#f86820'],
-  doors: { r: '#f82048', y: '#f8f800', g: '#10f880', b: '#0070f8' }
+  doors: { r: '#f82048', y: '#f8f800', g: '#10f880', b: '#0070f8' },
+  // ZM draws no "H" locks — every door, normal or colored, is a bare pip line.
+  doorJambs: false
 };
 
 /** Per-game palette overrides on top of the style default. */
@@ -1173,9 +1181,11 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
     if (c.w & E && !open('E')) ctx.fillRect(x + S - 2, y, 2, S);
     // doors (gba style): a small gap in the wall — the room fill showing
     // through for a normal hatch, the lock color for a colored one. 2 source
-    // px of gap = 4 logical px, centered on the wall segment. A colored
-    // hatch also gets its jamb bar just inside the wall — two adjacent cells
-    // compose the game's H shape, an asymmetric door yields a half-H.
+    // px of gap = 4 logical px, centered on the wall segment. Where the style
+    // draws them (Fusion), a colored hatch also gets its jamb bar just inside
+    // the wall — two adjacent cells compose the game's H shape, an asymmetric
+    // door yields a half-H. ZM draws no jambs: every door is a bare pip line
+    // (COL.doorJambs), so one-sided doors read as a single clean mark.
     if (c.dr) {
       for (const p of c.dr) {
         const colored = p[1] !== 'n';
@@ -1184,7 +1194,7 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
         else if (p[0] === 'S') ctx.fillRect(x + S / 2 - 2, y + S - 2, 4, 2);
         else if (p[0] === 'W') ctx.fillRect(x, y + S / 2 - 2, 2, 4);
         else if (p[0] === 'E') ctx.fillRect(x + S - 2, y + S / 2 - 2, 2, 4);
-        if (!colored) continue;
+        if (!colored || !COL.doorJambs) continue;
         if (p[0] === 'N') ctx.fillRect(x + S / 2 - 4, y + 2, 8, 2);
         else if (p[0] === 'S') ctx.fillRect(x + S / 2 - 4, y + S - 4, 8, 2);
         else if (p[0] === 'W') ctx.fillRect(x + 2, y + S / 2 - 4, 2, 8);
