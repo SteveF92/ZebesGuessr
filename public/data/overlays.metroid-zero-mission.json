@@ -1,0 +1,29 @@
+{
+  "brinstar": {
+    "connectors": [
+      {
+        "x0": 2,
+        "y0": 11,
+        "x1": 2,
+        "y1": 11,
+        "label": "CRATERIA",
+        "labelPos": "above",
+        "horizontal": false
+      },
+      {
+        "x0": 1,
+        "y0": 2,
+        "x1": 1,
+        "y1": 2,
+        "label": "TOURIAN"
+      },
+      {
+        "x0": 22,
+        "y0": 11,
+        "x1": 22,
+        "y1": 11,
+        "label": "NORFAIR"
+      }
+    ]
+  }
+}
