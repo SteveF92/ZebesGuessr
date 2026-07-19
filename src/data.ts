@@ -3,8 +3,8 @@ import type { GameData, MapGlyph, Connector, RoundTarget, Cell } from './types';
 
 export const GAMES = [
   { id: 'super-metroid', title: 'Super Metroid', available: true },
-  { id: 'metroid-fusion', title: 'Metroid Fusion', available: false },
-  { id: 'metroid-zero-mission', title: 'Metroid: Zero Mission', available: false }
+  { id: 'metroid-fusion', title: 'Metroid Fusion', available: true },
+  { id: 'metroid-zero-mission', title: 'Metroid: Zero Mission', available: true }
 ];
 
 /**
