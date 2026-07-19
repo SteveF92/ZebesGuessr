@@ -39,9 +39,8 @@ interface LandmarkTintData {
 /** Station glyphs drawn as a single letter (same meaning across games, styled
  *  per `mapStyle`). navigation/data are Fusion-only. */
 const GLYPH_LETTERS = { save: 'S', map: 'M', recharge: 'R', navigation: 'N', data: 'D' } as const;
-/** The "letter rooms" Fusion outlines in red — every lettered kind except the
- *  map-data marker, which the game draws without a red border. */
-const RED_WALL_GLYPHS = new Set<GlyphType>(['save', 'recharge', 'navigation', 'data']);
+/** The "letter rooms" GBA games outline in red — every lettered kind. */
+const RED_WALL_GLYPHS = new Set<GlyphType>(['save', 'map', 'recharge', 'navigation', 'data']);
 const TOOLS: { id: Tool; label: string }[] = [
   { id: 'save', label: 'Save (S)' },
   { id: 'map', label: 'Map (M)' },
@@ -191,7 +190,7 @@ const GBA_COL: typeof SNES_COL = {
   map: '#20c068',
   ship: '#f82048',
   letter: '#f8f800', // Fusion draws station letters in yellow
-  special: '#f82048', // Fusion outlines "letter rooms" (Save/Nav/Data/Recharge) in red
+  special: '#f82048', // GBA games outline "letter rooms" (Save/Map/Nav/Data/Recharge) in red
   fills: ['#f800f8', '#20c068'],
   doors: { r: '#f82048', y: '#f8f800', g: '#10f880', b: '#0000f8' },
   ...MARKERS
@@ -463,7 +462,7 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
   const [saveMsg, setSaveMsg] = useState('');
   const glyphs = edits[area.id] ?? area.map.glyphs;
   // Cells whose walls draw red because a "letter room" glyph sits on them
-  // (Fusion only — see RED_WALL_GLYPHS and drawCell's wall color).
+  // (GBA-style games only — see RED_WALL_GLYPHS and drawCell's wall color).
   const specialCells = useMemo(() => {
     const s = new Set<string>();
     if (mapStyle !== 'gba') return s;
