@@ -26,6 +26,15 @@ interface Props {
 type GlyphType = MapGlyph['t'];
 type Tool = GlyphType | 'connector' | 'roomname' | 'difficulty' | 'landmark' | 'erase';
 
+/** Subset of the dev /__landmarks/<game> payload the Landmark tint needs to map
+ *  each raw-pixel sprite stamp back onto its map cell (mirrors LandmarkEditor). */
+interface LandmarkTintData {
+  manifest: Record<string, { sprite: string; x: number; y: number }[]>;
+  areas: Record<string, { offsetX: number; offsetY: number; cellCropOffsets: Record<string, [number, number]> }>;
+  cellWidth: number;
+  cellHeight: number;
+}
+
 /** Station glyphs drawn as a single letter (same meaning across games, styled
  *  per `mapStyle`). navigation/data are Fusion-only. */
 const GLYPH_LETTERS = { save: 'S', map: 'M', recharge: 'R', navigation: 'N', data: 'D' } as const;
@@ -494,6 +503,55 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
   // hidden ratings get no tint, no outline, nothing.
   const [diffVisible, setDiffVisible] = useState<Set<number>>(() => new Set([1, 2, 3, 4, 5, 6]));
 
+  // Landmark-tint data: the baked sprite manifest (dev-only endpoint), fetched
+  // lazily the first time the Landmark tool is picked in edit mode. Used only to
+  // tint cells that already hold a stamp, so the curator sees coverage. In a
+  // built site (no dev server) the fetch fails and nothing tints — the editor is
+  // dev-only anyway.
+  const [landmarkData, setLandmarkData] = useState<LandmarkTintData | null>(null);
+  // stamp sprite -> pixel dimensions, needed to test a stamp's overlap with a cell
+  const [landmarkDims, setLandmarkDims] = useState<Record<string, { w: number; h: number }>>({});
+  useEffect(() => {
+    if (!editing || tool !== 'landmark' || landmarkData) return;
+    fetch(`/__landmarks/${data.game}`)
+      .then((r) => (r.ok ? r.json() : Promise.reject()))
+      .then((d: LandmarkTintData) => setLandmarkData(d))
+      .catch(() => {});
+  }, [editing, tool, data.game, landmarkData]);
+  useEffect(() => {
+    if (!landmarkData) return;
+    for (const list of Object.values(landmarkData.manifest)) {
+      for (const st of list) {
+        if (landmarkDims[st.sprite]) continue;
+        const img = new Image();
+        img.onload = () => setLandmarkDims((prev) => ({ ...prev, [st.sprite]: { w: img.width, h: img.height } }));
+        img.src = `/__landmark-sprite/${data.game}/${st.sprite}`;
+      }
+    }
+  }, [landmarkData, data.game, landmarkDims]);
+  /** cells of the current area whose source rect overlaps a manifest stamp */
+  const landmarkCells = useMemo(() => {
+    const s = new Set<string>();
+    const meta = landmarkData?.areas[area.id];
+    const stamps = landmarkData?.manifest[area.id];
+    if (!landmarkData || !meta || !stamps) return s;
+    const { cellWidth, cellHeight } = landmarkData;
+    for (const c of area.cells) {
+      const [dxp, dyp] = meta.cellCropOffsets[`${c.x},${c.y}`] ?? [0, 0];
+      const rx = meta.offsetX + c.x * cellWidth + dxp;
+      const ry = meta.offsetY + c.y * cellHeight + dyp;
+      for (const st of stamps) {
+        const dim = landmarkDims[st.sprite];
+        if (!dim) continue;
+        if (st.x < rx + cellWidth && st.x + dim.w > rx && st.y < ry + cellHeight && st.y + dim.h > ry) {
+          s.add(`${c.x},${c.y}`);
+          break;
+        }
+      }
+    }
+    return s;
+  }, [landmarkData, landmarkDims, area]);
+
   /** every cell of the area, for pointer hit-testing (tile coords) */
   const selectable = useMemo(() => new Set(area.cells.map((c) => `${c.x},${c.y}`)), [area]);
 
@@ -833,7 +891,11 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
     if (editing) drawOverlayEditing(ctx);
     for (const g of glyphs) drawGlyph(ctx, g);
     if (tileP > 0) drawTiles(ctx, vis);
-    if (editing) (tool === 'difficulty' ? drawDiffTint : drawRoomTint)(ctx);
+    if (editing) {
+      if (tool === 'difficulty') drawDiffTint(ctx);
+      else if (tool === 'roomname') drawRoomTint(ctx);
+      else if (tool === 'landmark') drawLandmarkTint(ctx);
+    }
 
     // Prime scan-visor brackets: four corner Ls around a cell, in place of a
     // full box — the same motif as the tile viewer's frame corners.
@@ -1309,6 +1371,18 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
     for (const [key, name] of Object.entries(roomEdits)) {
       if (!name || !key.startsWith(prefix)) continue;
       const [tx, ty] = key.slice(prefix.length).split(',').map(Number);
+      ctx.fillRect(tx * S, ty * S, S, S);
+    }
+    ctx.restore();
+  }
+
+  /** Edit-mode overlay for the Landmark tool: tint cells that already hold a
+   *  baked sprite stamp, so the curator sees which arenas are placed. */
+  function drawLandmarkTint(ctx: CanvasRenderingContext2D) {
+    ctx.save();
+    ctx.fillStyle = 'rgba(120, 200, 255, 0.30)'; // soft cyan over cells with a landmark
+    for (const key of landmarkCells) {
+      const [tx, ty] = key.split(',').map(Number);
       ctx.fillRect(tx * S, ty * S, S, S);
     }
     ctx.restore();
