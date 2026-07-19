@@ -771,6 +771,14 @@
       "sx": 32,
       "sy": 32,
       "note": "'Sector 43.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 13,
+      "y": 6,
+      "image": "tile-sources/metroid-fusion/sector-4/reservoir-east.png",
+      "sx": 512,
+      "sy": 352,
+      "note": "'Sector 46.png' from the randovania checkout, committed unmodified"
     }
   ],
   "sector-5": [
