@@ -68,12 +68,13 @@ PALETTES = {
     # ZM: fills are blue/green/orange (mapped / unmapped-until-visited /
     # super-heated); pure blue is a FILL here, not the door color it is in
     # Fusion, and the normal blue door is a lighter (0,112,248). Chozo-statue
-    # and some major-item rooms are flooded wall-WHITE with the icon inked
-    # into them ("whiteFill": an icon-occupied cell with no real fill gets an
-    # extra white fill variant, one past the fills list). ZM never draws
+    # and major-item rooms bake a big icon into the room that covers almost
+    # the whole cell in wall-white, but the real room fill always bleeds
+    # through around it — so these cells classify by their real fill like any
+    # other (the white ink is never a fill variant of its own). ZM never draws
     # ladder cells — its elevators are exit arrows on empty lattice — so the
     # ladder check is off ("ladders": False): with only 3 real fill colors
-    # the stray fill noise inside a white room can pattern-match a rung run.
+    # the stray fill noise inside an icon room can pattern-match a rung run.
     "metroid-zero-mission": {
         "fills": [(0, 0, 248), (32, 192, 104), (248, 104, 32)],
         "wall": (248, 248, 248),
@@ -82,7 +83,6 @@ PALETTES = {
         "icons": [(248, 32, 72), (248, 248, 0),
                   (248, 72, 72), (232, 184, 0), (248, 248, 56)],
         "background": [(8, 88, 16), (32, 40, 32)],
-        "whiteFill": True,
         "ladders": False,
     },
 }
@@ -374,17 +374,12 @@ def extract_area(img_path, pal):
                 continue
             if nfill < FILL_MIN:
                 icon_only.append((x, y))
-            # fill variant: majority vote. With "whiteFill", interior white
-            # outvoting every real fill marks a white-flooded icon room
-            # (chozo statue / major item), which gets the extra white variant
-            # one past the fills list; ties go to the real fill so a knob
-            # tunnel's rails (white 12 vs core 12) don't blanch it.
+            # fill variant: majority vote among the real fills. Chozo-statue
+            # and major-item rooms bake a big wall-white icon over most of the
+            # cell, but the real fill always bleeds through around it, so its
+            # color still wins the vote over the other real fills.
             counts = [int(f[inner].sum()) for f in fills]
-            if pal.get("whiteFill") \
-                    and int(wall[inner].sum()) > max(counts):
-                variant = len(fills)
-            else:
-                variant = counts.index(max(counts)) if max(counts) else 0
+            variant = counts.index(max(counts)) if max(counts) else 0
             knob = knob_geometry(bg, wall, x0, y0)
             if knob is not None:
                 inset, ports = knob

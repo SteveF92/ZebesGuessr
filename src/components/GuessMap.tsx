@@ -199,14 +199,15 @@ const GBA_COL: typeof SNES_COL = {
 
 // Zero Mission shares Fusion's map language but not its colors: dark-green
 // lattice, blue/green/orange fills (mapped / unmapped-until-visited /
-// super-heated) plus white-flooded chozo-statue and major-item rooms
-// (fill variant 3), and pips for every door — light blue is the normal one.
+// super-heated), and pips for every door — light blue is the normal one.
+// Chozo-statue and major-item rooms bake a big white icon over the fill, but
+// the real room color bleeds through, so they keep their real fill (no white).
 const ZM_COL: typeof SNES_COL = {
   ...GBA_COL,
   bg: '#085810', // lattice grid lines
   dot: '#202820', // empty-cell square interiors
   room: '#0000f8',
-  fills: ['#0000f8', '#20c068', '#f86820', '#f8f8f8'],
+  fills: ['#0000f8', '#20c068', '#f86820'],
   doors: { r: '#f82048', y: '#f8f800', g: '#10f880', b: '#0070f8' }
 };
 
