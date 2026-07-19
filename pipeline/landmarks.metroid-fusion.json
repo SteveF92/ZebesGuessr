@@ -54,8 +54,8 @@
     },
     {
       "sprite": "bosses/charge-core-x.png",
-      "x": 2020,
-      "y": 1015
+      "x": 2051,
+      "y": 987
     }
   ],
   "sector-2": [
@@ -68,6 +68,11 @@
       "sprite": "bosses/zazabi.png",
       "x": 3324,
       "y": 2102
+    },
+    {
+      "sprite": "barriers/eye-door-l.png",
+      "x": 3085,
+      "y": 1968
     }
   ],
   "sector-3": [
@@ -78,8 +83,8 @@
     },
     {
       "sprite": "bosses/box.png",
-      "x": 3971,
-      "y": 577
+      "x": 3994,
+      "y": 573
     }
   ],
   "sector-4": [
@@ -99,8 +104,8 @@
   "sector-6": [
     {
       "sprite": "bosses/box-x.png",
-      "x": 1869,
-      "y": 871
+      "x": 1813,
+      "y": 891
     },
     {
       "sprite": "bosses/core-x-spiked.png",
