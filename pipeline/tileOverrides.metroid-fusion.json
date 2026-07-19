@@ -6,15 +6,7 @@
       "image": "tile-sources/metroid-fusion/main-deck/sub-zero-containment.png",
       "sx": 32,
       "sy": 32,
-      "note": "Pre-collapse frozen Ridley (standing); the vgmaps rip is endgame state (collapsed). Source: 'Main Deck46.png' from github.com/randovania/randovania, committed unmodified - the render has a 32px border of off-camera tiles around the 480x160 two-screen room."
-    },
-    {
-      "x": 8,
-      "y": 10,
-      "image": "tile-sources/metroid-fusion/main-deck/sub-zero-containment.png",
-      "sx": 272,
-      "sy": 32,
-      "note": "Right screen of the same room, taken from the same render so the X-Ray overlay shows one consistent room state."
+      "note": "Pre-collapse frozen Ridley (standing); the vgmaps rip is endgame state (collapsed). Source: 'Main Deck46.png' from github.com/randovania/randovania, committed unmodified - the render has a 32px border of off-camera tiles around the 480x160 two-screen room. The room's right screen (8,10) deliberately stays on the vgmaps rip: the render draws its hatch in the wrong door color."
     }
   ]
 }

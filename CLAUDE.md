@@ -70,8 +70,10 @@ committed under `pipeline/tile-sources/<game>/<area>/` byte-identical to its
 upstream origin (Randovania room renders, MAGE exports), with `sx`/`sy`
 cropping the screen out of a larger room render. Pasted from pristine before
 landmark stamping (stamps land on top), honoring `cellCropOffsets`; the
-keepTiles trap applies here too. Override every screen of a multi-screen room
-from the same render or the X-Ray overlay gets a mid-room seam. The script
+keepTiles trap applies here too. Prefer overriding every screen of a
+multi-screen room from the same render (else the X-Ray overlay gets a
+mid-room state seam) — but it's a judgment call; Sub-Zero Containment's right
+screen stays endgame because the render's hatch color is wrong. The script
 no-ops only when a game has _neither_ manifest. See
 docs/adding-a-game.md § "Tile overrides".
 

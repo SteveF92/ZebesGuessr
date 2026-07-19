@@ -140,8 +140,12 @@ relative to `pipeline/`, with sources committed under
 upstream origin (a Randovania room render, a MAGE export) so provenance stays
 checkable, and crop the `cellWidth`×`cellHeight` screen out of a larger room
 render with `sx`/`sy` (default 0; the crop must be fully opaque). One room
-file can serve several cells — override every screen of a multi-screen room
-from the same render, or the X-Ray overlay will show a mid-room seam.
+file can serve several cells — prefer overriding every screen of a
+multi-screen room from the same render, or the X-Ray overlay shows a mid-room
+state seam. That's a judgment call, not a rule: Sub-Zero Containment keeps
+its endgame right screen (8,10) because the Randovania render draws that
+hatch in the wrong door color, and the wrong-color door is the worse
+artifact.
 Overrides are pasted onto the pristine copy _before_ landmark stamping, so
 stamps land on top, and the paste honors `cellCropOffsets` like the slicer.
 The same `keepTiles` trap applies: an override under a kept cell never reaches
