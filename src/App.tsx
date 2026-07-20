@@ -28,8 +28,10 @@ type Phase = 'menu' | 'loading' | 'creating' | 'guessing' | 'reveal' | 'summary'
 
 /** On phones the reveal plays as two beats: first the map (so you see where the
  *  room actually was), then the result card. Desktop shows both at once and
- *  ignores this. Time in ms the map beat holds before auto-advancing. */
-const REVEAL_MAP_MS = 2400;
+ *  ignores this. Time in ms the map beat holds before auto-advancing — must
+ *  outlast GuessMap's longest reveal (same-area miss: sweep + dot pause +
+ *  trace + ring ≈ 2450ms) with a breath to spare. */
+const REVEAL_MAP_MS = 2900;
 const isPhone = () => typeof window !== 'undefined' && window.matchMedia('(max-width: 800px)').matches;
 
 /** Read a `?seed=` code from the URL and decode it (null if absent/malformed). */

@@ -217,7 +217,7 @@ a:hover {
   .newbest,
   .init .cursor,
   .map-scan-sweep::after,
-  .map-scroll.shake-far,
+  .map-scroll.shake-miss,
   .map-scroll.shake-wrong,
   .reveal-box,
   .reveal-box::after,
@@ -1609,16 +1609,17 @@ a:hover {
   filter: drop-shadow(-2px 0 0 #0a1420) drop-shadow(0 -1px 0 #0a1420) drop-shadow(0 1px 0 #0a1420);
 }
 
-/* Bad-guess feedback: the map rattles when the reveal lands. `shake-far`
-   waits for the traced line to reach the target (TRACE_MS in GuessMap);
-   a wrong-area miss has no trace, so it hits immediately and harder. */
-.map-scroll.shake-far {
-  animation: zgShakeFar 0.4s ease-in-out 0.9s;
+/* Bad-guess feedback: the map rattles when the reveal lands. GuessMap adds
+   these classes on its reveal clock (shakeClass) — `shake-miss` as the dot
+   trail fires, `shake-wrong` as the map cuts to the target's area — so the
+   animations start immediately on class add, with no delays here. */
+.map-scroll.shake-miss {
+  animation: zgShakeMiss 0.4s ease-in-out;
 }
 .map-scroll.shake-wrong {
   animation: zgShakeWrong 0.45s ease-in-out;
 }
-@keyframes zgShakeFar {
+@keyframes zgShakeMiss {
   0%,
   100% {
     transform: translate(0, 0);

@@ -253,16 +253,20 @@ const N = 1,
   SO = 4,
   W = 8;
 
-/** Reveal lock-on timeline (ms): the scan sweep passes first, then a same-area
- *  miss traces the guess→target dot trail, then the target indicator lands and
- *  the ring pulse plays. An exact guess earns a second ring pulse, offset by
- *  RING2_DELAY. */
-const TRACE_MS = 900;
-const RING_MS = 650;
-const RING2_DELAY = 350;
-/** The map scan sweep's duration — keep in step with zgMapSweep in styles.css.
- *  Every reveal holds its TARGET indicator (and trail) until the sweep passes. */
-const SWEEP_MS = 550;
+/** Reveal timeline (ms). Every reveal opens the same way: the scan sweep
+ *  passes over the map and nothing lands until it clears. Then, by outcome:
+ *   - exact hit — the TARGET indicator + ring land as the sweep finishes,
+ *     with a second ring pulse offset by RING2_DELAY;
+ *   - same-area miss — the guess marker lands, holds a beat (DOT_PAUSE_MS),
+ *     then the map shakes as the dot trail traces to the target (TRACE_MS)
+ *     and the indicator locks on;
+ *   - wrong area — the map holds on the guessed area through the sweep, then
+ *     cuts to the target's area with a hard shake and locks on immediately. */
+const SWEEP_MS = 550; // scan sweep — keep in step with zgMapSweep in styles.css
+const DOT_PAUSE_MS = 350; // beat between the guess marker landing and the trail firing
+const TRACE_MS = 900; // dot trail guess→target
+const RING_MS = 650; // target ring pulse
+const RING2_DELAY = 350; // exact hit: second ring pulse offset
 /** Fusion-style TARGET callout: palette flip cadence (runs while revealed). */
 const TARGET_BLINK_MS = 350;
 
@@ -674,23 +678,35 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
     return s;
   }, [area]);
 
-  // Jump to the target's area when a round ends.
+  // Jump to the target's area when a round ends. A wrong-area guess holds on
+  // the guessed map while the scan sweep passes — the cut to the real area IS
+  // its reveal, landing with the shake once the sweep clears.
   useEffect(() => {
-    if (result) setAreaId(result.target.areaId);
+    if (!result) return;
+    if (result.target.areaId === result.guess.areaId) {
+      setAreaId(result.target.areaId);
+      return;
+    }
+    const t = setTimeout(() => setAreaId(result.target.areaId), SWEEP_MS);
+    return () => clearTimeout(t);
   }, [result]);
 
   // Reveal lock-on timeline: ms elapsed since the round ended. Drives the
   // traced guess→target line, the target blink-in, and the ring pulse(s) —
   // all staged off this one clock inside draw().
   const [revealT, setRevealT] = useState(0);
-  // Lock-on delay before the TARGET indicator lands. Every reveal first lets
-  // the scan sweep pass over the map (SWEEP_MS) — the answer stays hidden until
-  // it clears — then same-area misses trace the guess→target trail (TRACE_MS)
-  // before the indicator locks on. Exact hits and cross-area reveals have no
-  // trail, so they lock on right as the sweep finishes.
-  const traceMs = result && isFinite(result.distance) && result.distance > 0 ? TRACE_MS : 0;
-  const lockMs = result ? SWEEP_MS + traceMs : 0;
+  // Reveal milestones on the revealT clock (see the timeline constants). The
+  // sweep leads every outcome; only a same-area miss adds the dot-pause and
+  // trace beats before the TARGET indicator locks on at lockMs.
+  const sameAreaMiss = !!result && isFinite(result.distance) && result.distance > 0;
+  const traceStartMs = SWEEP_MS + DOT_PAUSE_MS; // same-area miss: shake + trail fire here
+  const lockMs = sameAreaMiss ? traceStartMs + TRACE_MS : SWEEP_MS;
   const revealTotal = lockMs + RING_MS + (result?.distance === 0 ? RING2_DELAY : 0);
+  // Bad-guess feedback, staged on the same clock: a same-area miss rattles the
+  // map as the trail fires; a wrong-area reveal rattles harder as it cuts to
+  // the target's area. Adding the class starts the CSS animation, so the
+  // keyframes carry no delays of their own.
+  const shakeClass = !result ? '' : !isFinite(result.distance) && revealT >= SWEEP_MS ? ' shake-wrong' : sameAreaMiss && revealT >= traceStartMs ? ' shake-miss' : '';
   useEffect(() => {
     if (!result) {
       setRevealT(0);
@@ -751,7 +767,7 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
       vh = el.clientHeight;
     if (!vw || !vh) return;
     // mirror the trail's easing so the view tracks the drawn tip exactly
-    const p = lockMs > 0 ? Math.min(1, revealT / lockMs) : 1;
+    const p = Math.max(0, Math.min(1, (revealT - traceStartMs) / TRACE_MS));
     const e = 1 - Math.pow(1 - p, 3);
     const { dx, dy } = area.map;
     const gx = (result.guess.cell.x + dx + 0.5) * S * SCALE * xScale;
@@ -1079,13 +1095,16 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
         brackets(selected.cell, COL.scan, 2.5, COL.scanOutline);
         ring(selected.cell, selectPulse, COL.scan);
       }
-    } else {
+    } else if (revealT >= SWEEP_MS) {
+      // Reveal, staged on the revealT clock — the map stays bare while the
+      // scan sweep passes, then the outcome plays out (see timeline constants).
       const lockT = revealT - lockMs; // ms since the target lock-on began
       if (result.guess.areaId === area.id) brackets(result.guess.cell, COL.scan, 3, COL.scanOutline);
-      if (result.guess.areaId === area.id && result.target.areaId === area.id && result.distance > 0) {
-        const p = Math.max(0, Math.min(1, (revealT - SWEEP_MS) / TRACE_MS));
+      if (sameAreaMiss && result.guess.areaId === area.id && result.target.areaId === area.id) {
+        const p = Math.max(0, Math.min(1, (revealT - traceStartMs) / TRACE_MS));
         const e = 1 - Math.pow(1 - p, 3);
-        dotTrail((result.guess.cell.x + 0.5) * S, (result.guess.cell.y + 0.5) * S, (result.target.cell.x + 0.5) * S, (result.target.cell.y + 0.5) * S, e);
+        // hold through the dot pause: only the guess marker until the trail fires
+        if (p > 0) dotTrail((result.guess.cell.x + 0.5) * S, (result.guess.cell.y + 0.5) * S, (result.target.cell.x + 0.5) * S, (result.target.cell.y + 0.5) * S, e);
       }
       if (result.target.areaId === area.id && lockT >= 0) {
         ring(result.target.cell, lockT / RING_MS, COL.target);
@@ -1341,13 +1360,7 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
         // Nudge the ship one pixel left — reads better centered in both games.
         // Zero Mission's Crateria ship also reads better nudged two pixels down.
         const shipYNudge = data.game === 'metroid-zero-mission' && area.id === 'crateria' ? 2 : 0;
-        ctx.drawImage(
-          img,
-          cx - shipWidth / 2 - 1,
-          cy - shipHeight / 2 + shipYNudge,
-          shipWidth,
-          shipHeight
-        );
+        ctx.drawImage(img, cx - shipWidth / 2 - 1, cy - shipHeight / 2 + shipYNudge, shipWidth, shipHeight);
         ctx.imageSmoothingEnabled = true;
       } else {
         // Fallback triangle if image not loaded
@@ -2005,11 +2018,7 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
         <RoomStateExplorer game={data.game} areaId={area.id} cell={roomStateCell} roomName={roomEdits[cellKey(area.id, roomStateCell)]} roomCells={roomStateCells} />
       )}
       <div className="map-viewport" ref={outerRef}>
-        <div
-          className={`map-scroll${panEnabled ? ' pan' : ''}${result ? (!isFinite(result.distance) ? ' shake-wrong' : result.distance >= 10 ? ' shake-far' : '') : ''}`}
-          ref={scrollRef}
-          style={fittedSize ? { width: fittedSize.w, height: fittedSize.h, boxSizing: 'content-box' } : undefined}
-        >
+        <div className={`map-scroll${panEnabled ? ' pan' : ''}${shakeClass}`} ref={scrollRef} style={fittedSize ? { width: fittedSize.w, height: fittedSize.h, boxSizing: 'content-box' } : undefined}>
           {result && <div className="map-scan-sweep" aria-hidden="true" />}
           {callout && (
             <div className={`target-callout${targetBlink ? ' alt' : ''}${callout.right ? ' right' : ''}`} style={{ left: callout.x, top: callout.y }} aria-hidden="true">
