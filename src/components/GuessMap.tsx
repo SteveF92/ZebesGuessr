@@ -254,12 +254,13 @@ const N = 1,
   W = 8;
 
 /** Reveal timeline (ms). Every reveal opens the same way: the scan sweep
- *  passes over the map and nothing lands until it clears. Then, by outcome:
+ *  passes over the map with only the guess marker showing (it persists from
+ *  the selection the player just placed). Then, by outcome:
  *   - exact hit — the TARGET indicator + ring land as the sweep finishes,
  *     with a second ring pulse offset by RING2_DELAY;
- *   - same-area miss — the guess marker lands, holds a beat (DOT_PAUSE_MS),
- *     then the map shakes as the dot trail traces to the target (TRACE_MS)
- *     and the indicator locks on;
+ *   - same-area miss — the marker holds a beat (DOT_PAUSE_MS), then the map
+ *     shakes as the dot trail traces to the target (TRACE_MS) and the
+ *     indicator locks on;
  *   - wrong area — the map holds on the guessed area through the sweep, then
  *     cuts to the target's area with a hard shake and locks on immediately. */
 const SWEEP_MS = 550; // scan sweep — keep in step with zgMapSweep in styles.css
@@ -1095,22 +1096,26 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
         brackets(selected.cell, COL.scan, 2.5, COL.scanOutline);
         ring(selected.cell, selectPulse, COL.scan);
       }
-    } else if (revealT >= SWEEP_MS) {
-      // Reveal, staged on the revealT clock — the map stays bare while the
-      // scan sweep passes, then the outcome plays out (see timeline constants).
-      const lockT = revealT - lockMs; // ms since the target lock-on began
+    } else {
+      // Reveal, staged on the revealT clock. The guess marker stays put from
+      // the moment of submit — continuity with the selection brackets the
+      // player just placed — while everything else (trail, shake, TARGET)
+      // waits out the scan sweep (see timeline constants).
       if (result.guess.areaId === area.id) brackets(result.guess.cell, COL.scan, 3, COL.scanOutline);
-      if (sameAreaMiss && result.guess.areaId === area.id && result.target.areaId === area.id) {
-        const p = Math.max(0, Math.min(1, (revealT - traceStartMs) / TRACE_MS));
-        const e = 1 - Math.pow(1 - p, 3);
-        // hold through the dot pause: only the guess marker until the trail fires
-        if (p > 0) dotTrail((result.guess.cell.x + 0.5) * S, (result.guess.cell.y + 0.5) * S, (result.target.cell.x + 0.5) * S, (result.target.cell.y + 0.5) * S, e);
-      }
-      if (result.target.areaId === area.id && lockT >= 0) {
-        ring(result.target.cell, lockT / RING_MS, COL.target);
-        // Exact guess: a second pulse for the direct hit.
-        if (result.distance === 0) ring(result.target.cell, (lockT - RING2_DELAY) / RING_MS, COL.target);
-        targetIndicator(result.target.cell, targetBlink);
+      if (revealT >= SWEEP_MS) {
+        const lockT = revealT - lockMs; // ms since the target lock-on began
+        if (sameAreaMiss && result.guess.areaId === area.id && result.target.areaId === area.id) {
+          const p = Math.max(0, Math.min(1, (revealT - traceStartMs) / TRACE_MS));
+          const e = 1 - Math.pow(1 - p, 3);
+          // hold through the dot pause: only the guess marker until the trail fires
+          if (p > 0) dotTrail((result.guess.cell.x + 0.5) * S, (result.guess.cell.y + 0.5) * S, (result.target.cell.x + 0.5) * S, (result.target.cell.y + 0.5) * S, e);
+        }
+        if (result.target.areaId === area.id && lockT >= 0) {
+          ring(result.target.cell, lockT / RING_MS, COL.target);
+          // Exact guess: a second pulse for the direct hit.
+          if (result.distance === 0) ring(result.target.cell, (lockT - RING2_DELAY) / RING_MS, COL.target);
+          targetIndicator(result.target.cell, targetBlink);
+        }
       }
     }
     ctx.restore();
