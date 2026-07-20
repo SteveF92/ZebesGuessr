@@ -65,6 +65,9 @@ export interface MapGlyph {
    *  source map — vs the plain `item` dot) are Zero Mission-only; the rest
    *  are shared across games, drawn per `mapStyle`. */
   t: 'save' | 'map' | 'ship' | 'boss' | 'item' | 'recharge' | 'navigation' | 'data' | 'chozo' | 'itemMajor';
+  /** span in cells for a multi-cell glyph, centred on `(x, y)`. Used for the
+   *  2×2 boss statues (Zero Mission's Kraid and Ridley); omitted elsewhere. */
+  s?: number;
 }
 
 /**

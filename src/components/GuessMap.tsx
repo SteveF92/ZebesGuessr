@@ -75,9 +75,20 @@ const SHIP_BY_AREA: Record<string, Record<string, string>> = {
   'metroid-zero-mission': { crateria: 'zm-samus-ship', chozodia: 'zm-pirate-ship' }
 };
 
+/** Per-area boss-sprite overrides, same shape as SHIP_BY_AREA. Zero Mission
+ *  draws a distinct arena statue per boss area. Falls back to `<prefix>-boss`. */
+const BOSS_BY_AREA: Record<string, Record<string, string>> = {
+  'metroid-zero-mission': { kraid: 'zm-kraid-tile', ridley: 'zm-ridley-tile' }
+};
+
 /** Resolve the ship asset basename for a game + current area. */
 function shipAsset(game: string, areaId: string): string {
   return SHIP_BY_AREA[game]?.[areaId] ?? `${SPRITE_PREFIX[game] ?? 'super'}-ship`;
+}
+
+/** Resolve the boss asset basename for a game + current area. */
+function bossAsset(game: string, areaId: string): string {
+  return BOSS_BY_AREA[game]?.[areaId] ?? `${SPRITE_PREFIX[game] ?? 'super'}-boss`;
 }
 
 /** Diff-tool overlay colors, rating 1 (easy) → 5 (hard); 6 = never served. */
@@ -764,11 +775,10 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
     };
   }, [result]);
 
-  // Load the ship and boss sprites. Boss art is one per game (super-boss.png,
-  // …); the ship can vary by area (Zero Mission's two ships), so it's resolved
-  // from game + area and reloaded when the player moves between areas.
+  // Load the ship and boss sprites. Both can vary by area (Zero Mission's two
+  // ships and its per-arena boss statues), so each is resolved from game + area
+  // and reloaded when the player moves between areas.
   useEffect(() => {
-    const prefix = SPRITE_PREFIX[data.game] ?? 'super';
     setShipLoaded(false);
     setBossLoaded(false);
 
@@ -779,7 +789,7 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
 
     const bossImg = new Image();
     bossImg.onload = () => setBossLoaded(true);
-    bossImg.src = `${import.meta.env.BASE_URL}assets/${prefix}-boss.png`;
+    bossImg.src = `${import.meta.env.BASE_URL}assets/${bossAsset(data.game, area.id)}.png`;
     bossImageRef.current = bossImg;
   }, [data.game, area.id]);
 
@@ -1248,11 +1258,17 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
     if (g.t === 'boss') {
       const img = bossImageRef.current;
       if (img && bossLoaded) {
-        const bossWidth = S * 0.7;
-        const bossHeight = (img.height / img.width) * bossWidth;
         // Pixel-art source (a few px square) — nearest-neighbor keeps it sharp.
         ctx.imageSmoothingEnabled = false;
-        ctx.drawImage(img, cx - bossWidth / 2, cy - bossHeight / 2, bossWidth, bossHeight);
+        if (g.s) {
+          // Spanning boss (2×2 arena statue): fill the s×s block, centred on (x, y).
+          const size = S * g.s * 0.8;
+          ctx.drawImage(img, cx - size / 2, cy - size / 2, size, size);
+        } else {
+          const bossWidth = S * 0.7;
+          const bossHeight = (img.height / img.width) * bossWidth;
+          ctx.drawImage(img, cx - bossWidth / 2, cy - bossHeight / 2, bossWidth, bossHeight);
+        }
         ctx.imageSmoothingEnabled = true;
       } else {
         // Fallback: orange diamond with dark core
@@ -1786,7 +1802,8 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
       glyphsOut[id] = list.map((g) => ({
         x: Math.round(g.x * 100) / 100,
         y: Math.round(g.y * 100) / 100,
-        t: g.t
+        t: g.t,
+        ...(g.s !== undefined ? { s: g.s } : {})
       }));
     }
     const overlaysOut: Record<string, Overlays> = {};
