@@ -259,8 +259,8 @@ const N = 1,
  *   - exact hit — the TARGET indicator + ring land as the sweep finishes,
  *     with a second ring pulse offset by RING2_DELAY;
  *   - same-area miss — the marker holds a beat (DOT_PAUSE_MS), then the dot
- *     trail traces to the target (TRACE_MS, with a shake if it's 10+ cells
- *     off) and the indicator locks on;
+ *     trail traces to the target (TRACE_MS) and the indicator locks on, with
+ *     a shake on arrival if it's 10+ cells off;
  *   - wrong area — the map holds on the guessed area through the sweep, then
  *     cuts to the target's area with a hard shake and locks on immediately. */
 const SWEEP_MS = 550; // scan sweep — keep in step with zgMapSweep in styles.css
@@ -703,11 +703,12 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
   const traceStartMs = SWEEP_MS + DOT_PAUSE_MS; // same-area miss: shake + trail fire here
   const lockMs = sameAreaMiss ? traceStartMs + TRACE_MS : SWEEP_MS;
   const revealTotal = lockMs + RING_MS + (result?.distance === 0 ? RING2_DELAY : 0);
-  // Bad-guess feedback, staged on the same clock: a far same-area miss (10+
-  // cells) rattles the map as the trail fires; a wrong-area reveal rattles
-  // harder as it cuts to the target's area. Adding the class starts the CSS
-  // animation, so the keyframes carry no delays of their own.
-  const shakeClass = !result ? '' : !isFinite(result.distance) && revealT >= SWEEP_MS ? ' shake-wrong' : sameAreaMiss && result.distance >= 10 && revealT >= traceStartMs ? ' shake-far' : '';
+  // Bad-guess feedback, staged on the same clock and always landing with the
+  // TARGET lock-on: a far same-area miss (10+ cells) rattles the map as the
+  // trail reaches the target; a wrong-area reveal rattles harder as it cuts to
+  // the target's area. Adding the class starts the CSS animation, so the
+  // keyframes carry no delays of their own.
+  const shakeClass = !result || revealT < lockMs ? '' : !isFinite(result.distance) ? ' shake-wrong' : sameAreaMiss && result.distance >= 10 ? ' shake-far' : '';
   useEffect(() => {
     if (!result) {
       setRevealT(0);

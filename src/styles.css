@@ -1609,10 +1609,11 @@ a:hover {
   filter: drop-shadow(-2px 0 0 #0a1420) drop-shadow(0 -1px 0 #0a1420) drop-shadow(0 1px 0 #0a1420);
 }
 
-/* Bad-guess feedback: the map rattles when the reveal lands. GuessMap adds
-   these classes on its reveal clock (shakeClass) — `shake-far` (a 10+ cell
-   miss) as the dot trail fires, `shake-wrong` as the map cuts to the target's
-   area — so the animations start immediately on class add, no delays here. */
+/* Bad-guess feedback: the map rattles as the TARGET lock-on lands. GuessMap
+   adds these classes on its reveal clock (shakeClass) — `shake-far` (a 10+
+   cell miss) as the trail reaches the target, `shake-wrong` as the map cuts
+   to the target's area — so the animations start immediately on class add,
+   no delays here. */
 .map-scroll.shake-far {
   animation: zgShakeFar 0.4s ease-in-out;
 }
