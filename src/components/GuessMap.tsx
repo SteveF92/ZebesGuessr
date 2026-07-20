@@ -258,9 +258,10 @@ const N = 1,
  *  the selection the player just placed). Then, by outcome:
  *   - exact hit — the TARGET indicator + ring land as the sweep finishes,
  *     with a second ring pulse offset by RING2_DELAY;
- *   - same-area miss — the marker holds a beat (DOT_PAUSE_MS), then the dot
- *     trail traces to the target (TRACE_MS) and the indicator locks on, with
- *     a shake on arrival if it's 10+ cells off;
+ *   - same-area miss — the trail's origin dot lands center-cell as the sweep
+ *     clears, holds a beat (DOT_PAUSE_MS), then the dot trail traces to the
+ *     target (TRACE_MS) and the indicator locks on, with a shake on arrival
+ *     if it's 10+ cells off;
  *   - wrong area — the map holds on the guessed area through the sweep, then
  *     cuts to the target's area with a hard shake and locks on immediately. */
 const SWEEP_MS = 550; // scan sweep — keep in step with zgMapSweep in styles.css
@@ -1037,25 +1038,24 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
       ctx.globalAlpha = 1;
     };
 
+    // A single trail dot — shared by the origin anchor and the traced line.
+    const trailDot = (px: number, py: number, half: number) => {
+      ctx.fillStyle = COL.trailOutline;
+      ctx.fillRect(px - half - 1, py - half - 1, half * 2 + 2, half * 2 + 2);
+      ctx.fillStyle = COL.trailDot;
+      ctx.fillRect(px - half, py - half, half * 2, half * 2);
+    };
     // Zero Mission-style trail: a run of thrown dots along the guess→target
     // path (no solid line), with a larger head dot leading while it traces.
     const dotTrail = (gx: number, gy: number, tx: number, ty: number, prog: number) => {
       const dist = Math.hypot(tx - gx, ty - gy);
-      if (dist <= 12) return; // adjacent cells: markers alone tell the story
       const ux = (tx - gx) / dist;
       const uy = (ty - gy) / dist;
-      const dot = (s: number, half: number) => {
-        const px = gx + ux * s;
-        const py = gy + uy * s;
-        ctx.fillStyle = COL.trailOutline;
-        ctx.fillRect(px - half - 1, py - half - 1, half * 2 + 2, half * 2 + 2);
-        ctx.fillStyle = COL.trailDot;
-        ctx.fillRect(px - half, py - half, half * 2, half * 2);
-      };
       const reach = prog * dist;
+      const head = Math.min(reach, dist - 8);
       // dots start clear of the guess brackets and stop short of the target dot
-      for (let s = 8; s <= Math.min(reach, dist - 8); s += 9) dot(s, 1.5);
-      if (prog < 1) dot(Math.min(reach, dist - 8), 2.5); // the thrown head dot
+      for (let s = 8; s <= head; s += 9) trailDot(gx + ux * s, gy + uy * s, 1.5);
+      if (prog < 1) trailDot(gx + ux * head, gy + uy * head, 2.5); // the thrown head dot
     };
 
     // Fusion-style target indicator: a sun-yellow dot in a red dashed ring
@@ -1106,10 +1106,19 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
       if (revealT >= SWEEP_MS) {
         const lockT = revealT - lockMs; // ms since the target lock-on began
         if (sameAreaMiss && result.guess.areaId === area.id && result.target.areaId === area.id) {
-          const p = Math.max(0, Math.min(1, (revealT - traceStartMs) / TRACE_MS));
-          const e = 1 - Math.pow(1 - p, 3);
-          // hold through the dot pause: only the guess marker until the trail fires
-          if (p > 0) dotTrail((result.guess.cell.x + 0.5) * S, (result.guess.cell.y + 0.5) * S, (result.target.cell.x + 0.5) * S, (result.target.cell.y + 0.5) * S, e);
+          const gx = (result.guess.cell.x + 0.5) * S;
+          const gy = (result.guess.cell.y + 0.5) * S;
+          const tcx = (result.target.cell.x + 0.5) * S;
+          const tcy = (result.target.cell.y + 0.5) * S;
+          // adjacent cells skip the whole trail: markers alone tell the story
+          if (Math.hypot(tcx - gx, tcy - gy) > 12) {
+            // the origin dot lands center-cell the moment the sweep clears and
+            // holds through the dot pause; the trail then stretches out from it
+            trailDot(gx, gy, 2.5);
+            const p = Math.max(0, Math.min(1, (revealT - traceStartMs) / TRACE_MS));
+            const e = 1 - Math.pow(1 - p, 3);
+            if (p > 0) dotTrail(gx, gy, tcx, tcy, e);
+          }
         }
         if (result.target.areaId === area.id && lockT >= 0) {
           ring(result.target.cell, lockT / RING_MS, COL.target);
