@@ -66,6 +66,20 @@ const SPRITE_PREFIX: Record<string, string> = {
   'metroid-fusion': 'fusion'
 };
 
+/** Per-area ship-sprite overrides for games whose ship art varies by area,
+ *  keyed `game → areaId → asset basename` (…/assets/<name>.png). Zero Mission
+ *  has two ships — Samus' in Crateria, the pirate frigate in Chozodia — and the
+ *  rule is deterministic, so the area picks the image rather than the placer
+ *  choosing a glyph type. Falls back to the game-wide `<prefix>-ship`. */
+const SHIP_BY_AREA: Record<string, Record<string, string>> = {
+  'metroid-zero-mission': { crateria: 'zm-samus-ship', chozodia: 'zm-pirate-ship' }
+};
+
+/** Resolve the ship asset basename for a game + current area. */
+function shipAsset(game: string, areaId: string): string {
+  return SHIP_BY_AREA[game]?.[areaId] ?? `${SPRITE_PREFIX[game] ?? 'super'}-ship`;
+}
+
 /** Diff-tool overlay colors, rating 1 (easy) → 5 (hard); 6 = never served. */
 const RATING_COLORS: Record<number, string> = {
   1: '46, 204, 113',
@@ -750,8 +764,9 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
     };
   }, [result]);
 
-  // Load per-game ship and boss sprites. Assets are named by a short prefix
-  // (super-ship.png, fusion-boss.png, …); map the game id onto it.
+  // Load the ship and boss sprites. Boss art is one per game (super-boss.png,
+  // …); the ship can vary by area (Zero Mission's two ships), so it's resolved
+  // from game + area and reloaded when the player moves between areas.
   useEffect(() => {
     const prefix = SPRITE_PREFIX[data.game] ?? 'super';
     setShipLoaded(false);
@@ -759,14 +774,14 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
 
     const img = new Image();
     img.onload = () => setShipLoaded(true);
-    img.src = `${import.meta.env.BASE_URL}assets/${prefix}-ship.png`;
+    img.src = `${import.meta.env.BASE_URL}assets/${shipAsset(data.game, area.id)}.png`;
     shipImageRef.current = img;
 
     const bossImg = new Image();
     bossImg.onload = () => setBossLoaded(true);
     bossImg.src = `${import.meta.env.BASE_URL}assets/${prefix}-boss.png`;
     bossImageRef.current = bossImg;
-  }, [data.game]);
+  }, [data.game, area.id]);
 
   // Lazily fetch the actual game screens for the current area while showTiles
   // is on; each arrival repaints so the overlay fills in progressively.
