@@ -253,14 +253,15 @@ const N = 1,
   SO = 4,
   W = 8;
 
-/** Reveal lock-on timeline (ms): a same-area miss traces the guess→target
- *  dot trail first, then the target indicator lands and the ring pulse plays.
- *  An exact guess earns a second ring pulse, offset by RING2_DELAY. */
+/** Reveal lock-on timeline (ms): the scan sweep passes first, then a same-area
+ *  miss traces the guess→target dot trail, then the target indicator lands and
+ *  the ring pulse plays. An exact guess earns a second ring pulse, offset by
+ *  RING2_DELAY. */
 const TRACE_MS = 900;
 const RING_MS = 650;
 const RING2_DELAY = 350;
 /** The map scan sweep's duration — keep in step with zgMapSweep in styles.css.
- *  An exact hit holds its TARGET indicator until the sweep has passed. */
+ *  Every reveal holds its TARGET indicator (and trail) until the sweep passes. */
 const SWEEP_MS = 550;
 /** Fusion-style TARGET callout: palette flip cadence (runs while revealed). */
 const TARGET_BLINK_MS = 350;
@@ -682,10 +683,13 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
   // traced guess→target line, the target blink-in, and the ring pulse(s) —
   // all staged off this one clock inside draw().
   const [revealT, setRevealT] = useState(0);
-  // Lock-on delay before the TARGET indicator lands: same-area misses trace
-  // the trail first, exact hits let the scan sweep pass over the answer,
-  // cross-area reveals lock on immediately.
-  const lockMs = result ? (isFinite(result.distance) && result.distance > 0 ? TRACE_MS : result.distance === 0 ? SWEEP_MS : 0) : 0;
+  // Lock-on delay before the TARGET indicator lands. Every reveal first lets
+  // the scan sweep pass over the map (SWEEP_MS) — the answer stays hidden until
+  // it clears — then same-area misses trace the guess→target trail (TRACE_MS)
+  // before the indicator locks on. Exact hits and cross-area reveals have no
+  // trail, so they lock on right as the sweep finishes.
+  const traceMs = result && isFinite(result.distance) && result.distance > 0 ? TRACE_MS : 0;
+  const lockMs = result ? SWEEP_MS + traceMs : 0;
   const revealTotal = lockMs + RING_MS + (result?.distance === 0 ? RING2_DELAY : 0);
   useEffect(() => {
     if (!result) {
@@ -1079,7 +1083,7 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
       const lockT = revealT - lockMs; // ms since the target lock-on began
       if (result.guess.areaId === area.id) brackets(result.guess.cell, COL.scan, 3, COL.scanOutline);
       if (result.guess.areaId === area.id && result.target.areaId === area.id && result.distance > 0) {
-        const p = lockMs > 0 ? Math.min(1, revealT / lockMs) : 1;
+        const p = Math.max(0, Math.min(1, (revealT - SWEEP_MS) / TRACE_MS));
         const e = 1 - Math.pow(1 - p, 3);
         dotTrail((result.guess.cell.x + 0.5) * S, (result.guess.cell.y + 0.5) * S, (result.target.cell.x + 0.5) * S, (result.target.cell.y + 0.5) * S, e);
       }
