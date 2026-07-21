@@ -149,7 +149,7 @@ from the pink x/y correlation heuristic, `|corr| ≥ 0.2`):
   whose sub-24px pink lies entirely within the band's perpendicular extent
   (the correlation heuristic misses some corner spills, e.g. Norfair's
   `(8,9)`, which otherwise render as floating shaft stubs).
-- **Renderer** (`GuessMap.drawBand`): each band is one filled pink polygon
+- **Renderer** (`drawBand` in `src/components/guessMap/drawMap.ts`): each band is one filled pink polygon
   with a 2px cyan outline, drawn _before_ the cells so room fills cover the
   mitred ends. `diag` cells draw nothing themselves; they exist for
   hover/click/targets.
@@ -229,7 +229,8 @@ Fusion colors quoted:
   outlines cross cell borders as full-width or edge-touching runs, never as
   white-bounded gaps. Colored hatches are drawn in the source as small
   H shapes (a jamb bar inside each room + a crossbar through the gap);
-  `GuessMap.drawCell` mirrors that, each cell drawing its half of the H.
+  `drawCell` (in `src/components/guessMap/drawMap.ts`) mirrors that, each
+  cell drawing its half of the H.
 - **Ship**: the docked ship sprite is drawn in door-yellow _inside_ its
   room's fill. Its pixels land on cell-boundary columns where the room
   outline's corner pixels already contribute 2 white px — together they cross

@@ -221,8 +221,9 @@ difficulty pass comes later.
 
 - `src/data.ts`: flip the game's `available` to `true`; add its areas to
   `ENABLED_AREAS` (dev filter).
-- New `mapStyle`? Add a palette + draw branches in `GuessMap.tsx`
-  (`SNES_COL`/`GBA_COL`, background lattice, `drawCell`). Zero Mission is
+- New `mapStyle`? Add a palette in `src/components/guessMap/constants.ts`
+  (`SNES_COL`/`GBA_COL`) + draw branches (the background lattice in
+  `GuessMap.draw`, cell shapes in `drawMap.ts`'s `drawCell`). Zero Mission is
   `gba` — **no new code expected**, its pause map uses the same language
   (check its door-pip and fill colors against `GBA_COL` though; ZM colors
   rooms per area).
@@ -268,7 +269,8 @@ npm run format     # includes the regenerated public/data/*.json
    the shared save/map/recharge/ship/boss/item); the editor has **Nav**/**Data**
    tools for them. Station letters are drawn per `mapStyle` — Super green,
    Fusion yellow — and Fusion additionally outlines its Save/Nav/Data/Recharge
-   "letter rooms" in red (`GuessMap`'s `specialCells` / `COL.special`). Placing
+   "letter rooms" in red (`computeSpecialCells` in `guessMap/drawMap.ts` /
+   `COL.special`). Placing
    the actual Fusion glyphs in the editor is still to do.
 4. **Connectors**: `overlays.<game>.json` via the editor (Fusion: the six
    numbered Main Deck elevators + per-sector return stubs).
@@ -306,7 +308,8 @@ npm run format     # includes the regenerated public/data/*.json
   rooms, no ladders, narrow rooms as knobs, self-neutralizing boss X marks)
   are documented in `docs/map-extraction-notes.md` → "Zero Mission
   specifics". Frontend-side, ZM gets its own palette via `GAME_COL` in
-  `GuessMap.tsx` and two extra glyph kinds (`chozo`, `itemMajor`).
+  `src/components/guessMap/constants.ts` and two extra glyph kinds (`chozo`,
+  `itemMajor`).
 - **Room names** come from Randovania (see step 8.2):
   `pipeline/import_fusion_room_names.py` for Fusion (offset table),
   `pipeline/import_zm_room_names.py` for ZM (dock-graph solve).

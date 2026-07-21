@@ -117,7 +117,7 @@ The pause-map canvas is bigger than the tile grid and has its own origin (Wrecke
 ## Architecture
 
 - `src/App.tsx` — the whole game flow as a phase state machine (`menu → loading → guessing → reveal → summary`). Game data is fetched at runtime from `public/data/<game>.json`.
-- `src/components/GuessMap.tsx` — canvas recreation of the in-game pause map (rooms, shafts, walls, diagonal stair bands, door pips, landmark glyphs), with a palette per `mapStyle` (`SNES_COL`/`GBA_COL`). Also contains the icon editor.
+- `src/components/GuessMap.tsx` — canvas recreation of the in-game pause map (rooms, shafts, walls, diagonal stair bands, door pips, landmark glyphs). The orchestrator: area state, X-Ray stretch, `draw()` composition, hit-testing, and the play JSX; everything else lives in `src/components/guessMap/` — `constants.ts` (per-`mapStyle` palettes `SNES_COL`/`GBA_COL` + per-game `GAME_COL`, marker colors, reveal-timeline constants), `connectors.ts` (connector geometry), `drawMap.ts`/`drawMarkers.ts` (pure canvas painters), `useMapViewport.ts` (pan/zoom + gestures), `useRevealTimeline.ts` (the revealT clock and its satellites), and the icon editor (`useMapEditor.ts` state/actions + `EditorToolbar.tsx` UI — the hook always runs since its editable glyph/connector/room-name copies feed play-mode drawing).
 - `src/components/TileViewer.tsx` — shows the mystery screen; difficulty crops via CSS scale.
 - `src/scoring.ts` — pure functions: distance, exponential score falloff, difficulty presets (`DIFFICULTIES`: crop tightness × score multiplier), rank names. Tune game feel here.
 - `src/data.ts` — data loading, target picking, URL helpers.
@@ -158,6 +158,6 @@ When you re-perfect a diagonal, edit this file — not `<game>.json` — then re
 
 ## Map extraction heuristics
 
-`extract_ingame_maps.py` quantizes pause-map recreations onto an 8px grid and cleans up three artifact classes at the pixel level: phantom rooms (caption text/exit arrows drawn in room pink), rooms misread as shafts because a baked-in station icon displaces their pink fill, and diagonal stair corridors (fitted as clipped sub-cell polygons in `map.bands`, rendered as filled polygons in `GuessMap.drawBand`). The thresholds are empirical and documented — read `docs/map-extraction-notes.md` before changing them, and re-validate against all six areas (the notes hold for Super Metroid; other games need re-checking).
+`extract_ingame_maps.py` quantizes pause-map recreations onto an 8px grid and cleans up three artifact classes at the pixel level: phantom rooms (caption text/exit arrows drawn in room pink), rooms misread as shafts because a baked-in station icon displaces their pink fill, and diagonal stair corridors (fitted as clipped sub-cell polygons in `map.bands`, rendered as filled polygons by `drawBand` in `src/components/guessMap/drawMap.ts`). The thresholds are empirical and documented — read `docs/map-extraction-notes.md` before changing them, and re-validate against all six areas (the notes hold for Super Metroid; other games need re-checking).
 
 Dev aids in the round header: **debug** toggle previews the real screen for any hovered map cell — useful when validating map/tile alignment.
