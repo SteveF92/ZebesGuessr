@@ -52,17 +52,5 @@
       "x": 7796,
       "y": 4341
     }
-  ],
-  "crateria": [
-    {
-      "sprite": "creatures/space-pirate.png",
-      "x": 1396,
-      "y": 1221
-    },
-    {
-      "sprite": "creatures/space-pirate.png",
-      "x": 1396,
-      "y": 1733
-    }
   ]
 }
