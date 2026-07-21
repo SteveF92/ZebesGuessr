@@ -312,8 +312,9 @@ a:hover {
   color: var(--cyan);
   opacity: 0.72;
 }
-/* the swappable sector name (ZEBES ↔ SR388, both 5 chars): reserve the
-   letter-spaced width so scramble glyphs can't reflow the line */
+/* the swappable sector name (ZEBES / SR388 / ZEBES, 20X5): reserve at least
+   the 5-char letter-spaced width so scramble glyphs can't reflow the short
+   words; ZM's longer line re-centers once when the scramble starts */
 .sector-word {
   display: inline-block;
   min-width: calc(5ch + 5 * 0.32em);
@@ -328,6 +329,7 @@ a:hover {
 }
 /* SUPER METROID title-screen treatment: metallic gradient fill + warm glow */
 .logo {
+  position: relative;
   font-family: var(--font-title);
   font-size: clamp(36px, 9vw, 84px);
   margin: 8px 0 2px;
@@ -340,18 +342,34 @@ a:hover {
   animation: zgTitleGlow 3.4s ease-in-out infinite;
 }
 /* GBA menu skins: the wordmark borrows that game's title-screen logo metal —
-   FUSION's icy chrome / ZERO MISSION's blue steel. `background:` shorthand
-   resets background-clip, so the clip is re-declared. */
-.logo.skin-fusion {
-  background: linear-gradient(180deg, #eaffff 0%, #a8ecff 24%, #58b8f8 46%, #2870d8 66%, #1840a8 82%, #101c60 100%);
+   FUSION's icy chrome / ZERO MISSION's blue steel. Gradients can't transition,
+   so each skin repaints the same text on its own pseudo-element (same line box,
+   so it lands pixel-exact over the base) and cross-fades via opacity. */
+.logo[data-text]::before,
+.logo[data-text]::after {
+  content: attr(data-text);
+  position: absolute;
+  inset: 0;
   -webkit-background-clip: text;
   background-clip: text;
+  color: transparent;
+  opacity: 0;
+  transition: opacity 0.7s ease;
+}
+.logo[data-text]::before {
+  background-image: linear-gradient(180deg, #eaffff 0%, #a8ecff 24%, #58b8f8 46%, #2870d8 66%, #1840a8 82%, #101c60 100%);
+}
+.logo[data-text]::after {
+  background-image: linear-gradient(180deg, #ffffff 0%, #c8e8ff 22%, #70b0f0 45%, #2868d0 68%, #123a90 85%, #0a2058 100%);
+}
+.logo.skin-fusion::before,
+.logo.skin-zm::after {
+  opacity: 1;
+}
+.logo.skin-fusion {
   animation-name: zgTitleGlowFusion;
 }
 .logo.skin-zm {
-  background: linear-gradient(180deg, #ffffff 0%, #c8e8ff 22%, #70b0f0 45%, #2868d0 68%, #123a90 85%, #0a2058 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
   animation-name: zgTitleGlowZm;
 }
 .logo.small {

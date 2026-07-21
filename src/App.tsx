@@ -134,9 +134,10 @@ export default function App() {
   // Scan-log typewriter for the reveal card's flavor line, gated like the
   // score count-up so it starts when the card actually appears.
   const shownFlavor = useTypewriter(revealResult ? revealFlavor(revealResult.distance) : '', cardVisible);
-  // Fusion's story orbits SR388, not Zebes — picking it fizzles the kicker's
-  // sector name through corrupted glyphs (both words are 5 chars, no reflow).
-  const sector = useGlitchText(selectedGameId === 'metroid-fusion' ? 'SR388' : 'ZEBES');
+  // The kicker's sector name fizzles through corrupted glyphs per game:
+  // Fusion's story orbits SR388, and Zero Mission dates itself in its intro
+  // ("In the year 20X5 of the Cosmic Calendar...") — the rare Metroid year.
+  const sector = useGlitchText(selectedGameId === 'metroid-fusion' ? 'SR388' : selectedGameId === 'metroid-zero-mission' ? 'ZEBES, 20X5' : 'ZEBES');
 
   function pickDifficulty(id: string) {
     setDifficultyId(id);
@@ -310,7 +311,10 @@ export default function App() {
         <p className="kicker">
           CHOZO OBSERVATORY // SECTOR <span className={`sector-word${sector.glitching ? ' glitching' : ''}`}>{sector.text}</span>
         </p>
-        <h1 className={`logo${skin ? ` skin-${skin}` : ''}`}>ZebesGuessr</h1>
+        {/* data-text feeds the skin pseudo-elements that cross-fade the logo metal */}
+        <h1 className={`logo${skin ? ` skin-${skin}` : ''}`} data-text="ZebesGuessr">
+          ZebesGuessr
+        </h1>
         <p className="tagline">
           Unidentified signal detected. <em>Locate it.</em>
         </p>
