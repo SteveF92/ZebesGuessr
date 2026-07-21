@@ -24,6 +24,16 @@
       "sprite": "barriers/eye-door-l.png",
       "x": 5005,
       "y": 1168
+    },
+    {
+      "sprite": "objects/ship.png",
+      "x": 4352,
+      "y": 2124
+    },
+    {
+      "sprite": "scenes/animals.png",
+      "x": 1611,
+      "y": 387
     }
   ],
   "sector-1": [
@@ -48,6 +58,11 @@
       "sprite": "barriers/eye-door-l.png",
       "x": 3085,
       "y": 1968
+    },
+    {
+      "sprite": "characters/sax-walk-left.png",
+      "x": 2004,
+      "y": 2029
     }
   ],
   "sector-3": [
@@ -69,6 +84,16 @@
       "sprite": "bosses/nightmare.png",
       "x": 5360,
       "y": 799
+    },
+    {
+      "sprite": "scenes/sax-5-background-2.png",
+      "x": 2640,
+      "y": 1600
+    },
+    {
+      "sprite": "scenes/sax-5.png",
+      "x": 2400,
+      "y": 1600
     }
   ],
   "sector-6": [
@@ -81,6 +106,11 @@
       "sprite": "bosses/core-x-spiked.png",
       "x": 2576,
       "y": 1626
+    },
+    {
+      "sprite": "scenes/sax-6.png",
+      "x": 2010,
+      "y": 1301
     }
   ]
 }

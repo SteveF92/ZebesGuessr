@@ -81,7 +81,9 @@ file** (dev server only) and commit the JSON.
   assembled Zazabi, B.O.X., Yakuza, and Nightmare poses from
   [Metroid Wiki](https://www.metroidwiki.org). The
   rippers are not affiliated with or involved in this project. Sprite cropping
-  and extraction aided by [fyrean's sprite extractor](https://fyrean.itch.io/sprite-extractor).
+  and extraction aided by [fyrean's sprite extractor](https://fyrean.itch.io/sprite-extractor). I also made use of the
+  [Save File Database compiled by MayanMystery](https://www.reddit.com/r/Metroid/comments/1654nv2/metroid_series_save_file_database/)
+  to get to moments I needed sprites from.
 - **Metroid, Samus Aran, and all game imagery** © Nintendo / developed by
   Nintendo R&D1 and Intelligent Systems. This project is not affiliated with,
   endorsed by, or connected to Nintendo in any way.

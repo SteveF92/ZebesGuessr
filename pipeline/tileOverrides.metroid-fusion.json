@@ -1177,6 +1177,22 @@
       "sx": 272,
       "sy": 672,
       "note": "'Sector 29.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 17,
+      "y": 8,
+      "image": "tile-sources/metroid-fusion/sector-2/overgrown-entrance.png",
+      "sx": 272,
+      "sy": 32,
+      "note": "'Sector 224.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 16,
+      "y": 8,
+      "image": "tile-sources/metroid-fusion/sector-2/overgrown-entrance.png",
+      "sx": 32,
+      "sy": 32,
+      "note": "'Sector 224.png' from the randovania checkout, committed unmodified"
     }
   ]
 }
