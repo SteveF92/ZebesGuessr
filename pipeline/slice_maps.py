@@ -163,14 +163,25 @@ def process_game(game_id: str, game: dict) -> None:
             )
         dbg.save(debug_dir / f"{area['id']}_grid.png")
 
-        data["areas"].append({
+        entry = {
             "id": area["id"],
             "name": area["name"],
             "cols": cols,
             "rows": rows,
             "mapImage": f"tiles/{game_id}/{area['id']}/map.png",
             "cells": [{"x": x, "y": y} for x, y in cells],
-        })
+        }
+        # Off-grid rooms (drawn shifted from their map slot so doors line up
+        # on the sheet, e.g. ZM Brinstar's save room at 16px below the grid):
+        # their cellCropOffsets entry captures the true art in the tile, and
+        # this mirrors the same pixel shift into the JSON so the X-Ray overlay
+        # can draw the tile back at its true position. A separate key because
+        # not every crop offset wants it — a *relocated* room (Fusion's
+        # Restricted Zone) pulls art from elsewhere but its map slot IS the
+        # true position, so its X-Ray draw must stay unshifted.
+        if area.get("xrayOffsets"):
+            entry["xrayOffsets"] = area["xrayOffsets"]
+        data["areas"].append(entry)
         print(f"  {area['name']}: {cols}x{rows} grid, {len(cells)} playable cells")
 
     out = ROOT / "public" / "data"

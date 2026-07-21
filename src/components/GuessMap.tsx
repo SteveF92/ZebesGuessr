@@ -447,7 +447,12 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
       const img = tileCache.current.get(tileUrl(data, { areaId: area.id, cell: c }));
       if (!img || !img.complete || img.naturalWidth === 0) continue;
       ctx.imageSmoothingEnabled = cellDevW < img.naturalWidth;
-      ctx.drawImage(img, c.x * S, c.y * S, S, S);
+      // Off-grid rooms: the tile was cropped shifted (cellCropOffsets), so
+      // shift its draw by the same amount to paint it at its true position.
+      const off = area.xrayOffsets?.[`${c.x},${c.y}`];
+      const ox = off ? (off[0] / (data.cellWidth ?? data.cellSize)) * S : 0;
+      const oy = off ? (off[1] / (data.cellHeight ?? data.cellSize)) * S : 0;
+      ctx.drawImage(img, c.x * S + ox, c.y * S + oy, S, S);
     }
     ctx.restore();
   }

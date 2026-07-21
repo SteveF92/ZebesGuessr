@@ -148,6 +148,11 @@ export interface AreaData {
   mapImage: string;
   /** every cell of the area; `k` present = the pause map draws it */
   cells: AreaCell[];
+  /** off-grid rooms: per-cell "x,y" → [dx,dy] source px the X-Ray tile is
+   *  drawn shifted by, restoring the room's true position (its tile was
+   *  cropped shifted via cellCropOffsets so the guess screen shows the full
+   *  room). Baked by slice_maps.py from the same-named config key. */
+  xrayOffsets?: Record<string, [number, number]>;
   /** pause-map render viewport + overlays */
   map: AreaMap;
 }
