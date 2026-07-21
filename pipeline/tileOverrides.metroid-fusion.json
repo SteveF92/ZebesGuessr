@@ -1009,20 +1009,28 @@
       "note": "'Sector 60.png' from the randovania checkout, committed unmodified"
     },
     {
-      "x": 5,
-      "y": 2,
-      "image": "tile-sources/metroid-fusion/sector-6/entrance-lobby.png",
-      "sx": 512,
-      "sy": 192,
-      "note": "'Sector 60.png' from the randovania checkout, committed unmodified"
-    },
-    {
       "x": 4,
       "y": 2,
       "image": "tile-sources/metroid-fusion/sector-6/entrance-lobby.png",
       "sx": 272,
       "sy": 192,
       "note": "'Sector 60.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 9,
+      "y": 1,
+      "image": "tile-sources/metroid-fusion/sector-6/nocturnal-access.png",
+      "sx": 272,
+      "sy": 32,
+      "note": "'Sector 64.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 8,
+      "y": 1,
+      "image": "tile-sources/metroid-fusion/sector-6/nocturnal-access.png",
+      "sx": 32,
+      "sy": 32,
+      "note": "'Sector 64.png' from the randovania checkout, committed unmodified"
     }
   ],
   "sector-2": [

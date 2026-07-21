@@ -76,11 +76,12 @@ file** (dev server only) and commit the JSON.
   boss/ship/creature poses onto them (`pipeline/composite_landmarks.py`).
   Those sprites were ripped by greiga master, Lexou Duck, Katuko, Gussprint,
   Ngamer01, Aquarius, Leix, Tommy Lee, Barack Obama, SkyLights, Chaofanatic,
-  Deathbringer, Zechs, Omegakyogre, and Vic — hosted at
-  [The Spriters Resource](https://www.spriters-resource.com) — with the
+  Deathbringer, Zechs, Omegakyogre, PR-kun, and Vic — hosted at
+  [The Spriters Resource](https://www.spriters-resource.com) and/or [Sprite Database](https://spritedatabase.net) — with the
   assembled Zazabi, B.O.X., Yakuza, and Nightmare poses from
   [Metroid Wiki](https://www.metroidwiki.org). The
-  rippers are not affiliated with or involved in this project.
+  rippers are not affiliated with or involved in this project. Sprite cropping
+  and extraction aided by [fyrean's sprite extractor](https://fyrean.itch.io/sprite-extractor).
 - **Metroid, Samus Aran, and all game imagery** © Nintendo / developed by
   Nintendo R&D1 and Intelligent Systems. This project is not affiliated with,
   endorsed by, or connected to Nintendo in any way.

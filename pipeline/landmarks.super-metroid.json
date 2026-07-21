@@ -21,16 +21,43 @@
       "y": 3020
     }
   ],
-  "norfair": [
+  "maridia": [
     {
-      "sprite": "creatures/space-pirate.png",
-      "x": 7284,
-      "y": 4341
+      "sprite": "creatures/turtle.png",
+      "x": 2387,
+      "y": 4059
     },
     {
-      "sprite": "creatures/space-pirate.png",
-      "x": 7796,
-      "y": 4341
+      "sprite": "creatures/baby-turtle-1.png",
+      "x": 2453,
+      "y": 4082
+    },
+    {
+      "sprite": "creatures/baby-turtle-2.png",
+      "x": 2365,
+      "y": 4082
+    },
+    {
+      "sprite": "creatures/baby-turtle-3.png",
+      "x": 2413,
+      "y": 4083
+    },
+    {
+      "sprite": "creatures/baby-turtle-1.png",
+      "x": 2339,
+      "y": 4082
+    }
+  ],
+  "norfair": [
+    {
+      "sprite": "enemies/pirate-2.png",
+      "x": 7521,
+      "y": 4302
+    },
+    {
+      "sprite": "enemies/pirate-1.png",
+      "x": 7687,
+      "y": 4283
     }
   ]
 }
