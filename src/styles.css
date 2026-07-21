@@ -24,30 +24,25 @@
   /* SNES pixel fonts (public/fonts/, hand-downloaded) with web fallback */
   --font-display: 'Super Metroid Large Alt', 'Press Start 2P', monospace;
   --font-title: 'Super Metroid Title', 'Press Start 2P', monospace;
-  /* The selected game's own in-game face, used for the few bits of text that
-     name a place inside that game (menu kicker, reveal card's area name). The
-     .skin-* rules below repoint it; Super Metroid keeps the display face. */
+  /* The selected game's own in-game face, used for text that names a place
+     inside that game (currently the reveal card's area name). The .skin-* rules
+     below repoint it; Super Metroid keeps the display face. */
   --font-game: var(--font-display);
-  /* Menu kicker size. The GBA faces fill their em box differently from the SNES
-     one, so each skin nudges this — see the .skin-* rules below. */
-  --kicker-size: 18px;
 }
 
 /* GBA game skins. The class rides the shell for whichever game is selected, so
    it cascades to the whole screen — but only --font-game consumers change.
-   Each falls back through --font-display, which matters: neither GBA face has a
-   `/`, so the kicker's `//` separator borrows one from further down the chain.
-   Their vertical metrics also run far taller than the SNES face (Zero Mission's
-   default line box is 1.63em against 0.88em), so every --font-game consumer
-   pins an explicit line-height — otherwise picking a GBA game shoves the layout
-   below it down by a dozen pixels. */
+   Each falls back through --font-display on purpose: the GBA faces are missing
+   punctuation the SNES one has, so anything they lack borrows a glyph from
+   further down the chain. Both also run far taller in the em box than the SNES
+   face (Zero Mission's default line box is 1.63em against 0.88em), so every
+   --font-game consumer pins an explicit line-height — otherwise picking a GBA
+   game shoves the layout below it down by a dozen pixels. */
 .skin-fusion {
   --font-game: 'Metroid Fusion', var(--font-display);
-  --kicker-size: 19px;
 }
 .skin-zm {
   --font-game: 'Metroid Zero Mission', var(--font-display);
-  --kicker-size: 15px;
 }
 
 * {
@@ -329,9 +324,14 @@ a:hover {
   gap: 16px;
   animation: zgRise 0.55s ease both;
 }
+/* Zero Mission's face regardless of the game picked — it just suits this line
+   better than the others, and the kicker is site furniture rather than
+   something naming a place in the selected game. Its em box runs tall, hence
+   the pinned line-height, and it sits small, hence 13px against the 18px this
+   was drawn at. */
 .kicker {
-  font-family: var(--font-game);
-  font-size: var(--kicker-size);
+  font-family: 'Metroid Zero Mission', var(--font-display);
+  font-size: 13px;
   line-height: 1;
   letter-spacing: 0.32em;
   color: var(--cyan);

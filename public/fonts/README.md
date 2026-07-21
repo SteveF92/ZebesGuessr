@@ -27,13 +27,18 @@ deployed as-is).
   [Metroid: Zero Mission](https://fontstruct.com/fontstructions/show/2394871)
   by Patrick H. Lauke, CC BY 3.0.
 
-The two GBA faces are the `--font-game` swap: picking Fusion or Zero Mission on
-the menu re-sets that variable (see the `.skin-fusion` / `.skin-zm` rules in
-`src/styles.css`), so the handful of spots that name a place in the game — the
-menu kicker's sector line, the reveal card's area name — render in that game's
-own font. Everything else stays on `--font-display`. Neither GBA face has a `/`
-glyph (nor does the SNES display face), so the kicker's `//` separator falls
-back, exactly as it already did.
+The two GBA faces are used two ways. Picking Fusion or Zero Mission on the menu
+re-points `--font-game` (see the `.skin-fusion` / `.skin-zm` rules in
+`src/styles.css`), so text naming a place inside that game — currently just the
+reveal card's area name — renders in that game's own font; Super Metroid leaves
+it on `--font-display`. Separately, the menu kicker is pinned to Zero Mission's
+face for every game, because it reads best there and it's site furniture rather
+than a place name.
+
+Every GBA declaration falls back through `--font-display`, which matters: the
+GBA faces are missing punctuation the SNES one has. Neither has a `/` glyph (nor
+does the SNES face), so the kicker's `//` separator falls all the way back to
+"Press Start 2P" — as it always did.
 
 `fonts.css` declares the `@font-face` rules and is linked from `index.html`
 with a relative href on purpose — the BASE_URL placeholder gets double-prefixed
