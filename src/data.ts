@@ -1,5 +1,16 @@
 import { DEFAULT_RATING, DIFFICULTIES, EXCLUDED_RATING, type Difficulty } from './scoring';
-import type { GameData, MapGlyph, Connector, RoundTarget, Cell } from './types';
+import type { AreaCell, GameData, MapGlyph, Connector, RoundTarget, Cell } from './types';
+
+/**
+ * Is this cell somewhere a player can point at? Only cells the pause map
+ * charts (i.e. carrying draw data) qualify: a cell without `k` has a real tile
+ * behind it — the X-Ray overlay paints it — but nothing is drawn on the guess
+ * map there, so it can be neither found nor fairly clicked. It gates both ends
+ * of a round: `pickTargets` won't serve one, and `GuessMap` won't let a click
+ * land on one (an undrawn cell under a connector is drawn as transit, not as a
+ * room, and counts as uncharted here too).
+ */
+export const isCharted = (cell: AreaCell): boolean => cell.k !== undefined;
 
 export const GAMES = [
   { id: 'super-metroid', title: 'Super Metroid', available: true },
@@ -199,8 +210,8 @@ function sampleUniform(pool: RoundTarget[], n: number, rng: () => number): Round
  * is two-step: a rating level inside the band is chosen equally, then a room
  * of that rating — so the band's rarer (harder) ratings show up as often as
  * its common ones instead of being drowned out. If the band holds fewer than
- * n cells, the full uniform pool is used as a fallback. Cells rated
- * EXCLUDED_RATING never enter either pool.
+ * n cells, the full uniform pool is used as a fallback. Uncharted cells (see
+ * `isCharted`) and cells rated EXCLUDED_RATING never enter either pool.
  *
  * `rng` defaults to Math.random; pass a seeded PRNG (see seed.ts) to make a
  * run reproducible.
@@ -210,6 +221,7 @@ export function pickTargets(data: GameData, n: number, diff?: Difficulty, rng: (
   const byRating = new Map<number, RoundTarget[]>();
   for (const area of data.areas) {
     for (const cell of area.cells) {
+      if (!isCharted(cell)) continue; // nothing drawn there to click, so never a target
       const r = cellRating(data, area.id, cell);
       if (r >= EXCLUDED_RATING) continue;
       const t = { areaId: area.id, cell };

@@ -24,8 +24,9 @@ export interface MapEditorOptions {
   mapStyle: string;
   /** dev icon-placement mode — gates the tint fetches and click handling */
   editing?: boolean;
-  /** every cell of the area, keyed "x,y" (GuessMap's hit-test set) */
-  selectable: Set<string>;
+  /** every cell of the area, keyed "x,y" — the editor's tools act on all
+   *  of them, charted or not (a connector cell still takes a room name) */
+  cellSet: Set<string>;
   COL: MapPalette;
 }
 
@@ -41,7 +42,7 @@ export type MapEditor = ReturnType<typeof useMapEditor>;
  * so this hook runs unconditionally; only the toolbar and click handling are
  * gated on `editing`.
  */
-export function useMapEditor({ data, area, mapStyle, editing, selectable, COL }: MapEditorOptions) {
+export function useMapEditor({ data, area, mapStyle, editing, cellSet, COL }: MapEditorOptions) {
   // editable copy of every area's glyphs; edits win over the loaded data
   const [edits, setEdits] = useState<Record<string, MapGlyph[]>>(() => {
     const m: Record<string, MapGlyph[]> = {};
@@ -260,7 +261,7 @@ export function useMapEditor({ data, area, mapStyle, editing, selectable, COL }:
       const next = { ...prev };
       for (let y = minY; y <= maxY; y++) {
         for (let x = minX; x <= maxX; x++) {
-          if (!selectable.has(`${x},${y}`)) continue;
+          if (!cellSet.has(`${x},${y}`)) continue;
           const key = roomKeyAt({ x, y });
           if (name) next[key] = name;
           else delete next[key];
@@ -300,7 +301,7 @@ export function useMapEditor({ data, area, mapStyle, editing, selectable, COL }:
 
   /** set the clicked cell's rating to the toolbar's selected value */
   function paintDiff(c: Cell) {
-    if (!selectable.has(`${c.x},${c.y}`)) return; // ratings only apply to real cells
+    if (!cellSet.has(`${c.x},${c.y}`)) return; // ratings only apply to real cells
     setDiffEdits((prev) => ({ ...prev, [cellKey(area.id, c)]: diffRating }));
   }
 

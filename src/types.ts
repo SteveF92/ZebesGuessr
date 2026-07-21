@@ -29,9 +29,10 @@ export type DoorPip = string;
 
 /**
  * One cell of an area — the single source of truth for "this screen exists".
- * Every cell has a tile PNG behind it and so can be a guess target; whether
- * it's actually served is difficulty's job (`EXCLUDED_RATING` = never), not
- * this list's.
+ * Every cell has a tile PNG behind it, so the X-Ray overlay paints all of
+ * them; whether one can be a guess target is decided elsewhere — it must be
+ * charted (carry draw data, see `isCharted`; an uncharted cell draws nothing
+ * to click) and difficulty must allow it (`EXCLUDED_RATING` = never served).
  *
  * The draw data is optional, and answers the only question the pause map adds:
  * *what to draw, if anything*. A cell the map charts carries `k`/`w` (plus `d`

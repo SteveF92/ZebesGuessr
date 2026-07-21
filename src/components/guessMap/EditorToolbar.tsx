@@ -34,12 +34,12 @@ interface Props {
   /** hovered map cell (tile coords) — the Diff tool's hovered-rating readout */
   hover: Cell | null;
   /** every cell of the area, keyed "x,y" */
-  selectable: Set<string>;
+  cellSet: Set<string>;
 }
 
 /** The dev editor's toolbar (tool buttons + each tool's controls) and the
  *  Landmark / Room state side panels. Rendered only while editing. */
-export default function EditorToolbar({ editor, game, areaId, mapStyle, hover, selectable }: Props) {
+export default function EditorToolbar({ editor, game, areaId, mapStyle, hover, cellSet }: Props) {
   const { tool, overlays, selConn, updateOverlays } = editor;
   return (
     <>
@@ -111,7 +111,7 @@ export default function EditorToolbar({ editor, game, areaId, mapStyle, hover, s
               );
             })}
             <span className="edit-msg">
-              {hover && selectable.has(`${hover.x},${hover.y}`) ? `hovered: ${editor.diffEdits[editor.roomKeyAt(hover)] ?? `${DEFAULT_RATING} (unrated)`}` : 'click a cell to rate it'}
+              {hover && cellSet.has(`${hover.x},${hover.y}`) ? `hovered: ${editor.diffEdits[editor.roomKeyAt(hover)] ?? `${DEFAULT_RATING} (unrated)`}` : 'click a cell to rate it'}
             </span>
           </>
         )}

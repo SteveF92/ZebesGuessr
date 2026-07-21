@@ -2,10 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { cellKey, cellPool, cellRating, deriveDifficultyIndex, indicesFromTargets, pickTargets, targetsFromIndices } from './data';
 import { decodeSeed, encodeSeed } from './seed';
 import { DEFAULT_RATING, DIFFICULTIES, getDifficulty } from './scoring';
-import type { Cell, GameData } from './types';
+import type { AreaCell, GameData } from './types';
 
 /** Minimal GameData with only the fields pickTargets touches. */
-function makeData(areas: Record<string, Cell[]>, cellDifficulty?: Record<string, number>): GameData {
+function makeData(areas: Record<string, AreaCell[]>, cellDifficulty?: Record<string, number>): GameData {
   return {
     game: 'test',
     title: 'Test',
@@ -24,7 +24,8 @@ function makeData(areas: Record<string, Cell[]>, cellDifficulty?: Record<string,
   };
 }
 
-const grid = (w: number, h: number): Cell[] => Array.from({ length: w * h }, (_, i) => ({ x: i % w, y: Math.floor(i / w) }));
+/** A block of charted cells — pickTargets only serves cells the map draws. */
+const grid = (w: number, h: number): AreaCell[] => Array.from({ length: w * h }, (_, i) => ({ x: i % w, y: Math.floor(i / w), k: 'room' as const, w: 0 }));
 
 describe('pickTargets', () => {
   it('returns n distinct targets', () => {
@@ -46,10 +47,10 @@ describe('pickTargets', () => {
   it('only picks cells that exist in the named area', () => {
     const data = makeData({
       brinstar: [
-        { x: 0, y: 0 },
-        { x: 1, y: 0 }
+        { x: 0, y: 0, k: 'room', w: 0 },
+        { x: 1, y: 0, k: 'room', w: 0 }
       ],
-      norfair: [{ x: 5, y: 5 }]
+      norfair: [{ x: 5, y: 5, k: 'room', w: 0 }]
     });
     const valid = new Set(data.areas.flatMap((a) => a.cells.map((c) => cellKey(a.id, c))));
     for (const t of pickTargets(data, 3)) {
@@ -159,15 +160,50 @@ describe('pickTargets rating-6 exclusion', () => {
   });
 });
 
+describe('pickTargets uncharted exclusion', () => {
+  // A cell with no draw data (an elevator shaft, a tube run, a screen the
+  // pause map simply doesn't chart) has a tile but nothing drawn on the map,
+  // so GuessMap won't let a click land on it — serving one would be an
+  // unwinnable round.
+  const withShaft = () => {
+    const cells: AreaCell[] = grid(3, 3);
+    cells.push({ x: 3, y: 0 }, { x: 3, y: 1 });
+    return cells;
+  };
+
+  it('never serves a cell with no draw data', () => {
+    const data = makeData({ norfair: withShaft() });
+    const uncharted = new Set(['norfair:3,0', 'norfair:3,1']);
+    for (const id of ['tallon', 'brinstar', 'sanctuary']) {
+      for (let i = 0; i < 30; i++) {
+        for (const t of pickTargets(data, 5, getDifficulty(id))) {
+          expect(uncharted.has(cellKey(t.areaId, t.cell))).toBe(false);
+        }
+      }
+    }
+  });
+
+  it('leaves uncharted cells out of the pool entirely, unrated or not', () => {
+    const data = makeData({ norfair: withShaft() });
+    const targets = pickTargets(data, 11);
+    expect(targets).toHaveLength(9); // the 3x3 charted block, not the 2 shaft cells
+  });
+
+  it('still counts uncharted cells in cellPool, so seed indices stay stable', () => {
+    const data = makeData({ norfair: withShaft() });
+    expect(cellPool(data)).toHaveLength(11);
+  });
+});
+
 describe('cell pool / seed index round-trip', () => {
   const data = makeData({ crateria: grid(6, 6), brinstar: grid(5, 4), norfair: grid(7, 3) });
 
   it('cellPool flattens areas in order, cells in order', () => {
     const pool = cellPool(data);
     expect(pool).toHaveLength(36 + 20 + 21);
-    expect(pool[0]).toEqual({ areaId: 'crateria', cell: { x: 0, y: 0 } });
-    expect(pool[36]).toEqual({ areaId: 'brinstar', cell: { x: 0, y: 0 } });
-    expect(pool[36 + 20]).toEqual({ areaId: 'norfair', cell: { x: 0, y: 0 } });
+    expect(pool[0]).toMatchObject({ areaId: 'crateria', cell: { x: 0, y: 0 } });
+    expect(pool[36]).toMatchObject({ areaId: 'brinstar', cell: { x: 0, y: 0 } });
+    expect(pool[36 + 20]).toMatchObject({ areaId: 'norfair', cell: { x: 0, y: 0 } });
   });
 
   it('indices ↔ targets round-trip', () => {

@@ -33,8 +33,9 @@ export function CreateSeed({ data, gameId, onExit, onPlay }: Props) {
 
   const gameIndex = GAMES.findIndex((g) => g.id === gameId);
 
-  // Playable (has a real screen) cells per area — GuessMap reports every drawn
-  // map cell, but only these are guessable targets worth picking.
+  // Playable (has a real screen) cells per area. GuessMap's own gate is now
+  // stricter — it only lets a click land on a charted cell — so this is a
+  // backstop that also covers picks arriving any other way.
   const playable = useMemo(() => {
     const m = new Map<string, Set<string>>();
     for (const a of data.areas) m.set(a.id, new Set(a.cells.map((c) => `${c.x},${c.y}`)));

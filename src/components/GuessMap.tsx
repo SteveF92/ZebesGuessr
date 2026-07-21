@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { AreaData, Cell, GameData, RoundResult } from '../types';
-import { tileUrl } from '../data';
+import { isCharted, tileUrl } from '../data';
 import { bossAsset, GAME_COL, GBA_COL, RING2_DELAY, RING_MS, S, SCALE, shipAsset, SNES_COL, SWEEP_MS, TRACE_MS } from './guessMap/constants';
 import { computeKnobWalls, computeOpenWalls, drawBand, drawCell, drawConnector, drawGlyph, type GlyphDrawContext } from './guessMap/drawMap';
 import { brackets, dotTrail, ring, targetIndicator, trailDot } from './guessMap/drawMarkers';
@@ -121,13 +121,18 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
   const tileCache = useRef<Map<string, HTMLImageElement>>(new Map());
   const [, setTileVersion] = useState(0);
 
-  /** every cell of the area, for pointer hit-testing (tile coords) */
-  const selectable = useMemo(() => new Set(area.cells.map((c) => `${c.x},${c.y}`)), [area]);
+  /** every cell of the area — what the editor's tools may act on (tile coords) */
+  const cellSet = useMemo(() => new Set(area.cells.map((c) => `${c.x},${c.y}`)), [area]);
+  /** the subset a guess may land on: cells the pause map actually charts. An
+   *  uncharted cell is a real screen (X-Ray paints it) but draws nothing here,
+   *  so clicking it could only ever be a mis-click — `pickTargets` won't serve
+   *  one either, so nothing guessable is lost. */
+  const guessable = useMemo(() => new Set(area.cells.filter(isCharted).map((c) => `${c.x},${c.y}`)), [area]);
 
   // The dev editor's state + actions (see useMapEditor). The editable copies
   // it holds (glyphs/overlays/roomEdits) feed play-mode drawing too, so the
   // hook always runs; only the toolbar and click handling gate on `editing`.
-  const editor = useMapEditor({ data, area, mapStyle, editing, selectable, COL });
+  const editor = useMapEditor({ data, area, mapStyle, editing, cellSet, COL });
   const { glyphs, specialCells, overlays, roomEdits, roomKeyAt, handleEditClick, drawEditingOverlays, drawEditorTints } = editor;
 
   /** knob cells keyed "x,y" -> wall bits (see computeKnobWalls) */
@@ -423,7 +428,7 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
   function selectAtPoint(clientX: number, clientY: number) {
     if (result) return;
     const c = cellFromPoint(clientX, clientY);
-    if (!c || !selectable.has(`${c.x},${c.y}`)) return;
+    if (!c || !guessable.has(`${c.x},${c.y}`)) return;
     onSelect(area.id, c);
     // Touch has no hover, so a tap doubles as the Scan Visor probe: report the
     // tapped cell so the scan panel shows its real screen (mirrors desktop hover).
@@ -445,7 +450,7 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
           R
         </button>
       </div>
-      {editing && <EditorToolbar editor={editor} game={data.game} areaId={area.id} mapStyle={mapStyle} hover={hover} selectable={selectable} />}
+      {editing && <EditorToolbar editor={editor} game={data.game} areaId={area.id} mapStyle={mapStyle} hover={hover} cellSet={cellSet} />}
       <div className="map-viewport" ref={outerRef}>
         <div className={`map-scroll${panEnabled ? ' pan' : ''}${shakeClass}`} ref={scrollRef} style={fittedSize ? { width: fittedSize.w, height: fittedSize.h, boxSizing: 'content-box' } : undefined}>
           {result && <div className="map-scan-sweep" aria-hidden="true" />}
@@ -464,17 +469,20 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
             onMouseMove={(e) => {
               if (!hoverCapable) return; // touch screens have no hover (pointer handlers drive them)
               const c = cellFromEvent(e);
-              const occ = c !== null && selectable.has(`${c.x},${c.y}`);
+              const occ = c !== null && cellSet.has(`${c.x},${c.y}`);
               // Report the pointed-at cell anywhere on the map, not just over drawn
               // rooms — empty cells still have a real coordinate (the scanner shows
-              // it as "no signal"). null only when the cursor leaves the map.
+              // it as "no signal"). null only when the cursor leaves the map. The
+              // scan preview covers every real cell, charted or not: an uncharted
+              // one has a screen to show even though it can't be guessed.
               onHoverCell?.(area.id, c, occ ? roomEdits[roomKeyAt(c!)] : undefined);
               if (editing) {
                 setHover(c);
                 return;
               }
               if (result) return;
-              setHover(occ ? c : null);
+              // The hover highlight must promise exactly what a click delivers.
+              setHover(c !== null && guessable.has(`${c.x},${c.y}`) ? c : null);
             }}
             onMouseLeave={() => {
               setHover(null);

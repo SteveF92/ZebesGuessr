@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { MAX_CELL_INDEX, SEED_LENGTH, decodeSeed, encodeSeed, mulberry32 } from './seed';
 import { pickTargets, cellKey } from './data';
 import { getDifficulty } from './scoring';
-import type { Cell, GameData } from './types';
+import type { AreaCell, GameData } from './types';
 
 describe('encodeSeed / decodeSeed', () => {
   it('round-trips game, difficulty, and the five tile indices', () => {
@@ -54,7 +54,7 @@ describe('mulberry32', () => {
 });
 
 /** Minimal GameData with only the fields pickTargets touches. */
-function makeData(areas: Record<string, Cell[]>): GameData {
+function makeData(areas: Record<string, AreaCell[]>): GameData {
   return {
     game: 'test',
     title: 'Test',
@@ -72,7 +72,7 @@ function makeData(areas: Record<string, Cell[]>): GameData {
   };
 }
 
-const grid = (w: number, h: number): Cell[] => Array.from({ length: w * h }, (_, i) => ({ x: i % w, y: Math.floor(i / w) }));
+const grid = (w: number, h: number): AreaCell[] => Array.from({ length: w * h }, (_, i) => ({ x: i % w, y: Math.floor(i / w), k: 'room' as const, w: 0 }));
 
 describe('pickTargets with a seeded rng is reproducible', () => {
   const data = makeData({ brinstar: grid(8, 8), norfair: grid(6, 6) });
