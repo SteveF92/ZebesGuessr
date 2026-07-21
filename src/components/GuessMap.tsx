@@ -4,6 +4,32 @@ import { cellKey, tileUrl } from '../data';
 import { DEFAULT_RATING, EXCLUDED_RATING } from '../scoring';
 import LandmarkEditor from './LandmarkEditor';
 import RoomStateExplorer from './RoomStateExplorer';
+import {
+  bossAsset,
+  DOT_PAUSE_MS,
+  E,
+  GAME_COL,
+  GBA_COL,
+  GLYPH_LETTERS,
+  ISOLATE_HIGHLIGHT,
+  MAX_CELL_PX,
+  N,
+  RATING_COLORS,
+  RED_WALL_GLYPHS,
+  RING2_DELAY,
+  RING_MS,
+  S,
+  SCALE,
+  shipAsset,
+  SNES_COL,
+  SO,
+  SWEEP_MS,
+  TARGET_BLINK_MS,
+  TRACE_MS,
+  W,
+  type GlyphType
+} from './guessMap/constants';
+import { connBounds, connContains, connectorFromDrag, connHorizontal, defaultLabelPos, LABEL_ARROW, LABEL_CYCLE, type Overlays } from './guessMap/connectors';
 
 interface Props {
   data: GameData;
@@ -24,7 +50,6 @@ interface Props {
   showTiles?: boolean;
 }
 
-type GlyphType = MapGlyph['t'];
 type Tool = GlyphType | 'connector' | 'roomname' | 'difficulty' | 'landmark' | 'roomstate' | 'erase';
 
 /** Subset of the dev /__landmarks/<game> payload the Landmark tint needs to map
@@ -36,11 +61,6 @@ interface LandmarkTintData {
   cellHeight: number;
 }
 
-/** Station glyphs drawn as a single letter (same meaning across games, styled
- *  per `mapStyle`). navigation/data are Fusion-only. */
-const GLYPH_LETTERS = { save: 'S', map: 'M', recharge: 'R', navigation: 'N', data: 'D' } as const;
-/** The "letter rooms" GBA games outline in red — every lettered kind. */
-const RED_WALL_GLYPHS = new Set<GlyphType>(['save', 'map', 'recharge', 'navigation', 'data']);
 const TOOLS: { id: Tool; label: string }[] = [
   { id: 'save', label: 'Save (S)' },
   { id: 'map', label: 'Map (M)' },
@@ -59,218 +79,6 @@ const TOOLS: { id: Tool; label: string }[] = [
   { id: 'roomstate', label: 'Room state' },
   { id: 'erase', label: 'Erase' }
 ];
-
-/** Map a game id onto the ship/boss sprite filename prefix in public/assets. */
-const SPRITE_PREFIX: Record<string, string> = {
-  'super-metroid': 'super',
-  'metroid-fusion': 'fusion'
-};
-
-/** Per-area ship-sprite overrides for games whose ship art varies by area,
- *  keyed `game → areaId → asset basename` (…/assets/<name>.png). Zero Mission
- *  has two ships — Samus' in Crateria, the pirate frigate in Chozodia — and the
- *  rule is deterministic, so the area picks the image rather than the placer
- *  choosing a glyph type. Falls back to the game-wide `<prefix>-ship`. */
-const SHIP_BY_AREA: Record<string, Record<string, string>> = {
-  'metroid-zero-mission': { crateria: 'zm-samus-ship', chozodia: 'zm-pirate-ship' }
-};
-
-/** Per-area boss-sprite overrides, same shape as SHIP_BY_AREA. Zero Mission
- *  draws a distinct arena statue per boss area. Falls back to `<prefix>-boss`. */
-const BOSS_BY_AREA: Record<string, Record<string, string>> = {
-  'metroid-zero-mission': { kraid: 'zm-kraid-tile', ridley: 'zm-ridley-tile' }
-};
-
-/** Resolve the ship asset basename for a game + current area. */
-function shipAsset(game: string, areaId: string): string {
-  return SHIP_BY_AREA[game]?.[areaId] ?? `${SPRITE_PREFIX[game] ?? 'super'}-ship`;
-}
-
-/** Resolve the boss asset basename for a game + current area. */
-function bossAsset(game: string, areaId: string): string {
-  return BOSS_BY_AREA[game]?.[areaId] ?? `${SPRITE_PREFIX[game] ?? 'super'}-boss`;
-}
-
-/** Diff-tool overlay colors, rating 1 (easy) → 5 (hard); 6 = never served. */
-const RATING_COLORS: Record<number, string> = {
-  1: '46, 204, 113',
-  2: '163, 224, 72',
-  3: '241, 196, 15',
-  4: '230, 126, 34',
-  5: '231, 76, 60',
-  6: '25, 25, 25'
-};
-
-/** outline color for the Diff tool's isolate mode — picked for max contrast
- *  against every rating color and the map's dark background. */
-const ISOLATE_HIGHLIGHT = '#39ff14';
-
-type Overlays = { connectors: Connector[] };
-
-/** label-position cycle order for the editor toggle */
-type LabelPos = NonNullable<Connector['labelPos']>;
-const LABEL_CYCLE: LabelPos[] = ['above', 'right', 'below', 'left'];
-const LABEL_ARROW: Record<LabelPos, string> = {
-  above: 'above ↑',
-  below: 'below ↓',
-  left: 'left ←',
-  right: 'right →'
-};
-
-/** geometry helpers: connectors are axis-aligned between two whole map cells */
-function connBounds(c: Connector) {
-  return {
-    minX: Math.min(c.x0, c.x1),
-    maxX: Math.max(c.x0, c.x1),
-    minY: Math.min(c.y0, c.y1),
-    maxY: Math.max(c.y0, c.y1)
-  };
-}
-/** true when the connector runs left-right (wider than it is tall). For a
- *  single cell (neither axis dominates) an explicit `horizontal` wins;
- *  otherwise the label side breaks the tie, so a 1-cell connector labelled
- *  left/right renders as a horizontal stub. The override exists for the one
- *  case the label can't cover: a horizontal stub labelled above/below. */
-function connHorizontal(c: Connector) {
-  const b = connBounds(c);
-  const dx = b.maxX - b.minX,
-    dy = b.maxY - b.minY;
-  if (dx !== dy) return dx > dy;
-  if (c.horizontal !== undefined) return c.horizontal;
-  return c.labelPos === 'left' || c.labelPos === 'right';
-}
-function connContains(c: Connector, cell: Cell) {
-  const b = connBounds(c);
-  return cell.x >= b.minX && cell.x <= b.maxX && cell.y >= b.minY && cell.y <= b.maxY;
-}
-function defaultLabelPos(c: Connector): LabelPos {
-  return connHorizontal(c) ? 'right' : 'below';
-}
-/** build a connector from two clicks, locking to the dominant axis */
-function connectorFromDrag(a: Cell, c: Cell): Connector {
-  if (Math.abs(c.x - a.x) >= Math.abs(c.y - a.y)) {
-    return { x0: Math.min(a.x, c.x), y0: a.y, x1: Math.max(a.x, c.x), y1: a.y, label: '' };
-  }
-  return { x0: a.x, y0: Math.min(a.y, c.y), x1: a.x, y1: Math.max(a.y, c.y), label: '' };
-}
-
-/** logical units per map cell (all drawing math is in these units) */
-const S = 16;
-/** css px per logical unit at view.z = 1 — the unit convention behind the pan/
- *  zoom plumbing (W0/H0, fitZ, zoomBounds) and the editing path's backing
- *  scale. Play-mode rendering is viewport-based (the canvas draws at the
- *  viewport's device resolution whatever the zoom), so this is NOT a quality
- *  knob. */
-const SCALE = 2;
-/** deepest zoom-in, expressed as the on-screen size of one map cell (css px).
- *  The map's base scale draws a cell at S*SCALE (32px), so this is the real
- *  zoom ceiling; large enough to inspect a single X-Ray screen up close. */
-const MAX_CELL_PX = 176;
-
-/* Marker colors (scan brackets, dot trail, target ring): shared visual
- * language across games, so they live outside the per-style palettes. */
-const MARKERS = {
-  hover: 'rgba(160, 248, 248, 0.6)',
-  selected: '#ffd24d',
-  item: '#f8f8f8',
-  target: '#00ff88',
-  /* Prime scan-visor brackets: cursor / placed guess markers */
-  scan: '#a0f8f8',
-  scanOutline: '#08262e',
-  /* Zero Mission dot trail + Fusion target dot */
-  trailDot: '#f8e048',
-  trailOutline: '#1a1400',
-  targetRing: '#00f858'
-};
-
-// SNES pause-map palette (Super Metroid recreation style)
-const SNES_COL = {
-  bg: '#000000',
-  /** snes: the purple dot lattice; gba: the empty-cell square color */
-  dot: '#40166e',
-  room: '#d83890',
-  wall: '#a0f8f8',
-  map: '#00f858',
-  ship: '#f88838',
-  /** landmark-letter text color (S/M/R…) */
-  letter: '#00f858',
-  /** wall color of a "letter room" — Fusion outlines them red; SNES has no
-   *  such rooms, so this is never drawn (kept equal to `wall`). */
-  special: '#a0f8f8',
-  /** room-fill variants (`CellDraw.f` indexes this; [0] === room) */
-  fills: ['#d83890'],
-  /** door-pip colors by letter (`CellDraw.dr`; gba style only) */
-  doors: {} as Record<string, string>,
-  /** gba style: a colored door also draws a jamb bar just inside the wall, so
-   *  two adjacent cells compose the game's "H" lock. Fusion does this; Zero
-   *  Mission draws its doors as small blocks on the border instead (see
-   *  drawCell), so it turns this off. */
-  doorJambs: true,
-  ...MARKERS
-};
-
-// GBA pause-map palette (Fusion tile-art style) — exact colors from the
-// source rips: navy lattice of empty squares, magenta/green room fills,
-// white walls, colored door pips.
-const GBA_COL: typeof SNES_COL = {
-  bg: '#000090', // lattice grid lines
-  dot: '#202048', // empty-cell square interiors
-  room: '#f800f8',
-  wall: '#f8f8f8',
-  map: '#20c068',
-  ship: '#f82048',
-  letter: '#f8f800', // Fusion draws station letters in yellow
-  special: '#f82048', // GBA games outline "letter rooms" (Save/Map/Nav/Data/Recharge) in red
-  fills: ['#f800f8', '#20c068'],
-  doors: { r: '#f82048', y: '#f8f800', g: '#10f880', b: '#0000f8' },
-  doorJambs: true,
-  ...MARKERS
-};
-
-// Zero Mission shares Fusion's map language but not its colors: dark-green
-// lattice, blue/green/orange fills (mapped / unmapped-until-visited /
-// super-heated), and pips for every door — light blue is the normal one.
-// Chozo-statue and major-item rooms bake a big white icon over the fill, but
-// the real room color bleeds through, so they keep their real fill (no white).
-const ZM_COL: typeof SNES_COL = {
-  ...GBA_COL,
-  bg: '#085810', // lattice grid lines
-  dot: '#202820', // empty-cell square interiors
-  room: '#0000f8',
-  fills: ['#0000f8', '#20c068', '#f86820'],
-  doors: { r: '#f82048', y: '#f8f800', g: '#10f880', b: '#0070f8' },
-  // ZM draws no "H" locks — its doors are small border blocks (see drawCell).
-  doorJambs: false
-};
-
-/** Per-game palette overrides on top of the style default. */
-const GAME_COL: Record<string, typeof SNES_COL> = {
-  'metroid-zero-mission': ZM_COL
-};
-
-const N = 1,
-  E = 2,
-  SO = 4,
-  W = 8;
-
-/** Reveal timeline (ms). Every reveal opens the same way: the scan sweep
- *  passes over the map with only the guess marker showing (it persists from
- *  the selection the player just placed). Then, by outcome:
- *   - exact hit — the TARGET indicator + ring land as the sweep finishes,
- *     with a second ring pulse offset by RING2_DELAY;
- *   - same-area miss — the trail's origin dot lands center-cell as the sweep
- *     clears, holds a beat (DOT_PAUSE_MS), then the dot trail traces to the
- *     target (TRACE_MS) and the indicator locks on, with a shake on arrival
- *     if it's 10+ cells off;
- *   - wrong area — the map holds on the guessed area through the sweep, then
- *     cuts to the target's area with a hard shake and locks on immediately. */
-const SWEEP_MS = 550; // scan sweep — keep in step with zgMapSweep in styles.css
-const DOT_PAUSE_MS = 350; // beat between the guess marker landing and the trail firing
-const TRACE_MS = 900; // dot trail guess→target
-const RING_MS = 650; // target ring pulse
-const RING2_DELAY = 350; // exact hit: second ring pulse offset
-/** Fusion-style TARGET callout: palette flip cadence (runs while revealed). */
-const TARGET_BLINK_MS = 350;
 
 /**
  * The clickable guess map, rebuilt as web elements: cells from the actual
