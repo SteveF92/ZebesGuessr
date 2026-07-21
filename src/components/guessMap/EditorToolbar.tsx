@@ -5,6 +5,7 @@ import { RATING_COLORS } from './constants';
 import { connBounds, connHorizontal, defaultLabelPos, LABEL_ARROW, LABEL_CYCLE } from './connectors';
 import LandmarkEditor from '../LandmarkEditor';
 import RoomStateExplorer from '../RoomStateExplorer';
+import CellEditorPanel from './CellEditorPanel';
 import type { MapEditor, Tool } from './useMapEditor';
 
 const TOOLS: { id: Tool; label: string }[] = [
@@ -23,6 +24,7 @@ const TOOLS: { id: Tool; label: string }[] = [
   { id: 'difficulty', label: 'Diff' },
   { id: 'landmark', label: 'Landmark' },
   { id: 'roomstate', label: 'Room state' },
+  { id: 'cell', label: 'Cell' },
   { id: 'erase', label: 'Erase' }
 ];
 
@@ -167,6 +169,7 @@ export default function EditorToolbar({ editor, game, areaId, mapStyle, hover, c
         )}
         {tool === 'landmark' && !editor.landmarkCell && <span className="edit-msg">click a cell to open its landmark view (X-Ray helps find the arenas)</span>}
         {tool === 'roomstate' && !editor.roomStateCell && <span className="edit-msg">click a cell to preview its room's Randovania render (X-Ray helps)</span>}
+        {tool === 'cell' && !editor.cellPanelCell && <span className="edit-msg">click a cell to edit its walls/doors (persisted via mapOverrides)</span>}
         <button className="btn tiny save" onClick={editor.saveMap}>
           Save to file
         </button>
@@ -176,6 +179,7 @@ export default function EditorToolbar({ editor, game, areaId, mapStyle, hover, c
       {tool === 'roomstate' && editor.roomStateCell && (
         <RoomStateExplorer game={game} areaId={areaId} cell={editor.roomStateCell} roomName={editor.roomEdits[cellKey(areaId, editor.roomStateCell)]} roomCells={editor.roomStateCells} />
       )}
+      {tool === 'cell' && editor.cellPanelCell && <CellEditorPanel editor={editor} game={game} areaId={areaId} mapStyle={mapStyle} />}
     </>
   );
 }

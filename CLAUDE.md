@@ -148,7 +148,7 @@ A connector is only _how a run gets drawn_; the cells under it are ordinary `are
 
 ### `mapOverrides.<game>.json` — pipeline-applied (not a runtime overlay)
 
-Unlike the four files above (merged at runtime by `loadGameData`), `mapOverrides.<game>.json` is consumed by `extract_ingame_maps.py` and **baked into `<game>.json`** — so the extraction stays reproducible while the map data the pixel heuristics can't nail stays hand-perfect. It's hand-edited JSON (no editor tool), keyed by areaId:
+Unlike the four files above (merged at runtime by `loadGameData`), `mapOverrides.<game>.json` is consumed by the extractors and **baked into `<game>.json`** — so the extraction stays reproducible while the map data the pixel heuristics can't nail stays hand-perfect. Keyed by areaId:
 
 - `cells` — upserts a cell's draw data by `(x, y)`, each `{ x, y, k, w, [d] }`. Used to reclassify a room as a stair (`k: "diag"`) or to draw rooms the heuristics miss (Wrecked Ship's `(9,9)`, six Norfair rooms).
 - `bands` — replaces the area's whole `map.bands` list. The auto-fitted stair polygons (`extract_diag_bands`) overshoot and look rough; these are clean hand-drawn ones (fractional cells). The extractor still runs its own fit first (its sliver-deletion side effect is kept), then this array wins.
@@ -156,7 +156,7 @@ Unlike the four files above (merged at runtime by `loadGameData`), `mapOverrides
 
 All three are tile coords and applied **after** alignment, like everything else.
 
-When you re-perfect a diagonal, edit this file — not `<game>.json` — then rerun `extract_ingame_maps.py` + `npm run format`.
+`cells` and `removeCells` are curated in-app via the editor's **Cell** tool: click a cell for a panel showing its draw data (kind, wall bits, stair dir, fill variant, door pips — controls adapt to `mapStyle`), edits render live on the map (the editor's `effectiveCells` copy feeds drawing and hit-testing), and **Save overrides** merges the session's deltas into this file via the dev-only `/__save-map-overrides` middleware — an upsert that preserves `bands` and untouched hand entries, written through prettier. Setting a cell to **none** clears its draw data (→ `removeCells`; the cell stays a real tile — the phantom-room case that also drops the tile stays a hand edit). **Save + Bake** runs `/__bake-map`, the light bake: just the style-matched extractor + prettier (draw data never touches tiles, so composite/slice are skipped — seconds, not ~30s). `bands` has no tool — when you re-perfect a diagonal, edit this file by hand, then rerun the extractor + `npm run format`.
 
 ## Map extraction heuristics
 

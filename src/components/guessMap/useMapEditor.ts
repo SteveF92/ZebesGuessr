@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { AreaData, Cell, GameData, MapGlyph } from '../../types';
+import type { AreaCell, AreaData, Cell, CellDraw, GameData, MapGlyph } from '../../types';
 import { cellKey } from '../../data';
 import { DEFAULT_RATING, EXCLUDED_RATING } from '../../scoring';
 import { ISOLATE_HIGHLIGHT, RATING_COLORS, S, type GlyphType, type MapPalette } from './constants';
 import { connBounds, connContains, connectorFromDrag, type Overlays } from './connectors';
 import { computeSpecialCells, drawConnector } from './drawMap';
 
-export type Tool = GlyphType | 'connector' | 'roomname' | 'difficulty' | 'landmark' | 'roomstate' | 'erase';
+export type Tool = GlyphType | 'connector' | 'roomname' | 'difficulty' | 'landmark' | 'roomstate' | 'cell' | 'erase';
 
 /** Subset of the dev /__landmarks/<game> payload the Landmark tint needs to map
  *  each raw-pixel sprite stamp back onto its map cell (mirrors LandmarkEditor). */
@@ -72,12 +72,75 @@ export function useMapEditor({ data, area, mapStyle, editing, cellSet, COL }: Ma
   // cell whose Randovania room render the Room state panel is exploring
   const [roomStateCell, setRoomStateCell] = useState<Cell | null>(null);
   useEffect(() => setRoomStateCell(null), [area.id]);
+  // cell whose draw data (kind/walls/doors) the Cell panel is editing
+  const [cellPanelCell, setCellPanelCell] = useState<Cell | null>(null);
+  useEffect(() => setCellPanelCell(null), [area.id]);
+  // In-session draw-data deltas over the baked cells, keyed [areaId]["x,y"];
+  // null = cleared (the pause map draws nothing there). Seeded EMPTY — unlike
+  // the glyph/connector copies there is no runtime sidecar to seed from:
+  // committed mapOverrides are already baked into area.cells, so only new
+  // deltas live here. Saved into mapOverrides.<game>.json (pipeline input)
+  // via /__save-map-overrides; they reach <game>.json on the next bake.
+  const [cellEdits, setCellEdits] = useState<Record<string, Record<string, CellDraw | null>>>({});
   // the tool is GBA-only (its toolbar button is hidden elsewhere) — drop it if
   // a non-GBA game arrives with it still selected
   useEffect(() => {
     if (tool === 'roomstate' && mapStyle !== 'gba') setTool('save');
   }, [tool, mapStyle]);
   const overlays = overlayEdits[area.id] ?? { connectors: area.map.connectors };
+
+  /** area.cells with the in-session draw-data deltas applied — what the map
+   *  draws and hit-tests from. Returns area.cells itself while the area has
+   *  no deltas, so downstream memos see an identical reference until the
+   *  first edit. */
+  const effectiveCells = useMemo((): AreaCell[] => {
+    const m = cellEdits[area.id];
+    if (!m || !Object.keys(m).length) return area.cells;
+    return area.cells.map((c): AreaCell => {
+      const e = m[`${c.x},${c.y}`];
+      if (e === undefined) return c;
+      // preserve the all-or-nothing union: {x,y} = uncharted, or a full CellDraw
+      return e === null ? { x: c.x, y: c.y } : { x: c.x, y: c.y, ...e };
+    });
+  }, [area, cellEdits]);
+
+  /** the baked draw data of the area's cell at c (normalized to the sidecar
+   *  shape: canonical key order, f/dr omitted when 0/empty like the pipeline's
+   *  _cell_json), or null if the map draws nothing there */
+  function bakedDrawAt(c: Cell): CellDraw | null {
+    const b = area.cells.find((a) => a.x === c.x && a.y === c.y);
+    if (!b || !b.k) return null;
+    return {
+      k: b.k,
+      w: b.w,
+      ...(b.d !== undefined ? { d: b.d } : {}),
+      ...(b.f ? { f: b.f } : {}),
+      ...(b.dr?.length ? { dr: b.dr } : {})
+    };
+  }
+
+  /** stage a draw-data delta for cell c (null = cleared). A delta equal to
+   *  the baked data is dropped instead, so a toggle-and-back leaves nothing
+   *  to save (and a cell the extractor never drew gains no removeCells junk). */
+  function setCellEdit(c: Cell, v: CellDraw | null) {
+    const same = JSON.stringify(v) === JSON.stringify(bakedDrawAt(c));
+    setCellEdits((prev) => {
+      const m = { ...(prev[area.id] ?? {}) };
+      const key = `${c.x},${c.y}`;
+      if (same) delete m[key];
+      else m[key] = v;
+      return { ...prev, [area.id]: m };
+    });
+  }
+
+  /** drop cell c's delta — revert to the baked draw data */
+  function resetCellEdit(c: Cell) {
+    setCellEdits((prev) => {
+      const m = { ...(prev[area.id] ?? {}) };
+      delete m[`${c.x},${c.y}`];
+      return { ...prev, [area.id]: m };
+    });
+  }
 
   // editable room-name map: flat "areaId:tileX,tileY" -> name, seeded from data.
   // The Name tool paints this name across a rectangle of playable cells.
@@ -190,6 +253,7 @@ export function useMapEditor({ data, area, mapStyle, editing, cellSet, COL }: Ma
     setRoomPending(null);
     setLandmarkCell(null);
     setRoomStateCell(null);
+    setCellPanelCell(null);
   }
 
   function updateOverlays(fn: (o: Overlays) => Overlays) {
@@ -295,6 +359,12 @@ export function useMapEditor({ data, area, mapStyle, editing, cellSet, COL }: Ma
     if (tool === 'difficulty') return paintDiff(c);
     if (tool === 'landmark') return setLandmarkCell(c);
     if (tool === 'roomstate') return setRoomStateCell(c);
+    if (tool === 'cell') {
+      // real tiles only: an upsert on a tile-less coordinate would create the
+      // drawn-but-unguessable target the extractor WARNs about (includeCells)
+      if (cellSet.has(`${c.x},${c.y}`)) setCellPanelCell(c);
+      return;
+    }
     if (tool === 'erase') return eraseAt(c);
     stampGlyph(c, tool); // tool narrows to GlyphType here
   }
@@ -403,6 +473,23 @@ export function useMapEditor({ data, area, mapStyle, editing, cellSet, COL }: Ma
     ctx.restore();
   }
 
+  /** Cell-tool overlay: tint cells carrying an unsaved/unbaked draw-data
+   *  delta (orange) and outline the panel's selected cell. */
+  function drawCellEditTint(ctx: CanvasRenderingContext2D) {
+    ctx.save();
+    ctx.fillStyle = 'rgba(255, 160, 40, 0.30)';
+    for (const key of Object.keys(cellEdits[area.id] ?? {})) {
+      const [tx, ty] = key.split(',').map(Number);
+      ctx.fillRect(tx * S, ty * S, S, S);
+    }
+    if (cellPanelCell) {
+      ctx.strokeStyle = COL.selected;
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(cellPanelCell.x * S + 0.75, cellPanelCell.y * S + 0.75, S - 1.5, S - 1.5);
+    }
+    ctx.restore();
+  }
+
   /** the active tool's tint overlay, drawn over the tiles (unlike
    *  drawEditingOverlays, which sits under the glyphs) */
   function drawEditorTints(ctx: CanvasRenderingContext2D) {
@@ -410,6 +497,7 @@ export function useMapEditor({ data, area, mapStyle, editing, cellSet, COL }: Ma
     else if (tool === 'roomname') drawRoomTint(ctx);
     else if (tool === 'landmark') drawLandmarkTint(ctx);
     else if (tool === 'roomstate') drawRoomStateTint(ctx);
+    else if (tool === 'cell') drawCellEditTint(ctx);
   }
 
   async function saveMap() {
@@ -460,6 +548,7 @@ export function useMapEditor({ data, area, mapStyle, editing, cellSet, COL }: Ma
     glyphs,
     specialCells,
     overlays,
+    effectiveCells,
     roomEdits,
     roomKeyAt,
     // click handling + edit-mode drawing
@@ -471,6 +560,12 @@ export function useMapEditor({ data, area, mapStyle, editing, cellSet, COL }: Ma
     landmarkCell,
     roomStateCell,
     roomStateCells,
+    cellPanelCell,
+    cellEdits,
+    bakedDrawAt,
+    setCellEdit,
+    resetCellEdit,
+    COL,
     // toolbar plumbing
     selectTool,
     saveMap,

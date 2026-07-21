@@ -158,18 +158,23 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
   // it holds (glyphs/overlays/roomEdits) feed play-mode drawing too, so the
   // hook always runs; only the toolbar and click handling gate on `editing`.
   const editor = useMapEditor({ data, area, mapStyle, editing, cellSet, COL });
-  const { glyphs, specialCells, overlays, roomEdits, roomKeyAt, handleEditClick, drawEditingOverlays, drawEditorTints } = editor;
+  const { glyphs, specialCells, overlays, effectiveCells, roomEdits, roomKeyAt, handleEditClick, drawEditingOverlays, drawEditorTints } = editor;
+
+  /** the area with the editor's live cell-draw deltas applied — identical to
+   *  `area` until the Cell tool stages an edit (effectiveCells' fast path) */
+  const effArea = useMemo(() => (effectiveCells === area.cells ? area : { ...area, cells: effectiveCells }), [area, effectiveCells]);
 
   /** the subset a guess may land on: cells the map draws (see `drawnCells`).
    *  A cell it draws nothing at is a real screen — X-Ray paints it — but a
    *  click there could only ever be a mis-click, and `pickTargets` won't serve
    *  one either, so nothing findable is lost. Built from the editor's live
-   *  connector list, the same one `draw` paints from, so a connector placed
-   *  mid-session makes its cells clickable immediately. */
-  const guessable = useMemo(() => drawnCells(area, overlays.connectors), [area, overlays.connectors]);
+   *  connector list and cell-draw deltas, the same ones `draw` paints from, so
+   *  a connector or room drawn mid-session makes its cells clickable
+   *  immediately (and a cleared room stops being clickable). */
+  const guessable = useMemo(() => drawnCells(effArea, overlays.connectors), [effArea, overlays.connectors]);
 
   /** knob cells keyed "x,y" -> wall bits (see computeKnobWalls) */
-  const knobWalls = useMemo(() => computeKnobWalls(area.cells), [area]);
+  const knobWalls = useMemo(() => computeKnobWalls(effectiveCells), [effectiveCells]);
 
   // Room walls a diagonal passage opens through, keyed `x,y,dir` — see
   // computeOpenWalls for the band cap-edge walk and why only caps open walls.
@@ -364,7 +369,7 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
 
     // stair passages go first so room cells drawn after cover the band ends
     for (const b of area.map.bands ?? []) drawBand(ctx, b, COL);
-    for (const c of area.cells) {
+    for (const c of effectiveCells) {
       if (c.x < vis.x0 || c.x > vis.x1 || c.y < vis.y0 || c.y > vis.y1) continue;
       drawCell(ctx, c, COL, { openWalls, specialCells });
     }

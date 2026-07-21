@@ -17,6 +17,11 @@ function run(cmd: string, args: string[]): Promise<{ code: number | null; out: s
   });
 }
 
+// one pipeline bake at a time, across every bake endpoint (/__bake-landmarks
+// runs the full composite → slice → extract chain; /__bake-map just the
+// extractor) — they all rewrite public/data/<game>.json
+let baking = false;
+
 // Dev-only endpoint for the in-app icon editor: POST the curated map data and
 // it is written straight into public/data/*.<game>.json, ready to commit —
 // glyphs into glyphs.<game>.json, connectors into overlays.<game>.json, room
@@ -160,8 +165,7 @@ function landmarkEditor(): Plugin {
       // the saved manifest into tiles: composite_landmarks -> slice_maps ->
       // the game's extractor, then prettier on the regenerated game JSON
       // (matching `npm run format` so the working tree stays commit-ready).
-      // Takes ~30-60s; one bake at a time.
-      let baking = false;
+      // Takes ~30-60s; one bake at a time (the module-level `baking` flag).
       server.middlewares.use('/__bake-landmarks', (req, res) => {
         if (req.method !== 'POST') {
           res.statusCode = 405;
@@ -408,7 +412,147 @@ function roomStateEditor(): Plugin {
   };
 }
 
+// Dev-only endpoints for the editor's Cell tool, which curates per-cell draw
+// data (kind/walls/stair dir/fill/door pips). mapOverrides.<game>.json is
+// PIPELINE INPUT like landmarks — the extractor's apply_cell_overrides bakes
+// it into <game>.json — but it's also hand-edited (bands, curated cells), so
+// saving MERGES the staged deltas into the existing file: cells upserted by
+// (x,y), removeCells kept symmetric (setting draw data drops a matching
+// removal and vice versa), bands and untouched entries preserved. Written
+// through prettier so the file matches `npm run format` byte-for-byte.
+function mapOverridesEditor(): Plugin {
+  const GAME_RE = /^[a-z0-9-]+$/;
+  const KINDS = new Set(['room', 'vshaft', 'hshaft', 'diag', 'knob']);
+  const PIP_RE = /^[NESW][rygbn]$/;
+  const checkCell = (c: any, areaId: string) => {
+    const bad = (why: string) => new Error(`bad cell in ${areaId}: ${why} (${JSON.stringify(c)})`);
+    if (!Number.isInteger(c?.x) || !Number.isInteger(c?.y)) throw bad('x/y');
+    if (!KINDS.has(c.k)) throw bad('k');
+    if (!Number.isInteger(c.w) || c.w < 0 || c.w > 15) throw bad('w');
+    if (c.d !== undefined && (c.k !== 'diag' || (c.d !== '/' && c.d !== '\\'))) throw bad('d');
+    if (c.f !== undefined && (!Number.isInteger(c.f) || c.f <= 0)) throw bad('f');
+    if (c.dr !== undefined && (!Array.isArray(c.dr) || c.dr.length === 0 || !c.dr.every((p: unknown) => typeof p === 'string' && PIP_RE.test(p)))) throw bad('dr');
+  };
+  return {
+    name: 'zg-map-overrides-editor',
+    apply: 'serve',
+    configureServer(server) {
+      // POST /__save-map-overrides { game, deltas: { areaId: { cells, removeCells } } }
+      server.middlewares.use('/__save-map-overrides', (req, res) => {
+        if (req.method !== 'POST') {
+          res.statusCode = 405;
+          return res.end('POST only');
+        }
+        let body = '';
+        req.on('data', (c) => (body += c));
+        req.on('end', async () => {
+          try {
+            const { game, deltas } = JSON.parse(body);
+            if (!GAME_RE.test(game ?? '')) throw new Error('bad game id');
+            if (typeof deltas !== 'object' || deltas === null) throw new Error('bad deltas');
+            const file = resolve(__dirname, 'public/data', `mapOverrides.${game}.json`);
+            const merged = existsSync(file) ? JSON.parse(await readFile(file, 'utf8')) : {};
+            for (const [areaId, d] of Object.entries<any>(deltas)) {
+              if (!GAME_RE.test(areaId)) throw new Error(`bad area id ${areaId}`);
+              const area = (merged[areaId] ??= {});
+              const cells: any[] = area.cells ?? [];
+              const removes: [number, number][] = area.removeCells ?? [];
+              const dropRemove = (x: number, y: number) => {
+                const i = removes.findIndex((r) => r[0] === x && r[1] === y);
+                if (i >= 0) removes.splice(i, 1);
+              };
+              const dropCell = (x: number, y: number) => {
+                const i = cells.findIndex((e) => e.x === x && e.y === y);
+                if (i >= 0) cells.splice(i, 1);
+                return i;
+              };
+              const appended: any[] = [];
+              for (const c of d.cells ?? []) {
+                checkCell(c, areaId);
+                // canonical key order, matching the pipeline's _cell_json
+                const entry = {
+                  x: c.x,
+                  y: c.y,
+                  k: c.k,
+                  w: c.w,
+                  ...(c.d !== undefined ? { d: c.d } : {}),
+                  ...(c.f !== undefined ? { f: c.f } : {}),
+                  ...(c.dr !== undefined ? { dr: c.dr } : {})
+                };
+                dropRemove(c.x, c.y);
+                const i = cells.findIndex((e) => e.x === c.x && e.y === c.y);
+                if (i >= 0)
+                  cells[i] = entry; // in place — minimal diff
+                else appended.push(entry);
+              }
+              appended.sort((a, b) => a.y - b.y || a.x - b.x);
+              cells.push(...appended);
+              for (const rc of d.removeCells ?? []) {
+                if (!Array.isArray(rc) || rc.length !== 2 || !Number.isInteger(rc[0]) || !Number.isInteger(rc[1])) throw new Error(`bad removeCells entry in ${areaId}: ${JSON.stringify(rc)}`);
+                dropCell(rc[0], rc[1]);
+                dropRemove(rc[0], rc[1]); // no dupes
+                removes.push([rc[0], rc[1]]);
+              }
+              if (cells.length) area.cells = cells;
+              else delete area.cells;
+              if (removes.length) area.removeCells = removes;
+              else delete area.removeCells;
+              if (!Object.keys(area).length) delete merged[areaId]; // bands etc. keep the area alive
+            }
+            const prettier = await import('prettier');
+            const cfg = await prettier.resolveConfig(file);
+            await writeFile(file, await prettier.format(JSON.stringify(merged), { ...cfg, filepath: file }));
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify({ ok: true, file }));
+          } catch (e) {
+            res.statusCode = 400;
+            res.end(String(e instanceof Error ? e.message : e));
+          }
+        });
+      });
+      // POST /__bake-map { game } — the light bake: just the game's extractor
+      // (draw-data changes never touch the tiles, so composite/slice are
+      // skipped; the extractor re-patches the existing base JSON in place),
+      // then prettier on the game JSON. Seconds instead of ~30-60s.
+      server.middlewares.use('/__bake-map', (req, res) => {
+        if (req.method !== 'POST') {
+          res.statusCode = 405;
+          return res.end('POST only');
+        }
+        let body = '';
+        req.on('data', (c) => (body += c));
+        req.on('end', async () => {
+          try {
+            const { game } = JSON.parse(body);
+            if (!GAME_RE.test(game ?? '')) throw new Error('bad game id');
+            if (baking) throw new Error('a bake is already running');
+            baking = true;
+            try {
+              const config = JSON.parse(await readFile(resolve(__dirname, 'pipeline/maps.config.json'), 'utf8'));
+              if (!config[game]) throw new Error('unknown game');
+              const extractor = (config[game].mapStyle ?? 'snes') === 'gba' ? 'extract_gba_maps.py' : 'extract_ingame_maps.py';
+              const r = await run('python', [`pipeline/${extractor}`, game]);
+              if (r.code !== 0) throw new Error(`${extractor} exited ${r.code}:\n${r.out.slice(-2000)}`);
+              const dataFile = resolve(__dirname, 'public/data', `${game}.json`);
+              const prettier = await import('prettier');
+              const cfg = await prettier.resolveConfig(dataFile);
+              await writeFile(dataFile, await prettier.format(await readFile(dataFile, 'utf8'), { ...cfg, filepath: dataFile }));
+              res.setHeader('Content-Type', 'application/json');
+              res.end(JSON.stringify({ ok: true, log: `== ${extractor}\n${r.out.trim()}` }));
+            } finally {
+              baking = false;
+            }
+          } catch (e) {
+            res.statusCode = 400;
+            res.end(String(e instanceof Error ? e.message : e));
+          }
+        });
+      });
+    }
+  };
+}
+
 export default defineConfig({
-  plugins: [react(), glyphSaver(), landmarkEditor(), roomStateEditor()],
+  plugins: [react(), glyphSaver(), landmarkEditor(), roomStateEditor(), mapOverridesEditor()],
   base: '/'
 });

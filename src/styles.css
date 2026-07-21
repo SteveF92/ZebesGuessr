@@ -1943,6 +1943,15 @@ a:hover {
   font-size: 0.85rem;
   margin-bottom: 0.35rem;
 }
+/* Cell tool: one door-pip picker per side, visually grouped */
+.cell-pip-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.1rem 0.25rem;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+}
 /* Room state tool: tall renders (a ZM shaft is 13 screens) scroll in place */
 .roomstate-scroll {
   max-height: 70vh;
