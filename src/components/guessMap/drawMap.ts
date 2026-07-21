@@ -308,7 +308,7 @@ export function drawGlyph(ctx: CanvasRenderingContext2D, g: MapGlyph, COL: MapPa
     const img = gcx.chozoImage;
     if (img) {
       ctx.imageSmoothingEnabled = false;
-      const w = S * 0.8;
+      const w = S * 0.9;
       const h = (img.height / img.width) * w;
       ctx.drawImage(img, cx - w / 2, cy - h / 2, w, h);
       ctx.imageSmoothingEnabled = true;
