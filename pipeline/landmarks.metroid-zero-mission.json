@@ -27,11 +27,6 @@
   ],
   "crateria": [
     {
-      "sprite": "objects/ship.png",
-      "x": 1716,
-      "y": 770
-    },
-    {
       "sprite": "bosses/deorem.png",
       "x": 4068,
       "y": 705
