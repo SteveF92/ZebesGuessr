@@ -8,6 +8,8 @@ import { connBounds, connHorizontal, defaultLabelPos } from './connectors';
 export interface GlyphDrawContext {
   bossImage: HTMLImageElement | null;
   shipImage: HTMLImageElement | null;
+  /** Zero Mission's chozo-statue sprite (games without one pass null) */
+  chozoImage: HTMLImageElement | null;
   /** knob cells keyed "x,y" -> wall bits (see computeKnobWalls) */
   knobWalls: Map<string, number>;
   /** extra downward nudge for the ship sprite (Zero Mission's Crateria ship) */
@@ -296,12 +298,22 @@ export function drawGlyph(ctx: CanvasRenderingContext2D, g: MapGlyph, COL: MapPa
     return;
   }
   if (g.t === 'chozo') {
-    // chozo statue room: the source map's big red circle.
-    ctx.strokeStyle = COL.special;
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.arc(cx, cy, S * 0.3, 0, Math.PI * 2);
-    ctx.stroke();
+    // chozo statue room: the statue sprite, sized like a single-cell boss.
+    const img = gcx.chozoImage;
+    if (img) {
+      ctx.imageSmoothingEnabled = false;
+      const w = S * 0.8;
+      const h = (img.height / img.width) * w;
+      ctx.drawImage(img, cx - w / 2, cy - h / 2, w, h);
+      ctx.imageSmoothingEnabled = true;
+    } else {
+      // Fallback: the source map's big red circle.
+      ctx.strokeStyle = COL.special;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(cx, cy, S * 0.3, 0, Math.PI * 2);
+      ctx.stroke();
+    }
     return;
   }
   if (g.t === 'ship') {

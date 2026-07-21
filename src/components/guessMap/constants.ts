@@ -29,6 +29,17 @@ const BOSS_BY_AREA: Record<string, Record<string, string>> = {
   'metroid-zero-mission': { kraid: 'zm-kraid-tile', ridley: 'zm-ridley-tile' }
 };
 
+/** Per-game chozo-statue sprite. Only Zero Mission charts statue rooms; a game
+ *  without an entry draws the vector circle fallback instead. */
+const CHOZO_BY_GAME: Record<string, string> = {
+  'metroid-zero-mission': 'zm-chozo-statue'
+};
+
+/** Resolve the chozo-statue asset basename for a game, or null if it has none. */
+export function chozoAsset(game: string): string | null {
+  return CHOZO_BY_GAME[game] ?? null;
+}
+
 /** Resolve the ship asset basename for a game + current area. */
 export function shipAsset(game: string, areaId: string): string {
   return SHIP_BY_AREA[game]?.[areaId] ?? `${SPRITE_PREFIX[game] ?? 'super'}-ship`;

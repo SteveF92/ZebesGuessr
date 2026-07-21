@@ -1,7 +1,7 @@
 import { type CSSProperties, useEffect, useMemo, useRef, useState } from 'react';
 import type { AreaData, Cell, GameData, RoundResult } from '../types';
 import { drawnCells, tileUrl } from '../data';
-import { bossAsset, GAME_COL, GBA_COL, RING2_DELAY, RING_MS, S, SCALE, shipAsset, SNES_COL, SWEEP_MS, TRACE_MS } from './guessMap/constants';
+import { bossAsset, chozoAsset, GAME_COL, GBA_COL, RING2_DELAY, RING_MS, S, SCALE, shipAsset, SNES_COL, SWEEP_MS, TRACE_MS } from './guessMap/constants';
 import { computeKnobWalls, computeOpenWalls, drawBand, drawCell, drawConnector, drawGlyph, type GlyphDrawContext } from './guessMap/drawMap';
 import { brackets, dotTrail, ring, targetIndicator, trailDot } from './guessMap/drawMarkers';
 import { useMapViewport } from './guessMap/useMapViewport';
@@ -117,8 +117,10 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const shipImageRef = useRef<HTMLImageElement | null>(null);
   const bossImageRef = useRef<HTMLImageElement | null>(null);
+  const chozoImageRef = useRef<HTMLImageElement | null>(null);
   const [shipLoaded, setShipLoaded] = useState(false);
   const [bossLoaded, setBossLoaded] = useState(false);
+  const [chozoLoaded, setChozoLoaded] = useState(false);
   const [hover, setHover] = useState<Cell | null>(null);
 
   // canvas' natural CSS size (backing store is 1:1 with CSS px): cols*S*SCALE.
@@ -191,10 +193,12 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
 
   // Load the ship and boss sprites. Both can vary by area (Zero Mission's two
   // ships and its per-arena boss statues), so each is resolved from game + area
-  // and reloaded when the player moves between areas.
+  // and reloaded when the player moves between areas. The chozo statue is
+  // game-wide, and absent for games that don't chart statue rooms.
   useEffect(() => {
     setShipLoaded(false);
     setBossLoaded(false);
+    setChozoLoaded(false);
 
     const img = new Image();
     img.onload = () => setShipLoaded(true);
@@ -205,6 +209,16 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
     bossImg.onload = () => setBossLoaded(true);
     bossImg.src = `${import.meta.env.BASE_URL}assets/${bossAsset(data.game, area.id)}.png`;
     bossImageRef.current = bossImg;
+
+    const chozoName = chozoAsset(data.game);
+    if (chozoName) {
+      const chozoImg = new Image();
+      chozoImg.onload = () => setChozoLoaded(true);
+      chozoImg.src = `${import.meta.env.BASE_URL}assets/${chozoName}.png`;
+      chozoImageRef.current = chozoImg;
+    } else {
+      chozoImageRef.current = null;
+    }
   }, [data.game, area.id]);
 
   // Lazily fetch the actual game screens for the current area while showTiles
@@ -360,6 +374,7 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
     const glyphCtx: GlyphDrawContext = {
       bossImage: bossLoaded ? bossImageRef.current : null,
       shipImage: shipLoaded ? shipImageRef.current : null,
+      chozoImage: chozoLoaded ? chozoImageRef.current : null,
       knobWalls,
       shipYNudge: data.game === 'metroid-zero-mission' && area.id === 'crateria' ? 2 : 0
     };
