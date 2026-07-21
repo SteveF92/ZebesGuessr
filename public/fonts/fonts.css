@@ -16,3 +16,19 @@
   font-style: normal;
   font-display: swap;
 }
+
+@font-face {
+  font-family: 'Metroid Fusion';
+  src: url('./metroid-fusion.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Metroid Zero Mission';
+  src: url('./metroid-zero-mission.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}

@@ -24,6 +24,30 @@
   /* SNES pixel fonts (public/fonts/, hand-downloaded) with web fallback */
   --font-display: 'Super Metroid Large Alt', 'Press Start 2P', monospace;
   --font-title: 'Super Metroid Title', 'Press Start 2P', monospace;
+  /* The selected game's own in-game face, used for the few bits of text that
+     name a place inside that game (menu kicker, reveal card's area name). The
+     .skin-* rules below repoint it; Super Metroid keeps the display face. */
+  --font-game: var(--font-display);
+  /* Menu kicker size. The GBA faces fill their em box differently from the SNES
+     one, so each skin nudges this — see the .skin-* rules below. */
+  --kicker-size: 18px;
+}
+
+/* GBA game skins. The class rides the shell for whichever game is selected, so
+   it cascades to the whole screen — but only --font-game consumers change.
+   Each falls back through --font-display, which matters: neither GBA face has a
+   `/`, so the kicker's `//` separator borrows one from further down the chain.
+   Their vertical metrics also run far taller than the SNES face (Zero Mission's
+   default line box is 1.63em against 0.88em), so every --font-game consumer
+   pins an explicit line-height — otherwise picking a GBA game shoves the layout
+   below it down by a dozen pixels. */
+.skin-fusion {
+  --font-game: 'Metroid Fusion', var(--font-display);
+  --kicker-size: 19px;
+}
+.skin-zm {
+  --font-game: 'Metroid Zero Mission', var(--font-display);
+  --kicker-size: 15px;
 }
 
 * {
@@ -306,8 +330,9 @@ a:hover {
   animation: zgRise 0.55s ease both;
 }
 .kicker {
-  font-family: var(--font-display);
-  font-size: 18px;
+  font-family: var(--font-game);
+  font-size: var(--kicker-size);
+  line-height: 1;
   letter-spacing: 0.32em;
   color: var(--cyan);
   opacity: 0.72;
@@ -1304,8 +1329,9 @@ a:hover {
   color: var(--dim);
 }
 .reveal-area {
-  font-family: var(--font-display);
+  font-family: var(--font-game);
   font-size: 24px;
+  line-height: 1;
   text-transform: uppercase;
   color: var(--cyan);
   margin-top: 7px;

@@ -8,7 +8,7 @@ import { HoverScan } from './components/HoverScan';
 import { useCountUp } from './hooks/useCountUp';
 import { useTypewriter } from './hooks/useTypewriter';
 import { useGlitchText } from './hooks/useGlitchText';
-import { GAMES, areaName, cellPool, cellRating, indicesFromTargets, loadGameData, pickTargets, roomName, targetsFromIndices, tileUrl } from './data';
+import { GAMES, GAME_SKINS, areaName, cellPool, cellRating, indicesFromTargets, loadGameData, pickTargets, roomName, skinClass, targetsFromIndices, tileUrl } from './data';
 import { DIFFICULTIES, ROUNDS_PER_RUN, cellDistance, computeUnlocks, getDifficulty, maxForRating, rankFlavor, revealFlavor, scoreRank, scoreRound } from './scoring';
 import type { Unlocks } from './scoring';
 
@@ -22,8 +22,6 @@ const UNLOCK_LABELS: Record<keyof Unlocks, string> = {
 };
 const UNLOCK_ORDER: (keyof Unlocks)[] = ['enterSeed', 'scan', 'xray', 'create'];
 
-// Menu skin per GBA game: haze tint + logo treatment echo that game's title screen.
-const MENU_SKINS: Record<string, string> = { 'metroid-fusion': 'fusion', 'metroid-zero-mission': 'zm' };
 import { ShareModal } from './components/ShareModal';
 import { type Seed, decodeSeed, encodeSeed } from './seed';
 import type { Cell, GameData, RoundResult, RoundTarget } from './types';
@@ -304,15 +302,16 @@ export default function App() {
 
   // ---------------------------------------------------------------- MENU
   if (phase === 'menu' || phase === 'loading') {
-    const skin = MENU_SKINS[selectedGameId];
+    const skin = GAME_SKINS[selectedGameId];
     return (
-      <div className="shell menu">
+      // the skin rides the shell so --font-game reaches the kicker's sector line
+      <div className={`shell menu${skinClass(selectedGameId)}`}>
         <BackdropFX phase={phase} tint={skin} />
         <p className="kicker">
           CHOZO OBSERVATORY // SECTOR <span className={`sector-word${sector.glitching ? ' glitching' : ''}`}>{sector.text}</span>
         </p>
         {/* data-text feeds the skin pseudo-elements that cross-fade the logo metal */}
-        <h1 className={`logo${skin ? ` skin-${skin}` : ''}`} data-text="ZebesGuessr">
+        <h1 className={`logo${skinClass(selectedGameId)}`} data-text="ZebesGuessr">
           ZebesGuessr
         </h1>
         <p className="tagline">
@@ -491,7 +490,7 @@ export default function App() {
 
   // ---------------------------------------------------------------- GAME
   return (
-    <div className={`shell game${phase === 'reveal' ? (revealStage === 'map' ? ' reveal-map' : ' reveal-result') : ''}`}>
+    <div className={`shell game${skinClass(data.game)}${phase === 'reveal' ? (revealStage === 'map' ? ' reveal-map' : ' reveal-result') : ''}`}>
       <BackdropFX phase={phase} />
       <header className="hud">
         <span className="logo small">ZebesGuessr</span>

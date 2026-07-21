@@ -3,7 +3,7 @@ import GuessMap from './GuessMap';
 import TileViewer from './TileViewer';
 import { HoverScan } from './HoverScan';
 import { Stars } from './Stars';
-import { GAMES, areaName, cellKey, cellPool, cellRating, deriveDifficultyIndex, indicesFromTargets, roomName, tileUrl } from '../data';
+import { GAMES, areaName, cellKey, cellPool, cellRating, deriveDifficultyIndex, indicesFromTargets, roomName, skinClass, tileUrl } from '../data';
 import { DIFFICULTIES, EXCLUDED_RATING } from '../scoring';
 import { SEED_TILES, encodeSeed } from '../seed';
 import { GAME_URL } from '../share';
@@ -127,7 +127,7 @@ export function CreateSeed({ data, gameId, onExit, onPlay }: Props) {
   const selExcluded = selRating >= EXCLUDED_RATING;
 
   return (
-    <div className="shell game create-mode">
+    <div className={`shell game create-mode${skinClass(gameId)}`}>
       <header className="hud">
         <span className="logo small">ZebesGuessr</span>
         <span className="hud-sub">SEED FORGE</span>

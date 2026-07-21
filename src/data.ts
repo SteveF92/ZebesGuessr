@@ -19,6 +19,16 @@ export const GAMES = [
 ];
 
 /**
+ * Per-game presentation skin, applied as `skin-<name>` on the shell (and, on
+ * the menu, the wordmark). It drives the title-screen haze tint, the logo
+ * metal, and `--font-game` — the game's own pixel face. Super Metroid is the
+ * unskinned baseline, so it has no entry.
+ */
+export const GAME_SKINS: Record<string, string> = { 'metroid-fusion': 'fusion', 'metroid-zero-mission': 'zm' };
+/** `" skin-fusion"` etc., ready to append to a className (empty if unskinned). */
+export const skinClass = (gameId: string): string => (GAME_SKINS[gameId] ? ` skin-${GAME_SKINS[gameId]}` : '');
+
+/**
  * Dev-only testing toggle: set an area to `false` here to exclude it from
  * target picking (its tiles/rooms just won't show up as guess targets).
  * Keyed by areaId, per game. Leave a game's entry absent/empty to include

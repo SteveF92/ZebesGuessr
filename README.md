@@ -84,6 +84,16 @@ file** (dev server only) and commit the JSON.
   and extraction aided by [fyrean's sprite extractor](https://fyrean.itch.io/sprite-extractor). I also made use of the
   [Save File Database compiled by MayanMystery](https://www.reddit.com/r/Metroid/comments/1654nv2/metroid_series_save_file_database/)
   to get to moments I needed sprites from.
+- **Pixel fonts**: the UI is set in FontStruct recreations of the games' own
+  typefaces. [Super Metroid (Large Alt) (SNES)](https://fontstruct.com/fontstructions/show/2383815/super-metroid-large-alt-snes),
+  [Metroid Fusion](https://fontstruct.com/fontstructions/show/2393436), and
+  [Metroid: Zero Mission](https://fontstruct.com/fontstructions/show/2394871)
+  are all the work of **Patrick H. Lauke**, licensed
+  [CC BY 3.0](http://creativecommons.org/licenses/by/3.0/); the wordmark uses
+  [Super Metroid Title](https://fontstruct.com/fontstructions/show/1940859/super-metroid-title)
+  by **Kitomoto**. Each TTF ships with its original FontStruct readme and
+  license under `public/fonts/` (see the README there for per-font notes). The
+  font creators are not affiliated with or involved in this project.
 - **Metroid, Samus Aran, and all game imagery** © Nintendo / developed by
   Nintendo R&D1 and Intelligent Systems. This project is not affiliated with,
   endorsed by, or connected to Nintendo in any way.

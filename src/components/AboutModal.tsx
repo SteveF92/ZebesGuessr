@@ -62,8 +62,10 @@ export function AboutModal({ onClose }: { onClose: () => void }) {
           open an issue and I'll remove it.
         </p>
         <p>
-          Pixel fonts: <a href="https://fontstruct.com/fontstructions/show/1940859/super-metroid-title">Super Metroid Title</a> by Kitomoto and{' '}
-          <a href="https://fontstruct.com/fontstructions/show/2383815/super-metroid-large-alt-snes">Super Metroid (Large Alt)</a> by Patrick H. Lauke (CC BY 3.0), both via FontStruct.
+          Pixel fonts, all via FontStruct: <a href="https://fontstruct.com/fontstructions/show/1940859/super-metroid-title">Super Metroid Title</a> by Kitomoto, and{' '}
+          <a href="https://fontstruct.com/fontstructions/show/2383815/super-metroid-large-alt-snes">Super Metroid (Large Alt)</a>,{' '}
+          <a href="https://fontstruct.com/fontstructions/show/2393436">Metroid Fusion</a>, and <a href="https://fontstruct.com/fontstructions/show/2394871">Metroid: Zero Mission</a> by{' '}
+          <strong>Patrick H. Lauke</strong> (all CC BY 3.0).
         </p>
         <p>
           Made by Steve Fallon, who also builds <a href="https://www.fantasycritic.games">Fantasy Critic</a> — "Fantasy Football for Video Games". The code for this site is available on{' '}
