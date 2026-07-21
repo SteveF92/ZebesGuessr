@@ -1,6 +1,6 @@
 import { type CSSProperties, useEffect, useMemo, useRef, useState } from 'react';
 import type { AreaData, Cell, GameData, RoundResult } from '../types';
-import { isCharted, tileUrl } from '../data';
+import { drawnCells, tileUrl } from '../data';
 import { bossAsset, GAME_COL, GBA_COL, RING2_DELAY, RING_MS, S, SCALE, shipAsset, SNES_COL, SWEEP_MS, TRACE_MS } from './guessMap/constants';
 import { computeKnobWalls, computeOpenWalls, drawBand, drawCell, drawConnector, drawGlyph, type GlyphDrawContext } from './guessMap/drawMap';
 import { brackets, dotTrail, ring, targetIndicator, trailDot } from './guessMap/drawMarkers';
@@ -152,17 +152,19 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
 
   /** every cell of the area — what the editor's tools may act on (tile coords) */
   const cellSet = useMemo(() => new Set(area.cells.map((c) => `${c.x},${c.y}`)), [area]);
-  /** the subset a guess may land on: cells the pause map actually charts. An
-   *  uncharted cell is a real screen (X-Ray paints it) but draws nothing here,
-   *  so clicking it could only ever be a mis-click — `pickTargets` won't serve
-   *  one either, so nothing guessable is lost. */
-  const guessable = useMemo(() => new Set(area.cells.filter(isCharted).map((c) => `${c.x},${c.y}`)), [area]);
-
   // The dev editor's state + actions (see useMapEditor). The editable copies
   // it holds (glyphs/overlays/roomEdits) feed play-mode drawing too, so the
   // hook always runs; only the toolbar and click handling gate on `editing`.
   const editor = useMapEditor({ data, area, mapStyle, editing, cellSet, COL });
   const { glyphs, specialCells, overlays, roomEdits, roomKeyAt, handleEditClick, drawEditingOverlays, drawEditorTints } = editor;
+
+  /** the subset a guess may land on: cells the map draws (see `drawnCells`).
+   *  A cell it draws nothing at is a real screen — X-Ray paints it — but a
+   *  click there could only ever be a mis-click, and `pickTargets` won't serve
+   *  one either, so nothing findable is lost. Built from the editor's live
+   *  connector list, the same one `draw` paints from, so a connector placed
+   *  mid-session makes its cells clickable immediately. */
+  const guessable = useMemo(() => drawnCells(area, overlays.connectors), [area, overlays.connectors]);
 
   /** knob cells keyed "x,y" -> wall bits (see computeKnobWalls) */
   const knobWalls = useMemo(() => computeKnobWalls(area.cells), [area]);

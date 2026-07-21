@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { cellKey, cellPool, cellRating, deriveDifficultyIndex, indicesFromTargets, pickTargets, targetsFromIndices } from './data';
+import { cellKey, cellPool, cellRating, deriveDifficultyIndex, drawnCells, indicesFromTargets, pickTargets, targetsFromIndices } from './data';
 import { decodeSeed, encodeSeed } from './seed';
 import { DEFAULT_RATING, DIFFICULTIES, getDifficulty } from './scoring';
-import type { AreaCell, GameData } from './types';
+import type { AreaCell, Connector, GameData } from './types';
 
 /** Minimal GameData with only the fields pickTargets touches. */
-function makeData(areas: Record<string, AreaCell[]>, cellDifficulty?: Record<string, number>): GameData {
+function makeData(areas: Record<string, AreaCell[]>, cellDifficulty?: Record<string, number>, connectors: Record<string, Connector[]> = {}): GameData {
   return {
     game: 'test',
     title: 'Test',
@@ -18,7 +18,7 @@ function makeData(areas: Record<string, AreaCell[]>, cellDifficulty?: Record<str
       rows: 10,
       mapImage: '',
       cells,
-      map: { cols: 10, rows: 10, dx: 0, dy: 0, glyphs: [], bands: [], connectors: [], source: 'fallback' }
+      map: { cols: 10, rows: 10, dx: 0, dy: 0, glyphs: [], bands: [], connectors: connectors[id] ?? [], source: 'fallback' }
     })),
     cellDifficulty
   };
@@ -160,36 +160,59 @@ describe('pickTargets rating-6 exclusion', () => {
   });
 });
 
-describe('pickTargets uncharted exclusion', () => {
-  // A cell with no draw data (an elevator shaft, a tube run, a screen the
-  // pause map simply doesn't chart) has a tile but nothing drawn on the map,
-  // so GuessMap won't let a click land on it — serving one would be an
-  // unwinnable round.
+describe('drawnCells / undrawn exclusion', () => {
+  // A cell with no draw data has a tile but nothing on the map, so GuessMap
+  // won't let a click land on it — serving one would be an unwinnable round.
+  // Unless a connector runs over it: transit is drawn too, and a junction like
+  // ZM Norfair's 14,13 is a real place you visit and remember.
   const withShaft = () => {
     const cells: AreaCell[] = grid(3, 3);
     cells.push({ x: 3, y: 0 }, { x: 3, y: 1 });
     return cells;
   };
+  const shaftRun: Connector[] = [{ x0: 3, y0: 0, x1: 3, y1: 1 }];
 
-  it('never serves a cell with no draw data', () => {
+  it('never serves a cell the map draws nothing at', () => {
     const data = makeData({ norfair: withShaft() });
-    const uncharted = new Set(['norfair:3,0', 'norfair:3,1']);
+    const undrawn = new Set(['norfair:3,0', 'norfair:3,1']);
     for (const id of ['tallon', 'brinstar', 'sanctuary']) {
       for (let i = 0; i < 30; i++) {
         for (const t of pickTargets(data, 5, getDifficulty(id))) {
-          expect(uncharted.has(cellKey(t.areaId, t.cell))).toBe(false);
+          expect(undrawn.has(cellKey(t.areaId, t.cell))).toBe(false);
         }
       }
     }
   });
 
-  it('leaves uncharted cells out of the pool entirely, unrated or not', () => {
+  it('leaves undrawn cells out of the pool entirely, unrated or not', () => {
     const data = makeData({ norfair: withShaft() });
-    const targets = pickTargets(data, 11);
-    expect(targets).toHaveLength(9); // the 3x3 charted block, not the 2 shaft cells
+    expect(pickTargets(data, 11)).toHaveLength(9); // the 3x3 charted block, not the 2 shaft cells
   });
 
-  it('still counts uncharted cells in cellPool, so seed indices stay stable', () => {
+  it('counts a cell a connector runs over as drawn', () => {
+    const area = makeData({ norfair: withShaft() }, undefined, { norfair: shaftRun }).areas[0];
+    expect(drawnCells(area).has('3,0')).toBe(true);
+    expect(drawnCells(area).has('3,1')).toBe(true);
+  });
+
+  it('serves a connector cell, so a junction is findable — difficulty still decides', () => {
+    const cells = withShaft();
+    const data = makeData({ norfair: cells }, { 'norfair:3,1': 6 }, { norfair: shaftRun });
+    const keys = pickTargets(data, 11).map((t) => cellKey(t.areaId, t.cell));
+    expect(keys).toContain('norfair:3,0'); // under the connector, unrated
+    expect(keys).not.toContain('norfair:3,1'); // under it too, but rated 6
+    expect(keys).toHaveLength(10);
+  });
+
+  it('ignores connector cells with no screen behind them (arrow-only runs)', () => {
+    // Crateria's connectors are drawn from an exit arrow + caption alone, over
+    // grid slots that never became cells — there's nothing there to guess.
+    const data = makeData({ norfair: grid(3, 3) }, undefined, { norfair: [{ x0: 7, y0: 7, x1: 7, y1: 8 }] });
+    expect(drawnCells(data.areas[0]).size).toBe(9);
+    expect(pickTargets(data, 20)).toHaveLength(9);
+  });
+
+  it('still counts undrawn cells in cellPool, so seed indices stay stable', () => {
     const data = makeData({ norfair: withShaft() });
     expect(cellPool(data)).toHaveLength(11);
   });

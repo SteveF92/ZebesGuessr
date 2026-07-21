@@ -1,16 +1,44 @@
 import { DEFAULT_RATING, DIFFICULTIES, EXCLUDED_RATING, type Difficulty } from './scoring';
-import type { AreaCell, GameData, MapGlyph, Connector, RoundTarget, Cell } from './types';
+import type { AreaCell, AreaData, GameData, MapGlyph, Connector, RoundTarget, Cell } from './types';
+
+/** Does the pause map chart this cell as a room — i.e. does it carry draw data? */
+const isCharted = (cell: AreaCell): boolean => cell.k !== undefined;
 
 /**
- * Is this cell somewhere a player can point at? Only cells the pause map
- * charts (i.e. carrying draw data) qualify: a cell without `k` has a real tile
- * behind it — the X-Ray overlay paints it — but nothing is drawn on the guess
- * map there, so it can be neither found nor fairly clicked. It gates both ends
- * of a round: `pickTargets` won't serve one, and `GuessMap` won't let a click
- * land on one (an undrawn cell under a connector is drawn as transit, not as a
- * room, and counts as uncharted here too).
+ * The cells of an area a player can point at, keyed "x,y": everything the map
+ * actually *draws*. That's the charted cells plus the cells a connector's
+ * rails run through — a transit cell draws no room box, but it's on screen and
+ * findable (ZM Norfair's `14,13`, the Speed Transporter junction, is a real
+ * place you visit and remember).
+ *
+ * The rest of `area.cells` — a screen the pause map simply doesn't draw —
+ * still has a tile behind it, so X-Ray paints it, but nothing marks it on the
+ * map. This gates both ends of a round: `pickTargets` won't serve one (a
+ * target nobody can find is an unwinnable round) and `GuessMap` won't let a
+ * click land on one (it could only ever be a mis-click). Difficulty still
+ * decides which of these get *served* — `EXCLUDED_RATING` keeps the elevator
+ * shafts out while leaving that junction in.
+ *
+ * Pass `connectors` explicitly to follow the editor's live, unsaved list;
+ * it defaults to the area's own.
  */
-export const isCharted = (cell: AreaCell): boolean => cell.k !== undefined;
+export function drawnCells(area: AreaData, connectors: Connector[] = area.map.connectors): Set<string> {
+  const exists = new Set(area.cells.map((c) => `${c.x},${c.y}`));
+  const drawn = new Set<string>();
+  for (const c of area.cells) if (isCharted(c)) drawn.add(`${c.x},${c.y}`);
+  for (const k of connectors) {
+    // Axis-aligned between two whole cells, so the run is one straight walk.
+    // Only cells that exist join in: the connectors drawn from nothing but an
+    // exit arrow + caption (all of Crateria's) run over grid slots with no
+    // tile behind them, and there's no screen there to guess.
+    for (let y = Math.min(k.y0, k.y1); y <= Math.max(k.y0, k.y1); y++) {
+      for (let x = Math.min(k.x0, k.x1); x <= Math.max(k.x0, k.x1); x++) {
+        if (exists.has(`${x},${y}`)) drawn.add(`${x},${y}`);
+      }
+    }
+  }
+  return drawn;
+}
 
 export const GAMES = [
   { id: 'super-metroid', title: 'Super Metroid', available: true },
@@ -220,8 +248,9 @@ function sampleUniform(pool: RoundTarget[], n: number, rng: () => number): Round
  * is two-step: a rating level inside the band is chosen equally, then a room
  * of that rating — so the band's rarer (harder) ratings show up as often as
  * its common ones instead of being drowned out. If the band holds fewer than
- * n cells, the full uniform pool is used as a fallback. Uncharted cells (see
- * `isCharted`) and cells rated EXCLUDED_RATING never enter either pool.
+ * n cells, the full uniform pool is used as a fallback. Cells the map doesn't
+ * draw (see `drawnCells`) and cells rated EXCLUDED_RATING never enter either
+ * pool.
  *
  * `rng` defaults to Math.random; pass a seeded PRNG (see seed.ts) to make a
  * run reproducible.
@@ -230,8 +259,9 @@ export function pickTargets(data: GameData, n: number, diff?: Difficulty, rng: (
   const all: RoundTarget[] = [];
   const byRating = new Map<number, RoundTarget[]>();
   for (const area of data.areas) {
+    const drawn = drawnCells(area);
     for (const cell of area.cells) {
-      if (!isCharted(cell)) continue; // nothing drawn there to click, so never a target
+      if (!drawn.has(`${cell.x},${cell.y}`)) continue; // nothing drawn there to click, so never a target
       const r = cellRating(data, area.id, cell);
       if (r >= EXCLUDED_RATING) continue;
       const t = { areaId: area.id, cell };
