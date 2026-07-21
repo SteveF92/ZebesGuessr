@@ -178,7 +178,8 @@ export function drawCell(ctx: CanvasRenderingContext2D, c: AreaCell, COL: MapPal
   const open = (dir: string) => walls.openWalls.has(`${c.x},${c.y},${dir}`);
   // Fusion "letter rooms" outline their walls in red (not their doors — those
   // keep their pip color below); every other cell draws plain white walls.
-  ctx.fillStyle = walls.specialCells.has(`${c.x},${c.y}`) ? COL.special : COL.wall;
+  const special = walls.specialCells.has(`${c.x},${c.y}`);
+  ctx.fillStyle = special ? COL.special : COL.wall;
   if (c.w & N && !open('N')) ctx.fillRect(x, y, S, 2);
   if (c.w & SO && !open('SO')) ctx.fillRect(x, y + S - 2, S, 2);
   if (c.w & W && !open('W')) ctx.fillRect(x, y, 2, S);
@@ -201,20 +202,25 @@ export function drawCell(ctx: CanvasRenderingContext2D, c: AreaCell, COL: MapPal
       const colored = p[1] !== 'n';
       if (!COL.doorJambs && colored) {
         const B = 4, // 2 source px of color, flush to the border
-          C = 2; // white wall caps flanking it along the wall (the 4x4's top/bottom rows)
+          C = 2, // white wall caps flanking it along the wall (the 4x4's top/bottom rows)
+          // depth into the cell. A letter room's door stops one source px
+          // shorter — it covers only the room's own (red) wall pixel and never
+          // spills into the fill, so a lock straddling a Save/Map room reads
+          // 3 px wide in-game rather than 4 (checked against the raw rips).
+          D = special ? B / 2 : B;
         // white caps first: the wall's white extends a bit past the lock on
-        // both ends (B deep, C longer than the color on each along-wall side)
+        // both ends (D deep, C longer than the color on each along-wall side)
         ctx.fillStyle = COL.wall;
-        if (p[0] === 'N') ctx.fillRect(x + S / 2 - B / 2 - C, y, B + 2 * C, B);
-        else if (p[0] === 'S') ctx.fillRect(x + S / 2 - B / 2 - C, y + S - B, B + 2 * C, B);
-        else if (p[0] === 'W') ctx.fillRect(x, y + S / 2 - B / 2 - C, B, B + 2 * C);
-        else if (p[0] === 'E') ctx.fillRect(x + S - B, y + S / 2 - B / 2 - C, B, B + 2 * C);
+        if (p[0] === 'N') ctx.fillRect(x + S / 2 - B / 2 - C, y, B + 2 * C, D);
+        else if (p[0] === 'S') ctx.fillRect(x + S / 2 - B / 2 - C, y + S - D, B + 2 * C, D);
+        else if (p[0] === 'W') ctx.fillRect(x, y + S / 2 - B / 2 - C, D, B + 2 * C);
+        else if (p[0] === 'E') ctx.fillRect(x + S - D, y + S / 2 - B / 2 - C, D, B + 2 * C);
         // then the lock color, inset between the caps
         ctx.fillStyle = COL.doors[p[1]] ?? COL.wall;
-        if (p[0] === 'N') ctx.fillRect(x + S / 2 - B / 2, y, B, B);
-        else if (p[0] === 'S') ctx.fillRect(x + S / 2 - B / 2, y + S - B, B, B);
-        else if (p[0] === 'W') ctx.fillRect(x, y + S / 2 - B / 2, B, B);
-        else if (p[0] === 'E') ctx.fillRect(x + S - B, y + S / 2 - B / 2, B, B);
+        if (p[0] === 'N') ctx.fillRect(x + S / 2 - B / 2, y, B, D);
+        else if (p[0] === 'S') ctx.fillRect(x + S / 2 - B / 2, y + S - D, B, D);
+        else if (p[0] === 'W') ctx.fillRect(x, y + S / 2 - B / 2, D, B);
+        else if (p[0] === 'E') ctx.fillRect(x + S - D, y + S / 2 - B / 2, D, B);
         continue;
       }
       ctx.fillStyle = colored ? (COL.doors[p[1]] ?? COL.wall) : fill;
