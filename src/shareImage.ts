@@ -37,9 +37,9 @@ const MONO = 'ui-monospace, "JetBrains Mono", monospace';
 // Logical layout constants (pre-DPR).
 const W = 560;
 const PAD = 28;
-// Header stack: logo 46 + score readout 64+14 + rank 28 +
+// Header stack: logo 46 + game title 22 + score readout 64+14 + rank 28 +
 // difficulty 22 + seed 24 + breathing room 28.
-const HEADER_H = 226;
+const HEADER_H = 248;
 const ROW_H = 52;
 const STRIP_GAP = 10;
 const THUMB_GAP = 10;
@@ -96,6 +96,18 @@ export async function buildShareImage(opts: ShareImageOpts): Promise<Blob | null
     ctx.fillText('ZEBESGUESSR', W / 2, y + 32);
     ctx.restore();
     y += 46;
+
+    // which game was played, mirroring the share text's "ZebesGuessr · <title>"
+    ctx.save();
+    setLetterSpacing(ctx, '0.18em');
+    ctx.shadowColor = 'rgba(160,248,248,0.35)';
+    ctx.shadowBlur = 10;
+    ctx.fillStyle = COL.cyan;
+    ctx.font = `700 12px ${DISPLAY}`;
+    ctx.fillText(data.title.toUpperCase(), W / 2, y + 12);
+    setLetterSpacing(ctx, '0px');
+    ctx.restore();
+    y += 22;
 
     drawScoreReadout(ctx, total, maxTotal, y);
     y += 64 + 14;

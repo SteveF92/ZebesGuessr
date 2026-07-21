@@ -7,6 +7,7 @@ import { CreateSeed } from './components/CreateSeed';
 import { HoverScan } from './components/HoverScan';
 import { useCountUp } from './hooks/useCountUp';
 import { useTypewriter } from './hooks/useTypewriter';
+import { useGlitchText } from './hooks/useGlitchText';
 import { GAMES, areaName, cellPool, cellRating, indicesFromTargets, loadGameData, pickTargets, roomName, targetsFromIndices, tileUrl } from './data';
 import { DIFFICULTIES, ROUNDS_PER_RUN, cellDistance, computeUnlocks, getDifficulty, maxForRating, rankFlavor, revealFlavor, scoreRank, scoreRound } from './scoring';
 import type { Unlocks } from './scoring';
@@ -20,6 +21,9 @@ const UNLOCK_LABELS: Record<keyof Unlocks, string> = {
   create: 'Create Seed'
 };
 const UNLOCK_ORDER: (keyof Unlocks)[] = ['enterSeed', 'scan', 'xray', 'create'];
+
+// Menu skin per GBA game: haze tint + logo treatment echo that game's title screen.
+const MENU_SKINS: Record<string, string> = { 'metroid-fusion': 'fusion', 'metroid-zero-mission': 'zm' };
 import { ShareModal } from './components/ShareModal';
 import { type Seed, decodeSeed, encodeSeed } from './seed';
 import type { Cell, GameData, RoundResult, RoundTarget } from './types';
@@ -43,10 +47,10 @@ function readSeedFromUrl(): Seed | null {
 /** fixed background flare: starfield + CRT scanlines + sweep bar.
  *  The green haze only shows on the title screen, and cross-fades out when
  *  leaving it (BackdropFX persists across phases, so the transition fires). */
-function BackdropFX({ phase }: { phase: Phase }) {
+function BackdropFX({ phase, tint }: { phase: Phase; tint?: string }) {
   const hazeOn = phase === 'menu' || phase === 'loading';
   return (
-    <div className="fx-layer">
+    <div className={`fx-layer${tint ? ` tint-${tint}` : ''}`}>
       <div className="stars" />
       <div className="fx-grid" />
       <div className={`fx-haze${hazeOn ? ' on' : ''}`}>
@@ -130,6 +134,9 @@ export default function App() {
   // Scan-log typewriter for the reveal card's flavor line, gated like the
   // score count-up so it starts when the card actually appears.
   const shownFlavor = useTypewriter(revealResult ? revealFlavor(revealResult.distance) : '', cardVisible);
+  // Fusion's story orbits SR388, not Zebes — picking it fizzles the kicker's
+  // sector name through corrupted glyphs (both words are 5 chars, no reflow).
+  const sector = useGlitchText(selectedGameId === 'metroid-fusion' ? 'SR388' : 'ZEBES');
 
   function pickDifficulty(id: string) {
     setDifficultyId(id);
@@ -296,11 +303,14 @@ export default function App() {
 
   // ---------------------------------------------------------------- MENU
   if (phase === 'menu' || phase === 'loading') {
+    const skin = MENU_SKINS[selectedGameId];
     return (
       <div className="shell menu">
-        <BackdropFX phase={phase} />
-        <p className="kicker">CHOZO OBSERVATORY // SECTOR ZEBES</p>
-        <h1 className="logo">ZebesGuessr</h1>
+        <BackdropFX phase={phase} tint={skin} />
+        <p className="kicker">
+          CHOZO OBSERVATORY // SECTOR <span className={`sector-word${sector.glitching ? ' glitching' : ''}`}>{sector.text}</span>
+        </p>
+        <h1 className={`logo${skin ? ` skin-${skin}` : ''}`}>ZebesGuessr</h1>
         <p className="tagline">
           Unidentified signal detected. <em>Locate it.</em>
         </p>

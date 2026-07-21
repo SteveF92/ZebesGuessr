@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { type CSSProperties, useEffect, useMemo, useRef, useState } from 'react';
 import type { AreaData, Cell, GameData, RoundResult } from '../types';
 import { isCharted, tileUrl } from '../data';
 import { bossAsset, GAME_COL, GBA_COL, RING2_DELAY, RING_MS, S, SCALE, shipAsset, SNES_COL, SWEEP_MS, TRACE_MS } from './guessMap/constants';
@@ -85,6 +85,35 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
     const n = data.areas.length;
     setAreaId(data.areas[(idx + dir + n) % n].id);
   }
+
+  // The physical L/R keys (Q/E as WASD-friendly aliases) work the shoulder
+  // buttons too; `pressed` mirrors the keypress onto the on-screen button.
+  // Off while editing — the editor has its own text fields and arrow-key nudges.
+  const [pressedShoulder, setPressedShoulder] = useState<'l' | 'r' | null>(null);
+  useEffect(() => {
+    if (editing) return;
+    const dirFor = (key: string) => (key === 'l' || key === 'q' ? -1 : key === 'r' || key === 'e' ? 1 : 0);
+    const isTyping = (t: EventTarget | null) => t instanceof HTMLElement && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable);
+    const onDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.metaKey || e.altKey || e.repeat || isTyping(e.target)) return;
+      const dir = dirFor(e.key.toLowerCase());
+      if (!dir) return;
+      cycleArea(dir);
+      setPressedShoulder(dir < 0 ? 'l' : 'r');
+    };
+    const onUp = (e: KeyboardEvent) => {
+      if (dirFor(e.key.toLowerCase())) setPressedShoulder(null);
+    };
+    const onBlur = () => setPressedShoulder(null);
+    window.addEventListener('keydown', onDown);
+    window.addEventListener('keyup', onUp);
+    window.addEventListener('blur', onBlur);
+    return () => {
+      window.removeEventListener('keydown', onDown);
+      window.removeEventListener('keyup', onUp);
+      window.removeEventListener('blur', onBlur);
+    };
+  }); // no deps: cycleArea closes over areaId (same pattern as App's Enter handler)
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const shipImageRef = useRef<HTMLImageElement | null>(null);
   const bossImageRef = useRef<HTMLImageElement | null>(null);
@@ -435,18 +464,23 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
     onHoverCell?.(area.id, c, roomEdits[roomKeyAt(c)]);
   }
 
+  // GBA games restyle the tab bar + shoulders (see `.tab.gba`/`.shoulder.gba`);
+  // the vars carry each game's own palette so Fusion and ZM keep their colors.
+  const gba = mapStyle === 'gba' ? ' gba' : '';
+  const mapVars = { '--map-accent': COL.room, '--map-lattice': COL.bg } as CSSProperties;
+
   return (
-    <div className="guess-map">
+    <div className="guess-map" style={mapVars}>
       <div className="area-tabs">
-        <button className="shoulder l" title="Previous area" onClick={() => cycleArea(-1)}>
+        <button className={`shoulder l${gba}${pressedShoulder === 'l' ? ' pressed' : ''}`} title="Previous area (L/Q)" onClick={() => cycleArea(-1)}>
           L
         </button>
         {data.areas.map((a: AreaData) => (
-          <button key={a.id} className={`tab ${a.id === areaId ? 'active' : ''}`} onClick={() => setAreaId(a.id)}>
+          <button key={a.id} className={`tab${gba} ${a.id === areaId ? 'active' : ''}`} onClick={() => setAreaId(a.id)}>
             {a.name}
           </button>
         ))}
-        <button className="shoulder r" title="Next area" onClick={() => cycleArea(1)}>
+        <button className={`shoulder r${gba}${pressedShoulder === 'r' ? ' pressed' : ''}`} title="Next area (R/E)" onClick={() => cycleArea(1)}>
           R
         </button>
       </div>
