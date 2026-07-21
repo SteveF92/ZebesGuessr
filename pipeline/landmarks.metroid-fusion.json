@@ -6,21 +6,6 @@
       "y": 3364
     },
     {
-      "sprite": "characters/sa-x-stand-r.png",
-      "x": 30,
-      "y": 3464
-    },
-    {
-      "sprite": "creatures/metroid.png",
-      "x": 70,
-      "y": 3240
-    },
-    {
-      "sprite": "creatures/metroid.png",
-      "x": 150,
-      "y": 3290
-    },
-    {
       "sprite": "creatures/metroid.png",
       "x": 95,
       "y": 3420
@@ -46,11 +31,6 @@
       "sprite": "bosses/neo-ridley.png",
       "x": 74,
       "y": 1439
-    },
-    {
-      "sprite": "bosses/charge-core-x.png",
-      "x": 2049,
-      "y": 987
     }
   ],
   "sector-2": [
@@ -68,11 +48,6 @@
       "sprite": "barriers/eye-door-l.png",
       "x": 3085,
       "y": 1968
-    },
-    {
-      "sprite": "characters/sa-x-run-l.png",
-      "x": 2770,
-      "y": 1039
     }
   ],
   "sector-3": [
