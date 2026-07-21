@@ -41,6 +41,16 @@
       "sprite": "bosses/neo-ridley.png",
       "x": 74,
       "y": 1439
+    },
+    {
+      "sprite": "scenes/chozo-statue.png",
+      "x": 1920,
+      "y": 981
+    },
+    {
+      "sprite": "scenes/charge-core-x.png",
+      "x": 2242,
+      "y": 960
     }
   ],
   "sector-2": [
@@ -63,6 +73,11 @@
       "sprite": "characters/sax-walk-left.png",
       "x": 2004,
       "y": 2029
+    },
+    {
+      "sprite": "scenes/sax-chase.png",
+      "x": 3840,
+      "y": 1440
     }
   ],
   "sector-3": [
@@ -70,6 +85,11 @@
       "sprite": "bosses/box.png",
       "x": 3994,
       "y": 573
+    },
+    {
+      "sprite": "creatures/scientist.png",
+      "x": 813,
+      "y": 1390
     }
   ],
   "sector-4": [
@@ -94,6 +114,11 @@
       "sprite": "scenes/sax-5.png",
       "x": 2400,
       "y": 1600
+    },
+    {
+      "sprite": "scenes/sector5-geron.png",
+      "x": 2207,
+      "y": 642
     }
   ],
   "sector-6": [
