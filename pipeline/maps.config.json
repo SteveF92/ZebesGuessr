@@ -319,7 +319,10 @@
         "excludeCells": [
           [28, 17],
           [29, 17]
-        ]
+        ],
+        "cellCropOffsets": {
+          "13,7": [0, 16]
+        }
       },
       {
         "id": "norfair",
