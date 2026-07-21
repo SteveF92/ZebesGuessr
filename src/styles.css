@@ -2549,6 +2549,20 @@ a:hover {
     display: none;
   }
 
+  /* The kicker breaks onto two centered lines rather than wrapping mid-phrase,
+     and the // separator goes with it — it only earns its keep joining the two
+     halves on one line. Line-height opens up to space the stacked lines (still
+     pinned, so the tall ZM em box can't set it). */
+  .kicker {
+    line-height: 1.7;
+  }
+  .kicker-half {
+    display: block;
+  }
+  .kicker-sep {
+    display: none;
+  }
+
   /* Menu actions stack into one column on phones, always in this order
      regardless of which secondary buttons are unlocked: Seed Entry, then
      Create Seed, then Start Mission anchored at the bottom. */

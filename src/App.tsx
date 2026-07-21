@@ -135,7 +135,7 @@ export default function App() {
   // The kicker's sector name fizzles through corrupted glyphs per game:
   // Fusion's story orbits SR388, and Zero Mission dates itself in its intro
   // ("In the year 20X5 of the Cosmic Calendar...") — the rare Metroid year.
-  const sector = useGlitchText(selectedGameId === 'metroid-fusion' ? 'SR388' : selectedGameId === 'metroid-zero-mission' ? 'ZEBES, 20X5' : 'ZEBES');
+  const sector = useGlitchText(selectedGameId === 'metroid-fusion' ? 'SR388' : selectedGameId === 'metroid-zero-mission' ? 'ZEBES, 20X5' : 'ZEBES, 20X7');
 
   function pickDifficulty(id: string) {
     setDifficultyId(id);
@@ -304,11 +304,16 @@ export default function App() {
   if (phase === 'menu' || phase === 'loading') {
     const skin = GAME_SKINS[selectedGameId];
     return (
-      // the skin rides the shell so --font-game reaches the kicker's sector line
+      // the skin rides the shell so --font-game reaches the area names below it
       <div className={`shell menu${skinClass(selectedGameId)}`}>
         <BackdropFX phase={phase} tint={skin} />
+        {/* the halves are spans so phones can stack them and drop the separator */}
         <p className="kicker">
-          CHOZO OBSERVATORY // SECTOR <span className={`sector-word${sector.glitching ? ' glitching' : ''}`}>{sector.text}</span>
+          <span className="kicker-half">CHOZO OBSERVATORY</span>
+          <span className="kicker-sep"> // </span>
+          <span className="kicker-half">
+            SECTOR <span className={`sector-word${sector.glitching ? ' glitching' : ''}`}>{sector.text}</span>
+          </span>
         </p>
         {/* data-text feeds the skin pseudo-elements that cross-fade the logo metal */}
         <h1 className={`logo${skinClass(selectedGameId)}`} data-text="ZebesGuessr">
