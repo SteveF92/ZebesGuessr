@@ -152,7 +152,7 @@ def side_door(doors: dict, wall: np.ndarray, anydoor: np.ndarray,
     walled = [s for s in side_lines(x0, y0, side, h, w)
               if int(wall[s].sum()) >= 4]
     if not walled:
-        return station_door(wall, anydoor, anyfill, x0, y0, side, h, w)
+        return station_door(doors, wall, anydoor, anyfill, x0, y0, side, h, w)
     line = own_line(x0, y0, side) if len(walled) == 2 else walled[0]
     wl = wall[line]
     dls = {c: dm[line] for c, dm in doors.items()}
@@ -175,33 +175,44 @@ def side_door(doors: dict, wall: np.ndarray, anydoor: np.ndarray,
     return None
 
 
-def station_door(wall: np.ndarray, anydoor: np.ndarray, anyfill: np.ndarray,
-                 x0: int, y0: int, side: int, h: int, w: int) -> str | None:
-    """Doors between two adjacent lettered station rooms (the N/S/R line at
-    each sector's start, and the main deck's block).
+def bounded_run(m: np.ndarray, wl: np.ndarray) -> bool:
+    """Does `m` draw a 2-5px run on this boundary line, bounded by white on
+    both ends? That's the shape of every door drawn in a wall line."""
+    for i in range(1, len(m) - 1):
+        if m[i] and not m[i - 1]:
+            j = i
+            while j < len(m) and m[j]:
+                j += 1
+            if 2 <= j - i <= 5 and wl[i - 1] and j < len(wl) and wl[j]:
+                return True
+    return False
 
-    Those rooms are drawn as one baked caption box: their shared border is
-    box-red, not wall-white, so no line on the boundary is wall-quality and
-    the normal scan never runs. The door is a dotted separator — white pip,
-    room fill showing through the gap, white pip. If the boundary still
-    reads as solid counting the door-colored pixels (the same test the wall
-    bit uses), a short fill run bounded by white on the cell's own line is
-    that door; stations only ever get plain hatches.
+
+def station_door(doors: dict, wall: np.ndarray, anydoor: np.ndarray,
+                 anyfill: np.ndarray, x0: int, y0: int,
+                 side: int, h: int, w: int) -> str | None:
+    """Doors between two adjacent lettered station rooms (Fusion's N/S/R line
+    at each sector's start and the main deck's block; ZM's Chozodia Save+Map
+    pair, its only two abutting letter rooms).
+
+    Either way the shared border is drawn in box/letter-room red, not
+    wall-white, so no line on the boundary is wall-quality and the normal
+    scan never runs. If the boundary still reads as solid counting the
+    door-colored pixels (the same test the wall bit uses), scan the cell's
+    own line for a door run bounded by white. A locked door puts its pip
+    there (red excluded — that's the outline itself); Fusion's stations
+    instead draw a dotted separator (white pip, room fill showing through
+    the gap, white pip), so a fill run is a plain hatch.
     """
     if all(int(wall[s].sum()) + int(anydoor[s].sum()) < 4
            for s in side_lines(x0, y0, side, h, w)):
         return None  # not a solid boundary at all
     line = own_line(x0, y0, side)
     wl = wall[line]
-    fl = anyfill[line]
-    for i in range(1, len(fl) - 1):
-        if fl[i] and not fl[i - 1]:
-            j = i
-            while j < len(fl) and fl[j]:
-                j += 1
-            if 2 <= j - i <= 5 and wl[i - 1] and j < len(wl) and wl[j]:
-                return "n"
-    return None
+    for c, dm in doors.items():
+        if c != "r" and bounded_run(dm[line], wl):
+            return c
+    return "n" if bounded_run(anyfill[line], wl) else None
 
 
 def is_ladder(sub_fill: np.ndarray) -> bool:
