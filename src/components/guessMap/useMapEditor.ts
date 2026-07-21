@@ -483,9 +483,12 @@ export function useMapEditor({ data, area, mapStyle, editing, cellSet, COL }: Ma
       ctx.fillRect(tx * S, ty * S, S, S);
     }
     if (cellPanelCell) {
-      ctx.strokeStyle = COL.selected;
-      ctx.lineWidth = 1.5;
-      ctx.strokeRect(cellPanelCell.x * S + 0.75, cellPanelCell.y * S + 0.75, S - 1.5, S - 1.5);
+      // a small center dot, not an outline — the walls/doors being edited sit
+      // on the cell border, so an outline would cover exactly what's changing
+      ctx.fillStyle = '#f82048';
+      ctx.beginPath();
+      ctx.arc((cellPanelCell.x + 0.5) * S, (cellPanelCell.y + 0.5) * S, 2, 0, Math.PI * 2);
+      ctx.fill();
     }
     ctx.restore();
   }
