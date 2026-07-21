@@ -153,6 +153,10 @@ export interface AreaData {
    *  cropped shifted via cellCropOffsets so the guess screen shows the full
    *  room). Baked by slice_maps.py from the same-named config key. */
   xrayOffsets?: Record<string, [number, number]>;
+  /** cells (as "x,y") with hand-completed X-Ray art: the overlay draws
+   *  tiles/<game>/<area>/xray_<x>_<y>.png grid-aligned instead of the guess
+   *  tile (which may be crop-shifted). Baked by slice_maps.py. */
+  xrayTiles?: string[];
   /** pause-map render viewport + overlays */
   map: AreaMap;
 }

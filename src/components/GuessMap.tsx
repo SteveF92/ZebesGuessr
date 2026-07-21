@@ -1,6 +1,6 @@
 import { type CSSProperties, useEffect, useMemo, useRef, useState } from 'react';
 import type { AreaData, Cell, GameData, RoundResult } from '../types';
-import { drawnCells, tileUrl } from '../data';
+import { drawnCells, tileUrl, xrayTileUrl } from '../data';
 import { bossAsset, chozoAsset, GAME_COL, GBA_COL, RING2_DELAY, RING_MS, S, SCALE, shipAsset, SNES_COL, SWEEP_MS, TRACE_MS } from './guessMap/constants';
 import { computeKnobWalls, computeOpenWalls, drawBand, drawCell, drawConnector, drawGlyph, type GlyphDrawContext } from './guessMap/drawMap';
 import { brackets, dotTrail, ring, targetIndicator, trailDot } from './guessMap/drawMarkers';
@@ -231,15 +231,19 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
   useEffect(() => {
     if (!showTiles) return;
     let cancelled = false;
-    for (const c of area.cells) {
-      const url = tileUrl(data, { areaId: area.id, cell: c });
-      if (tileCache.current.has(url)) continue;
+    const fetchTile = (url: string) => {
+      if (tileCache.current.has(url)) return;
       const img = new Image();
       img.onload = () => {
         if (!cancelled) setTileVersion((v) => v + 1);
       };
       tileCache.current.set(url, img);
       img.src = url;
+    };
+    for (const c of area.cells) fetchTile(tileUrl(data, { areaId: area.id, cell: c }));
+    for (const key of area.xrayTiles ?? []) {
+      const [x, y] = key.split(',').map(Number);
+      fetchTile(xrayTileUrl(data, area.id, { x, y }));
     }
     return () => {
       cancelled = true;
@@ -444,12 +448,15 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
     const cellDevW = view ? snapView(view).cw : S * SCALE * xScale; // device px per cell
     for (const c of area.cells) {
       if (c.x < vis.x0 || c.x > vis.x1 || c.y < vis.y0 || c.y > vis.y1) continue;
-      const img = tileCache.current.get(tileUrl(data, { areaId: area.id, cell: c }));
+      const key = `${c.x},${c.y}`;
+      // Hand-completed X-Ray art replaces the guess tile at its grid slot;
+      // otherwise an off-grid room's crop-shifted tile (cellCropOffsets)
+      // draws shifted by the same amount, back to its true position.
+      const hasXray = area.xrayTiles?.includes(key);
+      const img = tileCache.current.get(hasXray ? xrayTileUrl(data, area.id, c) : tileUrl(data, { areaId: area.id, cell: c }));
       if (!img || !img.complete || img.naturalWidth === 0) continue;
       ctx.imageSmoothingEnabled = cellDevW < img.naturalWidth;
-      // Off-grid rooms: the tile was cropped shifted (cellCropOffsets), so
-      // shift its draw by the same amount to paint it at its true position.
-      const off = area.xrayOffsets?.[`${c.x},${c.y}`];
+      const off = hasXray ? undefined : area.xrayOffsets?.[key];
       const ox = off ? (off[0] / (data.cellWidth ?? data.cellSize)) * S : 0;
       const oy = off ? (off[1] / (data.cellHeight ?? data.cellSize)) * S : 0;
       ctx.drawImage(img, c.x * S + ox, c.y * S + oy, S, S);

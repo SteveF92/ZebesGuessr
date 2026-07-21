@@ -320,12 +320,12 @@
           [28, 17],
           [29, 17]
         ],
+        "includeCells": [[13, 8]],
+        "keepTiles": [[13, 8]],
         "cellCropOffsets": {
           "13,7": [0, 16]
         },
-        "xrayOffsets": {
-          "13,7": [0, 16]
-        }
+        "xrayTiles": ["13,7"]
       },
       {
         "id": "norfair",

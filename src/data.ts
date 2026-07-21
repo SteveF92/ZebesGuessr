@@ -219,6 +219,13 @@ export function tileUrl(data: GameData, t: RoundTarget): string {
   return `${import.meta.env.BASE_URL}tiles/${data.game}/${t.areaId}/cell_${t.cell.x}_${t.cell.y}.png`;
 }
 
+/** Hand-completed X-Ray art for a cell listed in the area's `xrayTiles`;
+ *  drawn grid-aligned in the overlay instead of the (possibly crop-shifted)
+ *  guess tile. */
+export function xrayTileUrl(data: GameData, areaId: string, cell: Cell): string {
+  return `${import.meta.env.BASE_URL}tiles/${data.game}/${areaId}/xray_${cell.x}_${cell.y}.png`;
+}
+
 export function roomName(data: GameData, t: RoundTarget): string | undefined {
   return data.roomNames?.[`${t.areaId}:${t.cell.x},${t.cell.y}`];
 }

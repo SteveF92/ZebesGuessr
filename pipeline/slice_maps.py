@@ -181,6 +181,21 @@ def process_game(game_id: str, game: dict) -> None:
         # true position, so its X-Ray draw must stay unshifted.
         if area.get("xrayOffsets"):
             entry["xrayOffsets"] = area["xrayOffsets"]
+        # The polished alternative: cells (as "x,y") whose X-Ray overlay draws
+        # a committed hand-made xray_<x>_<y>.png (grid-aligned, the full-slot
+        # truth - e.g. the strip above an off-grid room painted in) instead of
+        # the guess tile. Beats an xrayOffsets shift when the vacated band
+        # would show bare recreation fill. The files live beside the cell
+        # tiles and are never generated or pruned here (the prune glob only
+        # matches cell_*.png). Pair with an includeCells+keepTiles cell where
+        # overhanging art (an off-grid room's floor) needs its own slot.
+        if area.get("xrayTiles"):
+            entry["xrayTiles"] = area["xrayTiles"]
+            for key in area["xrayTiles"]:
+                kx, ky = key.split(",")
+                if not (tile_dir / f"xray_{kx}_{ky}.png").exists():
+                    print(f"  WARNING: {area['id']} xrayTiles {key} has no "
+                          f"xray_{kx}_{ky}.png in {tile_dir}")
         data["areas"].append(entry)
         print(f"  {area['name']}: {cols}x{rows} grid, {len(cells)} playable cells")
 
