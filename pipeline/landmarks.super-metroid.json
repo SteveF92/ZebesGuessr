@@ -1,26 +1,6 @@
 {
   "brinstar": [
     {
-      "sprite": "creatures/etecoon.png",
-      "x": 376,
-      "y": 3105
-    },
-    {
-      "sprite": "creatures/etecoon.png",
-      "x": 632,
-      "y": 3105
-    },
-    {
-      "sprite": "creatures/etecoon.png",
-      "x": 504,
-      "y": 2849
-    },
-    {
-      "sprite": "creatures/dachora.png",
-      "x": 1908,
-      "y": 1801
-    },
-    {
       "sprite": "creatures/dachora.png",
       "x": 1443,
       "y": 3284
