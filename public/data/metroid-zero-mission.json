@@ -5500,6 +5500,18 @@
       "mapImage": "tiles/metroid-zero-mission/chozodia/map.png",
       "cells": [
         {
+          "x": 12,
+          "y": 0
+        },
+        {
+          "x": 13,
+          "y": 0
+        },
+        {
+          "x": 14,
+          "y": 0
+        },
+        {
           "x": 15,
           "y": 0,
           "k": "room",
@@ -5516,6 +5528,26 @@
           "dr": ["Sn"]
         },
         {
+          "x": 17,
+          "y": 0
+        },
+        {
+          "x": 18,
+          "y": 0
+        },
+        {
+          "x": 19,
+          "y": 0
+        },
+        {
+          "x": 20,
+          "y": 0
+        },
+        {
+          "x": 21,
+          "y": 0
+        },
+        {
           "x": 22,
           "y": 0,
           "k": "room",
@@ -5526,6 +5558,10 @@
           "y": 0,
           "k": "room",
           "w": 3
+        },
+        {
+          "x": 12,
+          "y": 1
         },
         {
           "x": 13,
@@ -5602,6 +5638,10 @@
           "w": 6
         },
         {
+          "x": 12,
+          "y": 2
+        },
+        {
           "x": 13,
           "y": 2,
           "k": "room",
@@ -5658,6 +5698,18 @@
           "f": 1
         },
         {
+          "x": 4,
+          "y": 3
+        },
+        {
+          "x": 5,
+          "y": 3
+        },
+        {
+          "x": 6,
+          "y": 3
+        },
+        {
           "x": 12,
           "y": 3,
           "k": "room",
@@ -5684,6 +5736,26 @@
           "dr": ["Wb"]
         },
         {
+          "x": 16,
+          "y": 3
+        },
+        {
+          "x": 17,
+          "y": 3
+        },
+        {
+          "x": 18,
+          "y": 3
+        },
+        {
+          "x": 19,
+          "y": 3
+        },
+        {
+          "x": 4,
+          "y": 4
+        },
+        {
           "x": 5,
           "y": 4,
           "k": "room",
@@ -5697,6 +5769,22 @@
           "w": 7,
           "f": 1,
           "dr": ["Sn"]
+        },
+        {
+          "x": 7,
+          "y": 4
+        },
+        {
+          "x": 8,
+          "y": 4
+        },
+        {
+          "x": 9,
+          "y": 4
+        },
+        {
+          "x": 10,
+          "y": 4
         },
         {
           "x": 12,
@@ -5725,6 +5813,10 @@
           "w": 10
         },
         {
+          "x": 16,
+          "y": 4
+        },
+        {
           "x": 17,
           "y": 4,
           "k": "room",
@@ -5741,6 +5833,18 @@
           "y": 4,
           "k": "room",
           "w": 3
+        },
+        {
+          "x": 20,
+          "y": 4
+        },
+        {
+          "x": 21,
+          "y": 4
+        },
+        {
+          "x": 4,
+          "y": 5
         },
         {
           "x": 5,
@@ -5867,6 +5971,50 @@
           "y": 5,
           "k": "room",
           "w": 3
+        },
+        {
+          "x": 24,
+          "y": 5
+        },
+        {
+          "x": 25,
+          "y": 5
+        },
+        {
+          "x": 26,
+          "y": 5
+        },
+        {
+          "x": 27,
+          "y": 5
+        },
+        {
+          "x": 28,
+          "y": 5
+        },
+        {
+          "x": 1,
+          "y": 6
+        },
+        {
+          "x": 2,
+          "y": 6
+        },
+        {
+          "x": 3,
+          "y": 6
+        },
+        {
+          "x": 4,
+          "y": 6
+        },
+        {
+          "x": 5,
+          "y": 6
+        },
+        {
+          "x": 6,
+          "y": 6
         },
         {
           "x": 7,
@@ -6080,6 +6228,10 @@
           "f": 1
         },
         {
+          "x": 11,
+          "y": 7
+        },
+        {
           "x": 12,
           "y": 7,
           "k": "room",
@@ -6161,6 +6313,10 @@
           "dr": ["Sn"]
         },
         {
+          "x": 24,
+          "y": 7
+        },
+        {
           "x": 1,
           "y": 8,
           "k": "room",
@@ -6190,6 +6346,10 @@
         },
         {
           "x": 5,
+          "y": 8
+        },
+        {
+          "x": 6,
           "y": 8
         },
         {
@@ -6370,6 +6530,14 @@
           "dr": ["Wn"]
         },
         {
+          "x": 7,
+          "y": 9
+        },
+        {
+          "x": 8,
+          "y": 9
+        },
+        {
           "x": 9,
           "y": 9,
           "k": "room",
@@ -6446,10 +6614,30 @@
           "w": 10
         },
         {
+          "x": 21,
+          "y": 9
+        },
+        {
           "x": 25,
           "y": 9,
           "k": "room",
           "w": 10
+        },
+        {
+          "x": 2,
+          "y": 10
+        },
+        {
+          "x": 3,
+          "y": 10
+        },
+        {
+          "x": 4,
+          "y": 10
+        },
+        {
+          "x": 5,
+          "y": 10
         },
         {
           "x": 6,
@@ -6549,10 +6737,22 @@
           "w": 3
         },
         {
+          "x": 24,
+          "y": 10
+        },
+        {
           "x": 25,
           "y": 10,
           "k": "room",
           "w": 10
+        },
+        {
+          "x": 0,
+          "y": 11
+        },
+        {
+          "x": 1,
+          "y": 11
         },
         {
           "x": 2,
@@ -6784,6 +6984,10 @@
           "w": 10
         },
         {
+          "x": 14,
+          "y": 12
+        },
+        {
           "x": 18,
           "y": 12,
           "k": "room",
@@ -6798,6 +7002,22 @@
           "dr": ["Wb"]
         },
         {
+          "x": 20,
+          "y": 12
+        },
+        {
+          "x": 21,
+          "y": 12
+        },
+        {
+          "x": 22,
+          "y": 12
+        },
+        {
+          "x": 23,
+          "y": 12
+        },
+        {
           "x": 24,
           "y": 12,
           "k": "room",
@@ -6808,6 +7028,10 @@
           "y": 12,
           "k": "room",
           "w": 14
+        },
+        {
+          "x": 0,
+          "y": 13
         },
         {
           "x": 1,
@@ -6824,6 +7048,22 @@
           "w": 10,
           "f": 1,
           "dr": ["Wn"]
+        },
+        {
+          "x": 3,
+          "y": 13
+        },
+        {
+          "x": 4,
+          "y": 13
+        },
+        {
+          "x": 5,
+          "y": 13
+        },
+        {
+          "x": 6,
+          "y": 13
         },
         {
           "x": 7,
@@ -6873,6 +7113,22 @@
           "w": 11
         },
         {
+          "x": 15,
+          "y": 13
+        },
+        {
+          "x": 16,
+          "y": 13
+        },
+        {
+          "x": 17,
+          "y": 13
+        },
+        {
+          "x": 18,
+          "y": 13
+        },
+        {
           "x": 19,
           "y": 13,
           "k": "room",
@@ -6918,6 +7174,14 @@
         },
         {
           "x": 26,
+          "y": 13
+        },
+        {
+          "x": 27,
+          "y": 13
+        },
+        {
+          "x": 28,
           "y": 13
         },
         {
@@ -7126,6 +7390,14 @@
           "f": 1
         },
         {
+          "x": 1,
+          "y": 15
+        },
+        {
+          "x": 2,
+          "y": 15
+        },
+        {
           "x": 3,
           "y": 15,
           "k": "room",
@@ -7152,6 +7424,14 @@
           "k": "room",
           "w": 10,
           "f": 1
+        },
+        {
+          "x": 10,
+          "y": 15
+        },
+        {
+          "x": 11,
+          "y": 15
         },
         {
           "x": 12,
@@ -7315,6 +7595,18 @@
           "f": 1
         },
         {
+          "x": 7,
+          "y": 16
+        },
+        {
+          "x": 8,
+          "y": 16
+        },
+        {
+          "x": 9,
+          "y": 16
+        },
+        {
           "x": 10,
           "y": 16,
           "k": "room",
@@ -7392,6 +7684,10 @@
           "k": "room",
           "w": 6,
           "f": 1
+        },
+        {
+          "x": 0,
+          "y": 17
         },
         {
           "x": 1,
@@ -7519,6 +7815,10 @@
           "dr": ["Wn"]
         },
         {
+          "x": 4,
+          "y": 18
+        },
+        {
           "x": 5,
           "y": 18,
           "k": "room",
@@ -7577,6 +7877,10 @@
           "k": "room",
           "w": 3,
           "f": 1
+        },
+        {
+          "x": 13,
+          "y": 18
         },
         {
           "x": 14,
@@ -7833,6 +8137,10 @@
           "f": 1
         },
         {
+          "x": 10,
+          "y": 21
+        },
+        {
           "x": 3,
           "y": 22,
           "k": "room",
@@ -7893,6 +8201,14 @@
           "w": 15,
           "f": 1,
           "dr": ["Wb"]
+        },
+        {
+          "x": 27,
+          "y": 22
+        },
+        {
+          "x": 28,
+          "y": 22
         }
       ],
       "map": {
@@ -7965,6 +8281,7 @@
     "brinstar:17,5": "Mero Hive Chamber",
     "brinstar:17,6": "Mero Abyss",
     "brinstar:17,7": "Mero Abyss",
+    "brinstar:17,8": "Mero Abyss",
     "brinstar:18,0": "Varia Chamber Access",
     "brinstar:18,1": "Varia Chamber Access",
     "brinstar:18,10": "Norfair Access Corridor",
@@ -7983,6 +8300,7 @@
     "brinstar:2,11": "Starting Room",
     "brinstar:2,12": "Starting Room",
     "brinstar:2,13": "Starting Room",
+    "brinstar:2,14": "Starting Room",
     "brinstar:20,10": "Norfair Access Corridor",
     "brinstar:20,2": "Save Station (North)",
     "brinstar:20,5": "Mero Hive Chamber",
@@ -8023,6 +8341,7 @@
     "brinstar:28,4": "Short Shaft",
     "brinstar:28,5": "Save Station (East)",
     "brinstar:28,6": "Alternate Charge Beast Arena",
+    "brinstar:28,7": "Brinstar Map Station",
     "brinstar:29,2": "Eastern Hub",
     "brinstar:29,3": "Eastern Hub",
     "brinstar:29,4": "Short Shaft",
@@ -8063,13 +8382,21 @@
     "brinstar:9,8": "Hidden Tank Shaft",
     "brinstar:9,9": "Hidden Tank Shaft",
     "chozodia:0,12": "Save Station (Ruins West)",
+    "chozodia:0,14": "Upper Ledge Chamber",
+    "chozodia:0,15": "Upper Ledge Chamber",
+    "chozodia:0,16": "Upper Ledge Chamber",
+    "chozodia:0,18": "Chozodia's Fork",
+    "chozodia:0,19": "Chozodia's Fork",
+    "chozodia:0,20": "Chozodia's Fork",
     "chozodia:1,12": "Chacmool Access",
-    "chozodia:1,14": "Hiding Place D",
+    "chozodia:1,13": "Chacmool Access",
+    "chozodia:1,14": "Upper Ledge Chamber",
     "chozodia:1,15": "Curved Shaft",
     "chozodia:1,16": "Upper Ledge Chamber",
     "chozodia:1,17": "Chozodia's Fork",
     "chozodia:1,18": "Chozodia's Fork",
     "chozodia:1,19": "Chozodia's Fork",
+    "chozodia:1,20": "Chozodia's Fork",
     "chozodia:1,21": "Wrecked Ship Entrance",
     "chozodia:10,10": "Crawlspace",
     "chozodia:10,11": "Patrolled Path",
@@ -8096,6 +8423,11 @@
     "chozodia:11,19": "Large Glass Tube",
     "chozodia:11,8": "Exterior",
     "chozodia:12,1": "Mother Ship Bridge",
+    "chozodia:12,10": "Hiding Place B",
+    "chozodia:12,11": "Large Glass Tube",
+    "chozodia:12,12": "Large Glass Tube",
+    "chozodia:12,13": "Large Glass Tube",
+    "chozodia:12,14": "Large Glass Tube",
     "chozodia:12,15": "Large Glass Tube",
     "chozodia:12,16": "Large Glass Tube",
     "chozodia:12,17": "Large Glass Tube",
@@ -8104,9 +8436,12 @@
     "chozodia:12,3": "Ventilation Tunnel",
     "chozodia:12,4": "Ventilation Tunnel",
     "chozodia:12,5": "Armory Access",
+    "chozodia:12,6": "Armory Access",
+    "chozodia:12,7": "Armory Access",
     "chozodia:12,8": "Exterior",
+    "chozodia:12,9": "Hiding Place B",
     "chozodia:13,1": "Mother Ship Bridge",
-    "chozodia:13,10": "Hidden Zebesian",
+    "chozodia:13,10": "Hiding Place B",
     "chozodia:13,11": "Outer Drop",
     "chozodia:13,12": "Outer Drop",
     "chozodia:13,13": "Outer Drop",
@@ -8125,6 +8460,8 @@
     "chozodia:13,8": "Exterior",
     "chozodia:13,9": "Hiding Place B",
     "chozodia:14,1": "Mother Ship Bridge",
+    "chozodia:14,10": "Hiding Place B",
+    "chozodia:14,11": "Hiding Place B",
     "chozodia:14,13": "Launchpad",
     "chozodia:14,14": "Launchpad",
     "chozodia:14,15": "Launchpad",
@@ -8140,7 +8477,10 @@
     "chozodia:14,7": "Robot-Patrolled Hall",
     "chozodia:14,8": "Energy Runway",
     "chozodia:14,9": "Hiding Place B",
+    "chozodia:15,0": "Wall Tunnel",
     "chozodia:15,1": "Wall Tunnel",
+    "chozodia:15,10": "Hiding Place B",
+    "chozodia:15,11": "Hiding Place B",
     "chozodia:15,2": "Upper Antechamber",
     "chozodia:15,3": "Bridge Access",
     "chozodia:15,4": "Bridge Access",
@@ -8148,26 +8488,37 @@
     "chozodia:15,6": "Atomic Corridor",
     "chozodia:15,7": "Robot-Patrolled Hall",
     "chozodia:15,8": "Energy Runway",
-    "chozodia:15,9": "Tripwire Maze",
+    "chozodia:15,9": "Hiding Place B",
+    "chozodia:16,0": "Wall Tunnel",
     "chozodia:16,1": "Wall Tunnel",
+    "chozodia:16,10": "Hiding Place B",
+    "chozodia:16,11": "Hiding Place B",
     "chozodia:16,2": "Save Station (Ship North)",
     "chozodia:16,5": "Sloped Shaft",
     "chozodia:16,6": "Sloped Shaft",
     "chozodia:16,7": "Robot-Patrolled Hall",
     "chozodia:16,8": "Energy Runway",
-    "chozodia:16,9": "Tripwire Maze",
+    "chozodia:16,9": "Hiding Place B",
     "chozodia:17,1": "Wall Tunnel",
     "chozodia:17,14": "First Stealth Chamber",
     "chozodia:17,15": "First Stealth Chamber",
+    "chozodia:17,4": "Mother Ship Concourse",
     "chozodia:17,5": "Mother Ship Concourse",
     "chozodia:17,6": "Sloped Shaft",
     "chozodia:17,7": "Missile Pit",
+    "chozodia:17,8": "Missile Pit",
     "chozodia:17,9": "Save Station (Ship Central)",
     "chozodia:18,1": "Wall Tunnel",
+    "chozodia:18,10": "Searchlight Shaft",
+    "chozodia:18,11": "Searchlight Shaft",
+    "chozodia:18,12": "Searchlight Shaft",
     "chozodia:18,14": "Hiding Place A",
     "chozodia:18,15": "Map Station",
+    "chozodia:18,16": "Map Station",
     "chozodia:18,2": "Energy Vault Hall",
+    "chozodia:18,4": "Mother Ship Concourse",
     "chozodia:18,5": "Mother Ship Concourse",
+    "chozodia:18,6": "Sloped Shaft",
     "chozodia:18,7": "Missile Pit",
     "chozodia:18,8": "Pit Access",
     "chozodia:18,9": "Save Station (Ship Central)",
@@ -8180,7 +8531,9 @@
     "chozodia:19,15": "Map Station",
     "chozodia:19,16": "Mother Ship Exit East",
     "chozodia:19,2": "Energy Vault Hall",
+    "chozodia:19,4": "Mother Ship Concourse",
     "chozodia:19,5": "Mother Ship Concourse",
+    "chozodia:19,6": "Sloped Shaft",
     "chozodia:19,7": "Pit Access",
     "chozodia:19,8": "Pit Access",
     "chozodia:19,9": "Gate Chamber",
@@ -8220,6 +8573,7 @@
     "chozodia:21,6": "Mother Ship Hangar",
     "chozodia:21,7": "Mother Ship Hangar",
     "chozodia:21,8": "Mother Ship Hangar",
+    "chozodia:22,0": "Mecha Ridley Chamber",
     "chozodia:22,1": "Mecha Ridley Chamber",
     "chozodia:22,13": "Tripwire Corridor",
     "chozodia:22,14": "Tripwire Corridor",
@@ -8229,6 +8583,8 @@
     "chozodia:22,6": "Escape-Ship Bay",
     "chozodia:22,7": "Escape-Ship Bay",
     "chozodia:22,8": "Save Station (Ship East)",
+    "chozodia:23,0": "Mecha Ridley Chamber",
+    "chozodia:23,1": "Mecha Ridley Chamber",
     "chozodia:23,12": "Alcove Shaft",
     "chozodia:23,13": "Tripwire Corridor",
     "chozodia:23,14": "Mother Ship East Upper Entrance",
@@ -8243,22 +8599,28 @@
     "chozodia:24,13": "Alcove Shaft",
     "chozodia:24,14": "Mother Ship East Upper Entrance",
     "chozodia:24,15": "Mother Ship Approach (final)",
+    "chozodia:24,6": "Escape Tunnel",
     "chozodia:24,7": "Escape-Ship Bay Access",
     "chozodia:24,8": "Escape-Ship Bay Access",
     "chozodia:25,10": "Multi-Platform Shaft",
     "chozodia:25,11": "Multi-Platform Shaft",
     "chozodia:25,12": "Alcove Shaft",
-    "chozodia:25,13": "Alcove Shaft",
+    "chozodia:25,13": "Mother Ship Approach (final)",
     "chozodia:25,14": "Mother Ship Approach (final)",
     "chozodia:25,15": "Mother Ship Approach (final)",
+    "chozodia:25,6": "Escape Tunnel",
     "chozodia:25,8": "Multi-Platform Shaft",
     "chozodia:25,9": "Multi-Platform Shaft",
+    "chozodia:26,13": "Mother Ship Approach (final)",
     "chozodia:26,14": "Mother Ship Approach (final)",
     "chozodia:26,15": "Mother Ship Approach (final)",
+    "chozodia:26,6": "Escape Tunnel",
     "chozodia:27,14": "Crash Landing Site (final)",
     "chozodia:27,15": "Crash Landing Site (final)",
+    "chozodia:27,6": "Escape Tunnel",
     "chozodia:28,14": "Crash Landing Site (final)",
     "chozodia:28,15": "Crash Landing Site (final)",
+    "chozodia:28,6": "Escape Tunnel",
     "chozodia:3,11": "Chacmool Room",
     "chozodia:3,12": "Chacmool Room",
     "chozodia:3,13": "Chacmool Room",
@@ -8282,6 +8644,7 @@
     "chozodia:4,21": "Super Missile Maze B",
     "chozodia:4,22": "Super Missile Maze B",
     "chozodia:5,11": "Eye Pit",
+    "chozodia:5,12": "Chacmool Room",
     "chozodia:5,14": "Zebesian Pit",
     "chozodia:5,15": "Zebesian Pit",
     "chozodia:5,17": "Hanging Barrier Hall",
@@ -8445,20 +8808,30 @@
     "crateria:5,5": "Landing Site",
     "crateria:5,6": "Landing Site",
     "crateria:5,9": "Weedway",
+    "crateria:6,0": "Landing Site",
+    "crateria:6,1": "Landing Site",
     "crateria:6,10": "Broken Elevator to Brinstar",
+    "crateria:6,2": "Landing Site",
     "crateria:6,3": "Landing Site",
     "crateria:6,4": "Landing Site",
     "crateria:6,5": "Landing Site",
     "crateria:6,6": "Landing Site",
     "crateria:6,9": "Broken Elevator to Brinstar",
+    "crateria:7,0": "Landing Site",
+    "crateria:7,1": "Landing Site",
+    "crateria:7,2": "Landing Site",
     "crateria:7,3": "Landing Site",
     "crateria:7,4": "Landing Site",
     "crateria:7,5": "Landing Site",
     "crateria:7,6": "Landing Site",
+    "crateria:8,0": "Landing Site",
+    "crateria:8,1": "Landing Site",
+    "crateria:8,2": "Landing Site",
     "crateria:8,3": "Landing Site",
     "crateria:8,4": "Landing Site",
     "crateria:8,5": "Landing Site",
     "crateria:8,6": "Landing Site",
+    "crateria:9,2": "Landing Site",
     "crateria:9,3": "Landing Site",
     "crateria:9,4": "Landing Site",
     "crateria:9,5": "Landing Site",
@@ -8504,6 +8877,7 @@
     "kraid:12,3": "Apex Launcher Hub",
     "kraid:12,4": "Apex Launcher Hub",
     "kraid:12,5": "Apex Launcher Hub",
+    "kraid:12,6": "Apex Launcher Hub",
     "kraid:12,8": "Corrosive Pool",
     "kraid:12,9": "Acid Fall",
     "kraid:13,10": "Block Column Hub",
@@ -8549,6 +8923,7 @@
     "kraid:5,6": "Acidic Concourse",
     "kraid:5,7": "Acidic Concourse",
     "kraid:5,8": "Gauntlet",
+    "kraid:5,9": "Pipe Shaft",
     "kraid:6,10": "Sidehopper Hall",
     "kraid:6,11": "Ball Launcher Speedway",
     "kraid:6,12": "Sidehopper Path",
@@ -8592,6 +8967,7 @@
     "kraid:9,5": "Caged Sidehopper Hall",
     "kraid:9,6": "Runway",
     "kraid:9,8": "Corrosive Pool",
+    "kraid:9,9": "Acid Fall",
     "norfair:0,10": "Lava-Filled Passage",
     "norfair:0,11": "Lava-Filled Passage",
     "norfair:0,12": "Lava-Filled Passage",
@@ -8703,6 +9079,7 @@
     "norfair:18,4": "Main Corridor",
     "norfair:18,5": "Gauntlet A",
     "norfair:18,7": "Hi-Jump Chamber Access",
+    "norfair:18,8": "Kiru-Giru Larval Hall",
     "norfair:18,9": "Kiru-Giru Larval Hall",
     "norfair:19,0": "Ice Beam Tutorial C",
     "norfair:19,1": "Heated Missile Room",
@@ -8726,25 +9103,39 @@
     "norfair:2,7": "Secret Tunnel",
     "norfair:2,8": "Map Station",
     "norfair:2,9": "Lava-Filled Passage",
+    "norfair:20,0": "Ice Beam Tutorial C",
+    "norfair:20,1": "Heated Missile Room",
+    "norfair:20,10": "Kiru-Giru Larval Hall",
+    "norfair:20,11": "Save Station (Southeast)",
+    "norfair:20,2": "Ice Beam Chamber Access",
+    "norfair:20,3": "Blue-Bubble Hub",
+    "norfair:20,4": "Blue-Bubble Hub",
+    "norfair:20,5": "Gauntlet A",
+    "norfair:20,6": "Blue-Bubble Hub",
+    "norfair:20,7": "Hi-Jump Chamber Access",
+    "norfair:20,8": "Guide Statue (Varia)",
+    "norfair:20,9": "Guide Statue (Varia)",
     "norfair:3,10": "Hopping-Mad Corridor",
     "norfair:3,4": "Western Lava Corridor",
     "norfair:3,5": "Missile Tank Tunnel",
     "norfair:3,6": "Screw Attack Chamber",
     "norfair:3,7": "Three Rock Corridor",
     "norfair:3,8": "Twin Hill Room",
-    "norfair:3,9": "West Green Bubble Hub",
+    "norfair:3,9": "Hopping-Mad Corridor",
     "norfair:4,10": "Hopping-Mad Corridor",
     "norfair:4,4": "Western Lava Corridor",
     "norfair:4,5": "Missile Tank Tunnel",
     "norfair:4,6": "Screw Attack Chamber",
     "norfair:4,7": "Three Rock Corridor",
     "norfair:4,8": "Twin Hill Room",
+    "norfair:4,9": "Hopping-Mad Corridor",
     "norfair:5,10": "Hopping-Mad Corridor",
     "norfair:5,4": "Western Lava Corridor",
     "norfair:5,5": "Missile Tank Tunnel",
     "norfair:5,6": "Screw Attack Chamber Access",
     "norfair:5,7": "Three Rock Corridor",
     "norfair:5,8": "Twin Hill Room",
+    "norfair:5,9": "Hopping-Mad Corridor",
     "norfair:6,10": "Hopping-Mad Corridor",
     "norfair:6,11": "East Green Bubble Hub (Lower)",
     "norfair:6,12": "East Green Bubble Hub (Lower)",
@@ -8769,6 +9160,7 @@
     "norfair:8,13": "Speed Transporter C",
     "norfair:8,4": "Western Lava Corridor",
     "norfair:8,5": "Gauntlet C",
+    "norfair:8,6": "Gauntlet C",
     "norfair:8,7": "Save Station (West)",
     "norfair:8,8": "Precarious Path",
     "norfair:9,10": "Vine-Infested Passage",
@@ -8777,8 +9169,11 @@
     "norfair:9,13": "Speed Transporter C",
     "norfair:9,4": "Western Lava Corridor",
     "norfair:9,5": "Gauntlet C",
+    "norfair:9,6": "Gauntlet C",
     "norfair:9,7": "Barisute Chamber",
     "norfair:9,8": "Precarious Path",
+    "ridley:0,8": "Maze",
+    "ridley:0,9": "Maze",
     "ridley:1,5": "Save Station (West)",
     "ridley:1,8": "Maze",
     "ridley:1,9": "Maze",
@@ -8854,6 +9249,8 @@
     "ridley:20,6": "Chain Reaction Chamber",
     "ridley:20,7": "Chain Reaction Chamber",
     "ridley:21,5": "Runway",
+    "ridley:21,6": "Chain Reaction Chamber",
+    "ridley:21,7": "Chain Reaction Chamber",
     "ridley:22,5": "Runway",
     "ridley:3,3": "Pronged Hall",
     "ridley:3,5": "Path over Lava",
@@ -8880,12 +9277,14 @@
     "ridley:7,3": "Hall of Pillars",
     "ridley:7,4": "Missile Cache",
     "ridley:7,5": "Hidden Climb",
+    "ridley:7,6": "Ridley Arena Access",
     "ridley:7,7": "Ridley Arena Access",
     "ridley:7,8": "Zebbo Nest",
     "ridley:8,1": "Imago Arena",
     "ridley:8,2": "Imago Arena",
     "ridley:8,3": "Hall of Pillars",
     "ridley:8,5": "Desgeega Hall",
+    "ridley:8,6": "Ridley Arena Access",
     "ridley:8,7": "Ridley Arena Access",
     "ridley:8,8": "Zebbo Nest",
     "ridley:9,1": "Imago Arena",
@@ -8907,8 +9306,13 @@
     "tourian:1,8": "Escape Shaft",
     "tourian:1,9": "Escape Shaft",
     "tourian:10,10": "Save Station (South)",
+    "tourian:10,11": "Save Station (South)",
+    "tourian:10,12": "Save Station (South)",
     "tourian:10,5": "Metroid Pit",
-    "tourian:11,10": "Triple-Tiered Room",
+    "tourian:10,6": "Metroid Pit",
+    "tourian:11,10": "Save Station (South)",
+    "tourian:11,11": "Save Station (South)",
+    "tourian:11,12": "Save Station (South)",
     "tourian:11,5": "Metroid Pit",
     "tourian:11,6": "I Shaped Room",
     "tourian:12,10": "Triple-Tiered Room",
@@ -8946,6 +9350,7 @@
     "tourian:8,10": "Rinka Hall (INITIAL)",
     "tourian:8,5": "Lava Passage",
     "tourian:9,10": "Save Station (South)",
-    "tourian:9,5": "Metroid Pit"
+    "tourian:9,5": "Metroid Pit",
+    "tourian:9,6": "Metroid Pit"
   }
 }
