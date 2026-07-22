@@ -578,7 +578,7 @@ a:hover {
   align-items: center;
   gap: 5px;
   width: 100%;
-  max-width: 760px; /* matched to .random-panel so the two options read as parallel cards */
+  max-width: 800px; /* matched to .random-panel so the two options read as parallel cards */
   margin: 10px 0 0;
   padding: 13px 18px 12px;
   font-family: var(--font-body);
@@ -656,7 +656,9 @@ a:hover {
   flex-direction: column;
   align-items: center;
   width: 100%;
-  max-width: 760px;
+  /* 800 outer − 2×18 padding keeps the inner content at the 760 the
+     three-across difficulty row was sized for. */
+  max-width: 800px;
   padding: 14px 18px 18px;
   border: 1px solid rgba(160, 248, 248, 0.28);
   border-radius: 10px;
