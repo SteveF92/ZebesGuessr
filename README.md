@@ -79,7 +79,7 @@ file** (dev server only) and commit the JSON.
   Deathbringer, Zechs, Omegakyogre, PR-kun, and Vic — hosted at
   [The Spriters Resource](https://www.spriters-resource.com) and/or [Sprite Database](https://spritedatabase.net) — with the
   assembled Zazabi, B.O.X., Yakuza, and Nightmare poses from
-  [Metroid Wiki](https://www.metroidwiki.org). The
+  [Metroid Wiki](https://www.metroidwiki.org). Animated Metroid Sprite used on the title screen via PlNG on Reddit. The
   rippers are not affiliated with or involved in this project. Sprite cropping
   and extraction aided by [fyrean's sprite extractor](https://fyrean.itch.io/sprite-extractor). I also made use of the
   [Save File Database compiled by MayanMystery](https://www.reddit.com/r/Metroid/comments/1654nv2/metroid_series_save_file_database/)
