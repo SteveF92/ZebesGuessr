@@ -241,6 +241,31 @@ and chase every anomaly until the output is clean:
 - `undrawn` cells (tiles the pause map doesn't chart — elevator shafts, rooms
   absent from the in-game map) are normal; rate them **6**.
 
+### Off-grid and partially-rendered rooms (`cellCropOffsets` + `xrayOffsets`)
+
+Some sheets draw a room shifted from its grid slot, or contain only a
+fragment of it (a boss room's camera-locked band — ZM's Mecha Ridley chamber
+is a 160px middle strip of a 2×2-screen room). Before reaching for offsets,
+**measure**: template-match the fragment against the room's Randovania render
+(`tile-sources/`, 32px border) — the match often shows the art is already
+true-to-grid and only _partial_, in which case the map/X-Ray side needs
+nothing at all.
+
+What usually does need fixing is the **guess screen**: a cell whose natural
+crop catches only part of the band serves a strip floating in black. The
+treatment (ZM Brinstar save room, Mecha Ridley):
+
+- `cellCropOffsets` `{"x,y": [dx, dy]}` shifts that cell's tile crop so the
+  served screen captures the full art (Mecha Ridley: `[0, -48]` pulls the
+  whole fight screenshot into `(22,1)`).
+- `xrayOffsets` (same key, same value) draws the tile back at its true
+  position in the X-Ray overlay, so the map view stays honest. Skip it only
+  when the map slot IS the true position (a _relocated_ room pulled from
+  elsewhere on the sheet, e.g. Fusion Main Deck's displaced cluster — crop
+  without xray).
+- Neighbors that remain partial stay in the game as map/X-Ray filler; rate
+  them **6** so only the whole screen is ever served.
+
 A starter difficulty file with exactly those 6s can be generated in one line
 from the merged JSON (cells without `k` + the artless includes). The real
 difficulty pass comes later.
