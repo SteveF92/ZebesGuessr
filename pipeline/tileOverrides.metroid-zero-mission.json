@@ -402,5 +402,95 @@
       "sy": 32,
       "note": "'Norfair33.png' from the randovania checkout, committed unmodified"
     }
+  ],
+  "tourian": [
+    {
+      "x": 8,
+      "y": 10,
+      "image": "tile-sources/metroid-zero-mission/tourian/rinka-hall-initial.png",
+      "sx": 512,
+      "sy": 32,
+      "note": "'Tourian3.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 7,
+      "y": 10,
+      "image": "tile-sources/metroid-zero-mission/tourian/rinka-hall-initial.png",
+      "sx": 272,
+      "sy": 32,
+      "note": "'Tourian3.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 6,
+      "y": 10,
+      "image": "tile-sources/metroid-zero-mission/tourian/rinka-hall-initial.png",
+      "sx": 32,
+      "sy": 32,
+      "note": "'Tourian3.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 5,
+      "y": 9,
+      "image": "tile-sources/metroid-zero-mission/tourian/command-center-initial.png",
+      "sx": 752,
+      "sy": 32,
+      "note": "'Tourian4.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 5,
+      "y": 10,
+      "image": "tile-sources/metroid-zero-mission/tourian/command-center-initial.png",
+      "sx": 752,
+      "sy": 192,
+      "note": "'Tourian4.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 4,
+      "y": 10,
+      "image": "tile-sources/metroid-zero-mission/tourian/command-center-initial.png",
+      "sx": 512,
+      "sy": 192,
+      "note": "'Tourian4.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 4,
+      "y": 9,
+      "image": "tile-sources/metroid-zero-mission/tourian/command-center-initial.png",
+      "sx": 512,
+      "sy": 32,
+      "note": "'Tourian4.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 3,
+      "y": 10,
+      "image": "tile-sources/metroid-zero-mission/tourian/command-center-initial.png",
+      "sx": 272,
+      "sy": 192,
+      "note": "'Tourian4.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 2,
+      "y": 10,
+      "image": "tile-sources/metroid-zero-mission/tourian/command-center-initial.png",
+      "sx": 32,
+      "sy": 192,
+      "note": "'Tourian4.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 2,
+      "y": 9,
+      "image": "tile-sources/metroid-zero-mission/tourian/command-center-initial.png",
+      "sx": 32,
+      "sy": 32,
+      "note": "'Tourian4.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 3,
+      "y": 9,
+      "image": "tile-sources/metroid-zero-mission/tourian/command-center-initial.png",
+      "sx": 272,
+      "sy": 32,
+      "note": "'Tourian4.png' from the randovania checkout, committed unmodified"
+    }
   ]
 }

@@ -24,5 +24,12 @@
       "x": 5280,
       "y": 112
     }
+  ],
+  "tourian": [
+    {
+      "sprite": "bosses/mother-brain.png",
+      "x": 535,
+      "y": 1623
+    }
   ]
 }
