@@ -54,8 +54,9 @@ export function AboutModal({ onClose }: { onClose: () => void }) {
           <a href="https://github.com/SteveF92/zebesguessr">project README</a>.
         </p>
         <p>
-          Room names come from the fan communities that mapped these games out: Metroid Fusion's are from the <a href="https://randovania.org">Randovania</a> project and the Fusion community, and
-          Super Metroid's are from <a href="https://maprando.com">Map Rando</a> and the Super Metroid community.
+          Room names come from the fan communities that mapped these games out. For Super Metroid, I relied on
+          <a href="https://wiki.supermetroid.run/Main_Page">the Super Metroid Speedrunning Wiki</a> and data from <a href="https://maprando.com">Map Rando</a>. For Fusion and Zero Mission, I used data
+          from <a href="https://randovania.org">Randovania</a>.
         </p>
         <p>
           Metroid and all game imagery are © Nintendo. This is a non-commercial fan project and is not affiliated with or endorsed by Nintendo. If you are a rights holder and want something removed,

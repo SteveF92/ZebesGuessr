@@ -426,13 +426,15 @@ export default function App() {
           className={`daily-btn${dailyScore !== undefined ? ' done' : ''}`}
           disabled={phase === 'loading' || !!loadedSeed}
           onClick={startDaily}
-          title="The same five screens for every hunter, every day"
+          title="The same five screens for every player, every day"
         >
-          <span className="daily-kicker">◆ DAILY MISSION #{dailyNumber(todayKey)} ◆</span>
+          <span className="daily-kicker">
+            ◆ DAILY MISSION #{dailyNumber(todayKey)} - {todayKey} ◆
+          </span>
           <span className="daily-desc">
             {GAMES.find((g) => g.id === dailyGameId(todayKey))?.title} · {dailyDifficulty(todayKey).label}
           </span>
-          <span className="daily-state">{dailyScore !== undefined ? `COMPLETE — ${dailyScore.toLocaleString()} · REPLAY ▶` : 'ONE MISSION. EVERY HUNTER. EVERY DAY. ▶'}</span>
+          <span className="daily-state">{dailyScore !== undefined ? `COMPLETE — ${dailyScore.toLocaleString()} · REPLAY ▶` : 'START MISSION ▶'}</span>
         </button>
 
         <div className="mission-or" aria-hidden="true">
