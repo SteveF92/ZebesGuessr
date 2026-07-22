@@ -42,8 +42,8 @@ PIXEL_FONT = ROOT / "public" / "fonts" / "super-metroid-large-alt-snes.ttf"
 # One iconic screen per game, from the FINAL BAKED tiles (landmark stamps and
 # room-state overrides mirrored in) — never the raw source maps.
 TILES = [
-    ROOT / "public" / "tiles" / "super-metroid" / "crateria" / "cell_21_4.png",
     ROOT / "public" / "tiles" / "metroid-fusion" / "main-deck" / "cell_7_10.png",
+    ROOT / "public" / "tiles" / "super-metroid" / "crateria" / "cell_21_4.png",
     ROOT / "public" / "tiles" / "metroid-zero-mission" / "chozodia" / "cell_5_5.png",
 ]
 
