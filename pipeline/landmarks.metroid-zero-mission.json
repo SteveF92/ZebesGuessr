@@ -24,5 +24,19 @@
       "x": 535,
       "y": 1623
     }
+  ],
+  "crateria": [
+    {
+      "sprite": "objects/samus-ship.png",
+      "x": 1681,
+      "y": 1014
+    }
+  ],
+  "chozodia": [
+    {
+      "sprite": "scenes/mecha-ridley.png",
+      "x": 5280,
+      "y": 112
+    }
   ]
 }
