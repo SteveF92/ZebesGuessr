@@ -258,6 +258,32 @@ a:hover {
 .tint-zm .fx-haze__glow {
   filter: hue-rotate(-120deg);
 }
+/* occasional background fauna (Metroid wander / ship flyby), spawned by
+   TitleCritters. Title screen only — the wrapper cross-fades like the haze.
+   Its own fixed layer (NOT inside .fx-layer, whose stacking context paints
+   above the menu's in-flow text): z-index -1 keeps sprites behind everything
+   in the shell, while .fx-layer's scanlines still wash over them. overflow
+   clips flights so off-screen transforms can't inflate scroll height. */
+.fx-critters {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 1s ease;
+}
+.fx-critters.on {
+  opacity: 1;
+}
+.fx-critters img {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform-origin: top left;
+  image-rendering: pixelated;
+  will-change: transform;
+}
 .fx-scanbar {
   position: absolute;
   left: 0;
@@ -1139,7 +1165,9 @@ a:hover {
   border-color: #9dffc2 #0e6a30 #0e6a30 #9dffc2;
   border-radius: 3px;
   color: var(--accent);
-  background: linear-gradient(rgba(77, 255, 136, 0.16), rgba(77, 255, 136, 0.03));
+  /* --panel base under the tint: the gradient alone is near-transparent, so
+     backdrop critters (TitleCritters) would show through the button face */
+  background: linear-gradient(rgba(77, 255, 136, 0.16), rgba(77, 255, 136, 0.03)) var(--panel);
   text-shadow: 0 0 12px rgba(77, 255, 136, 0.3);
 }
 .btn.next {
@@ -1150,18 +1178,18 @@ a:hover {
 }
 .btn.primary:hover:not(:disabled),
 .btn.next:hover:not(:disabled) {
-  background: linear-gradient(rgba(77, 255, 136, 0.3), rgba(77, 255, 136, 0.08));
+  background: linear-gradient(rgba(77, 255, 136, 0.3), rgba(77, 255, 136, 0.08)) var(--panel);
   box-shadow: 0 0 20px rgba(77, 255, 136, 0.4);
 }
 .btn.start {
   margin-top: 6px;
   border-color: #ffe9a0 #7a5200 #7a5200 #ffe9a0;
   color: var(--gold);
-  background: linear-gradient(rgba(255, 210, 77, 0.16), rgba(255, 210, 77, 0.03));
+  background: linear-gradient(rgba(255, 210, 77, 0.16), rgba(255, 210, 77, 0.03)) var(--panel);
   text-shadow: 0 0 12px rgba(255, 210, 77, 0.3);
 }
 .btn.start:hover:not(:disabled) {
-  background: linear-gradient(rgba(255, 210, 77, 0.3), rgba(255, 210, 77, 0.08));
+  background: linear-gradient(rgba(255, 210, 77, 0.3), rgba(255, 210, 77, 0.08)) var(--panel);
   box-shadow: 0 0 20px rgba(255, 210, 77, 0.4);
 }
 /* Draw the seed-lock separator as a crisp bar so it centers on the caps text

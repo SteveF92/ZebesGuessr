@@ -5,6 +5,7 @@ import { AboutModal, Credits } from './components/AboutModal';
 import { SeedEntryModal } from './components/SeedEntryModal';
 import { CreateSeed } from './components/CreateSeed';
 import { HoverScan } from './components/HoverScan';
+import { TitleCritters } from './components/TitleCritters';
 import { useCountUp } from './hooks/useCountUp';
 import { useTypewriter } from './hooks/useTypewriter';
 import { useGlitchText } from './hooks/useGlitchText';
@@ -48,15 +49,21 @@ function readSeedFromUrl(): Seed | null {
 function BackdropFX({ phase, tint }: { phase: Phase; tint?: string }) {
   const hazeOn = phase === 'menu' || phase === 'loading';
   return (
-    <div className={`fx-layer${tint ? ` tint-${tint}` : ''}`}>
-      <div className="stars" />
-      <div className="fx-grid" />
-      <div className={`fx-haze${hazeOn ? ' on' : ''}`}>
-        <div className="fx-haze__glow" />
+    <>
+      {/* outside .fx-layer: that fixed div is a stacking context painting above
+          the shell's in-flow content, so critters inside it could cross the menu
+          text. As a sibling at z-index -1 they stay behind everything. */}
+      <TitleCritters active={hazeOn} />
+      <div className={`fx-layer${tint ? ` tint-${tint}` : ''}`}>
+        <div className="stars" />
+        <div className="fx-grid" />
+        <div className={`fx-haze${hazeOn ? ' on' : ''}`}>
+          <div className="fx-haze__glow" />
+        </div>
+        <div className="fx-scanlines" />
+        <div className="fx-scanbar" />
       </div>
-      <div className="fx-scanlines" />
-      <div className="fx-scanbar" />
-    </div>
+    </>
   );
 }
 
