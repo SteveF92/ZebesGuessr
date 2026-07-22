@@ -441,7 +441,13 @@
           [23, 1]
         ],
         "excludeCells": [[28, 22]],
-        "transparentVoid": true
+        "transparentVoid": true,
+        "cellCropOffsets": {
+          "22,1": [0, -48]
+        },
+        "xrayOffsets": {
+          "22,1": [0, -48]
+        }
       }
     ]
   }
