@@ -1,4 +1,4 @@
-"""Generate the social-embed card (og:image) at public/og-card.png.
+"""Generate the social-embed card (og:image) at public/og-card-v2.png.
 
 A 1200x630 collage built entirely from committed sources: the site's palette
 (src/styles.css :root), a seeded starfield + scanlines echoing the .fx-layer
@@ -6,9 +6,11 @@ treatment, one iconic baked tile per game framed with .tile-frame-style cyan
 corner brackets, and the wordmark set in the Super Metroid Title font.
 
 Deterministic (fixed RNG seed), so reruns are byte-stable enough to diff.
-NOTE: the deploy uploads og-card.png under the immutable cache rule — if the
-card is ever redesigned, rename it (og-card-v2.png) and update index.html's
-og:image/twitter:image tags rather than regenerating in place.
+NOTE: the deploy uploads the card under the immutable cache rule — every
+redesign after it has shipped must BUMP the filename version (og-card-v3.png,
+...) and update index.html's og:image/twitter:image tags, never regenerate in
+place. v1 shipped 2026-07-22 with ZM's Mother Brain; v2 swapped it for the
+Chozodia mural.
 
 Usage: python pipeline/make_og_card.py
 """
@@ -21,7 +23,7 @@ from pathlib import Path
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 ROOT = Path(__file__).resolve().parent.parent
-OUT = ROOT / "public" / "og-card.png"
+OUT = ROOT / "public" / "og-card-v2.png"
 
 W, H = 1200, 630
 
@@ -42,7 +44,7 @@ PIXEL_FONT = ROOT / "public" / "fonts" / "super-metroid-large-alt-snes.ttf"
 TILES = [
     ROOT / "public" / "tiles" / "super-metroid" / "crateria" / "cell_21_4.png",
     ROOT / "public" / "tiles" / "metroid-fusion" / "main-deck" / "cell_7_10.png",
-    ROOT / "public" / "tiles" / "metroid-zero-mission" / "tourian" / "cell_2_10.png",
+    ROOT / "public" / "tiles" / "metroid-zero-mission" / "chozodia" / "cell_5_5.png",
 ]
 
 
