@@ -360,7 +360,7 @@ export default function RoomStateExplorer({ game, areaId, cell, roomName, roomCe
       )}
       {kept && (
         <div className="landmark-warning">
-          ⚠ ({cell.x},{cell.y}) is a keepTiles cell: the bake skips its tile PNG — mirror the override into the committed tile by hand (see CLAUDE.md).
+          ⚠ ({cell.x},{cell.y}) is a keepTiles cell: slicing skips its hand-painted tile PNG, so an override only reaches it via Save + Bake (which mirrors it in) — plain Save won't.
         </div>
       )}
       {alphaWarn && <div className="landmark-warning">⚠ this screen's crop has transparent pixels — composite_landmarks.py will reject it (off-camera area of the render?)</div>}

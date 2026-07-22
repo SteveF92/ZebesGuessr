@@ -163,7 +163,9 @@ function landmarkEditor(): Plugin {
       });
       // POST /__bake-landmarks { game } -> run the pipeline chain that turns
       // the saved manifest into tiles: composite_landmarks -> slice_maps ->
-      // the game's extractor, then prettier on the regenerated game JSON
+      // mirror_kept_tiles (slicing skips keepTiles cells, so stamps/overrides
+      // landing on one are mirrored into the committed PNG afterwards) -> the
+      // game's extractor, then prettier on the regenerated game JSON
       // (matching `npm run format` so the working tree stays commit-ready).
       // Takes ~30-60s; one bake at a time (the module-level `baking` flag).
       server.middlewares.use('/__bake-landmarks', (req, res) => {
@@ -184,7 +186,7 @@ function landmarkEditor(): Plugin {
               if (!config[game]) throw new Error('unknown game');
               const extractor = (config[game].mapStyle ?? 'snes') === 'gba' ? 'extract_gba_maps.py' : 'extract_ingame_maps.py';
               const logs: string[] = [];
-              for (const script of ['composite_landmarks.py', 'slice_maps.py', extractor]) {
+              for (const script of ['composite_landmarks.py', 'slice_maps.py', 'mirror_kept_tiles.py', extractor]) {
                 const r = await run('python', [`pipeline/${script}`, game]);
                 logs.push(`== ${script}\n${r.out.trim()}`);
                 if (r.code !== 0) throw new Error(`${script} exited ${r.code}:\n${r.out.slice(-2000)}`);

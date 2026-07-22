@@ -90,9 +90,8 @@ an image editor and pinning it via `localSource` (then delete that area's
 manifest entries). Either way, follow
 the slice with the extractor (step 5) — slicing rewrites the game JSON from
 scratch, so the pause-map draw data must be re-patched in. A stamp landing on a
-`keepTiles` cell won't reach that tile — apply it to the committed tile PNG by
-hand at the same in-tile offset (Fusion's Zazabi on sector-2 `(14,13)` is the
-one live example).
+`keepTiles` cell can't reach that tile through the slicer, so
+`mirror_kept_tiles.py` (step 4b) paints it into the committed PNG afterwards.
 
 ### Sprite files and categories
 
@@ -148,8 +147,13 @@ hatch in the wrong door color, and the wrong-color door is the worse
 artifact.
 Overrides are pasted onto the pristine copy _before_ landmark stamping, so
 stamps land on top, and the paste honors `cellCropOffsets` like the slicer.
-The same `keepTiles` trap applies: an override under a kept cell never reaches
-the tile PNG. Rebake with the usual composite → slice → extract → format
+An override under a `keepTiles` cell can't reach the tile through the slicer
+either, so `mirror_kept_tiles.py` (step 4b) writes it into the committed PNG —
+wholesale, since an override is a whole opaque screen, which means the kept
+cell's hand-painted art is fully superseded there (Tourian's Command Center
+row `(2,9)`–`(5,9)` is the live example: its hand-filled margins were replaced
+outright by the `command-center-initial` render). Rebake with the usual
+composite → slice → mirror → extract → format
 chain; only the targeted `cell_<x>_<y>.png`s (plus the area's `map.png`
 backdrop) should change — the game JSON must not. Known limitation: the
 Landmark tool previews against the pristine map, so overrides only show up
@@ -162,7 +166,8 @@ For Fusion and Zero Mission the whole workflow is in-app: the editor's
 must be named first). Click a cell to see its room's render gridded into
 screens — every render pads the room with 32px of off-camera tiles, and the
 crop math relies on it — then click screens to toggle per-cell overrides
-(✓ = this room's override, ≠ = a different image, orange = keepTiles trap),
+(✓ = this room's override, ≠ = a different image, orange = a kept tile, which
+only a full bake can reach — see step 4b),
 compare the crop against the current baked tile, and **Save** (writes the
 manifest and copies the render byte-identical into `tile-sources/`) or
 **Save + Bake**.
@@ -181,6 +186,29 @@ further:
   16 junk px on the right; harmless, floor division drops it).
 - Watermarks/credit text picked up as playable cells (green box around junk) →
   `excludeCells`. (Fusion: Sector 4's bottom-right VGMaps logo.)
+
+## 4b. Mirror into the kept tiles
+
+```
+python pipeline/mirror_kept_tiles.py <game-id>
+```
+
+A no-op unless the game has `keepTiles` cells with a stamp or override on them,
+and free to run always. Those tiles are hand-painted, so the slicer never
+rewrites them — which also means nothing `composite_landmarks.py` painted onto
+that part of the source map ever arrived. This step rebuilds each affected tile
+as **base → override → stamps**, the same order and geometry the compositor
+used, where the base is the hand-painted art kept in
+`pipeline/tile-bases/<game>/<area>/cell_<x>_<y>.png` (committed next to the
+tile). Working from a stored base instead of the live tile is what keeps it
+idempotent: a stamp that moves leaves no ghost, and one that goes away restores
+the tile from its base and drops the base file.
+
+The base is seeded from the current committed tile the first time a cell needs
+one, and the script says so loudly — seed a cell whose tile is _clean_, or
+whatever was already mirrored in becomes part of the base permanently. If you
+are adopting a cell that was mirrored by hand before this script existed,
+recover the pre-mirror tile from git history and drop it in as the base first.
 
 ## 5. Extract the in-game maps
 

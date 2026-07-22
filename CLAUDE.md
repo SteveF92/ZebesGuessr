@@ -31,6 +31,7 @@ There is no lint setup. The map pipeline (Python, needs `pip install pillow nump
 python pipeline/download_maps.py [game]       # fetch source maps into Images/raw/ (gitignored)
 python pipeline/composite_landmarks.py [game] # stamp boss/ship/landmark sprites onto the raw maps (no-op without a landmarks.<game>.json)
 python pipeline/slice_maps.py [game]          # slice per-screen tiles, write base public/data/<game>.json
+python pipeline/mirror_kept_tiles.py [game]   # paint stamps/overrides into the keepTiles tiles the slicer skips
 python pipeline/extract_ingame_maps.py [game] # patch that JSON with per-area "map" objects (mapStyle "snes")
 python pipeline/extract_gba_maps.py [game]    # same, for mapStyle "gba" (Metroid Fusion / Zero Mission)
 ```
@@ -51,15 +52,29 @@ tool (click a cell for a zoomed WYSIWYG panel — drag/arrow-nudge stamps, **Sav
 landmarks** writes the manifest via the dev-only `/__save-landmarks` middleware
 in `vite.config.ts`; it previews against the pristine map served by
 `/__landmark-image`, so no bake is needed to see a move) or by editing the
-manifest by hand; either way, bake by rerunning it + `slice_maps.py` + the
-extractor (slicing rewrites the JSON, so the extractor must re-patch it) —
-the panel's **Save + Bake** button runs that whole chain server-side
-(`/__bake-landmarks`, ~30s) including prettier on the game JSON. Or
-hand-layer sprites onto an area PNG in an image editor and pin it via
-`localSource`, deleting that area's manifest entries.
-One trap: a stamp under a `keepTiles` cell never reaches the tile PNG (the
-kept tile wins), so mirror it into the committed tile by hand at the same
-in-tile offset — Fusion's Zazabi on sector-2 `(14,13)` is the live example.
+manifest by hand; either way, bake by rerunning it + `slice_maps.py` +
+`mirror_kept_tiles.py` + the extractor (slicing rewrites the JSON, so the
+extractor must re-patch it) — the panel's **Save + Bake** button runs that
+whole chain server-side (`/__bake-landmarks`, ~30s) including prettier on the
+game JSON. Or hand-layer sprites onto an area PNG in an image editor and pin it
+via `localSource`, deleting that area's manifest entries.
+
+A `keepTiles` cell is the one thing the compositor can't reach: its tile PNG is
+hand-painted, so the slicer never rewrites it and a stamp landing there dies at
+the slice step. **`mirror_kept_tiles.py` closes that gap** — for every kept cell
+a stamp or override touches it rebuilds the tile as base → override → stamps,
+in the compositor's own order and geometry. The base is the hand-painted art
+with nothing mirrored in, committed at
+`pipeline/tile-bases/<game>/<area>/cell_<x>_<y>.png`; rebuilding from it (not
+from the live tile) is what makes reruns idempotent, so a moved stamp leaves no
+ghost and a deleted one restores the tile and drops its base. The base is seeded
+from the current committed tile the first time a cell needs one — the script
+warns when it does, and that seed must be a tile with nothing already mirrored
+into it, or the old art is stuck in the base forever. Live examples: Fusion's
+Zazabi on sector-2 `(14,13)` (a stamp) and ZM Tourian's Command Center row
+`(2,9)`–`(5,9)` (an override). A cell that _loses_ its `keepTiles` flag needs
+no mirror at all — the slicer reaches it again — so the script just drops the
+base.
 
 The composite step also applies **tile overrides** — whole-screen swaps to an
 alternate room state (rips capture one story moment; Fusion's are endgame,
@@ -69,8 +84,10 @@ and e.g. Sub-Zero Containment's frozen Ridley stood tall until mid-game).
 committed under `pipeline/tile-sources/<game>/<area>/` byte-identical to its
 upstream origin (Randovania room renders, MAGE exports), with `sx`/`sy`
 cropping the screen out of a larger room render. Pasted from pristine before
-landmark stamping (stamps land on top), honoring `cellCropOffsets`; the
-keepTiles trap applies here too. Prefer overriding every screen of a
+landmark stamping (stamps land on top), honoring `cellCropOffsets`; kept cells
+are reached by `mirror_kept_tiles.py` like stamps are, except wholesale — an
+override is a whole opaque screen, so it supersedes the hand-painted art
+entirely. Prefer overriding every screen of a
 multi-screen room from the same render (else the X-Ray overlay gets a
 mid-room state seam) — but it's a judgment call; Sub-Zero Containment's right
 screen stays endgame because the render's hatch color is wrong. The script
@@ -97,7 +114,7 @@ Order matters: `slice_maps.py` writes the base JSON (the tile list — one entry
 
 The extractor never drops a cell. If the pause map draws something the sliced map has no tile for, it keeps it and prints a **WARNING** naming the cells — fix it by adding them to `includeCells` in `maps.config.json` (a dark room under `slice_maps.py`'s fill threshold, usually). It should always be zero; the old behaviour was to silently delete those targets, which cost a long line of "recover room X as a valid tile" commits.
 
-`slice_maps.py` re-generates every tile PNG for a game each run and **prunes** any cell PNG no longer playable (so removed cells leave no orphans and `public/tiles/<game>/<area>/` always matches the JSON). A handful of tiles are hand-painted to fill a partial source screen (a room clipped by the sheet edge, or a game-side quirk) — list those cells in an area's `keepTiles` so the re-slice doesn't overwrite the committed PNG. The cell stays playable and in the JSON; only its tile write is skipped (a first run with no PNG yet still writes the base to edit from).
+`slice_maps.py` re-generates every tile PNG for a game each run and **prunes** any cell PNG no longer playable (so removed cells leave no orphans and `public/tiles/<game>/<area>/` always matches the JSON). A handful of tiles are hand-painted to fill a partial source screen (a room clipped by the sheet edge, or a game-side quirk) — list those cells in an area's `keepTiles` so the re-slice doesn't overwrite the committed PNG. The cell stays playable and in the JSON; only its tile write is skipped (a first run with no PNG yet still writes the base to edit from) — `mirror_kept_tiles.py` then paints any stamp or override back over that hand-painted art, so a kept tile isn't cut off from the compositor.
 
 The pipeline is reproducible: rerunning it (then `npm run format`) reproduces the committed `<game>.json` — no hand-edits live in that file. Both scripts write `json.dumps(..., indent=2)` so Prettier keeps objects expanded (one field per line); the extractor bakes in `mapOverrides.<game>.json` (see below) so the diagonals it can't fit stay correct. `extract_ingame_maps.py` globs `public/data/*.json` and skips any file lacking a top-level `game`/`areas` key, so the sidecar files (`glyphs.*`, `overlays.*`, `difficulty.*`, `roomNames.*`, `mapOverrides.*`) are left untouched.
 

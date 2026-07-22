@@ -362,13 +362,11 @@ export default function LandmarkEditor({ game, areaId, cell }: { game: string; a
       {paletteOpen && <SpritePalette groups={groups} game={game} onPick={addStamp} />}
       {kept && (
         <div className="landmark-warning">
-          ⚠ ({cell.x},{cell.y}) is a keepTiles cell: the bake skips its tile PNG — mirror any stamp into the committed tile by hand (see CLAUDE.md).
+          ⚠ ({cell.x},{cell.y}) is a keepTiles cell: slicing skips its hand-painted tile PNG, so a stamp only reaches it via Save + Bake (which mirrors it in) — plain Save won't.
         </div>
       )}
       {keptOverlaps.length > 0 && (
-        <div className="landmark-warning">
-          ⚠ stamps overlap keepTiles tile(s) the bake won't touch: {keptOverlaps.join(', ')} — after baking, hand-mirror the overlap into the committed tile PNG (see CLAUDE.md).
-        </div>
+        <div className="landmark-warning">⚠ stamps overlap keepTiles tile(s) the slicer won't rewrite: {keptOverlaps.join(', ')} — Save + Bake mirrors the overlap into those committed PNGs.</div>
       )}
       <canvas ref={canvasRef} className="landmark-canvas" onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp} />
     </div>

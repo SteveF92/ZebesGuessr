@@ -7,7 +7,8 @@ alpha-transparent poses (pipeline/sprites/<game>/) onto Images/raw/<game>/
 between download and slice, so the landmark art flows into the sliced tiles
 (mystery screens and the X-Ray overlay both render those):
 
-    download_maps.py -> composite_landmarks.py -> slice_maps.py -> extract_*.py
+    download_maps.py -> composite_landmarks.py -> slice_maps.py
+        -> mirror_kept_tiles.py -> extract_*.py
 
 Placements live in pipeline/landmarks.<game>.json, keyed by area id, each
 stamp { "sprite": "<path>", "x": <px>, "y": <px> } in raw source-map pixel
@@ -29,8 +30,9 @@ pipeline/ (sources live in pipeline/tile-sources/<game>/<area>/, committed
 byte-identical to their upstream origin so provenance stays checkable);
 "sx"/"sy" (default 0) crop a cellWidth x cellHeight screen out of a larger
 room render. Overrides are pasted before landmark stamping so stamps land on
-top, exactly as slicing will see them. The keepTiles trap applies here too: an
-override under a keepTiles cell never reaches the tile PNG.
+top, exactly as slicing will see them. A keepTiles cell's tile PNG is never
+rewritten by the slicer, so neither an override nor a stamp reaches it from
+here — mirror_kept_tiles.py mirrors them in afterwards.
 
 The pristine (unstamped) copy of each touched area is kept in
 Images/raw/<game>/pristine/ and stamping always restarts from it, so reruns
@@ -78,9 +80,9 @@ def paste_overrides(img, entries, area, cw, ch, ox, oy):
             raise SystemExit(f"{area_id}: ({o['x']},{o['y']}) paste at ({px},{py}) "
                              "is outside the raw image")
         if (o["x"], o["y"]) in kept:
-            print(f"  WARNING {area_id}: override at ({o['x']},{o['y']}) targets a "
-                  "keepTiles cell - it will never reach the tile PNG; mirror it "
-                  "into the committed tile by hand")
+            print(f"  note: {area_id}: override at ({o['x']},{o['y']}) targets a "
+                  "keepTiles cell - the slicer skips that tile, so "
+                  "mirror_kept_tiles.py has to run to reach it")
         img.paste(patch, (px, py))
         print(f"  {area_id}: tile override ({o['x']},{o['y']}) <- {o['image']} @ ({sx},{sy})")
 
