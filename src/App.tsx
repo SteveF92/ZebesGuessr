@@ -5,6 +5,7 @@ import { AboutModal, Credits } from './components/AboutModal';
 import { SeedEntryModal } from './components/SeedEntryModal';
 import { CreateSeed } from './components/CreateSeed';
 import { HoverScan } from './components/HoverScan';
+import { Stars } from './components/Stars';
 import { TitleCritters } from './components/TitleCritters';
 import { useCountUp } from './hooks/useCountUp';
 import { useTypewriter } from './hooks/useTypewriter';
@@ -37,10 +38,16 @@ type Phase = 'menu' | 'loading' | 'creating' | 'guessing' | 'reveal' | 'summary'
 const REVEAL_MAP_MS = 2900;
 const isPhone = () => typeof window !== 'undefined' && window.matchMedia('(max-width: 800px)').matches;
 
-/** Read a `?seed=` code from the URL and decode it (null if absent/malformed). */
+/** Read a `?seed=` code from the URL and decode it (null if absent/malformed).
+ *  The URL is untrusted input: the 3-bit game/difficulty fields decode for
+ *  slots that don't exist yet, so reject those here — otherwise the menu locks
+ *  itself to a seed it can't play. (Manual entry validates the same way in
+ *  SeedEntryModal.) */
 function readSeedFromUrl(): Seed | null {
   const code = new URLSearchParams(window.location.search).get('seed');
-  return code ? decodeSeed(code) : null;
+  const seed = code ? decodeSeed(code) : null;
+  if (seed && (!GAMES[seed.gameIndex]?.available || !DIFFICULTIES[seed.diffIndex])) return null;
+  return seed;
 }
 
 /** fixed background flare: starfield + CRT scanlines + sweep bar.
@@ -175,6 +182,15 @@ export default function App() {
       // so the code held for sharing at the summary always round-trips.
       const gameIndex = GAMES.findIndex((g) => g.id === gameId);
       const targets = runSeed ? targetsFromIndices(d, runSeed.indices) : pickTargets(d, ROUNDS_PER_RUN, difficulty, Math.random);
+      // A stale seed (minted against older map data) can hold indices past the
+      // current cell pool; targetsFromIndices drops those. Rather than play a
+      // short (or empty — that renders `targets[0]` and crashes) run, reject it
+      // — and unlock the menu first, or START would just retry the dead seed.
+      if (runSeed && targets.length !== runSeed.indices.length) {
+        window.history.replaceState({}, '', window.location.pathname);
+        setLoadedSeed(null);
+        throw new Error('SEED REJECTED — this code was minted against older map data.');
+      }
       const indices = runSeed ? runSeed.indices : indicesFromTargets(cellPool(d), targets);
       const diffIndex = runSeed ? runSeed.diffIndex : DIFFICULTIES.findIndex((dd) => dd.id === difficultyId);
       setActiveSeedCode(encodeSeed({ gameIndex, diffIndex, indices }));
@@ -452,8 +468,7 @@ export default function App() {
                   <div className="round-sub">
                     {rn && <span className="round-room">“{rn}”</span>}
                     <span className="round-stars" title={`Difficulty ${r.rating}/5`}>
-                      <span className="round-stars-label">DIFFICULTY</span> {'★'.repeat(r.rating)}
-                      {'☆'.repeat(5 - r.rating)}
+                      <span className="round-stars-label">DIFFICULTY</span> <Stars rating={r.rating} />
                     </span>
                   </div>
                   <div className="bar-track">
@@ -565,11 +580,7 @@ export default function App() {
               <p className="reveal-area">{areaName(data, result.target.areaId)}</p>
               {roomName(data, result.target) && <p className="reveal-room">“{roomName(data, result.target)}”</p>}
               <p className="reveal-rating">
-                DIFFICULTY{' '}
-                <span className="rating-stars">
-                  {'★'.repeat(result.rating)}
-                  {'☆'.repeat(5 - result.rating)}
-                </span>
+                DIFFICULTY <Stars rating={result.rating} />
               </p>
               <p className="reveal-dist">{isFinite(result.distance) ? (result.distance === 0 ? 'Exact cell.' : `${result.distance.toFixed(1)} cells away`) : 'Wrong area entirely.'}</p>
               <div className={`reveal-scoreline${result.distance === 0 ? ' exact' : ''}`}>
