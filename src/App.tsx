@@ -417,6 +417,21 @@ export default function App() {
         </p>
         {error && <p className="error">{error}</p>}
 
+        {/* The daily sits above the loadout pickers: it's its own self-contained
+            mission (game + difficulty preset), not part of choosing one. */}
+        <button
+          className={`daily-btn${dailyScore !== undefined ? ' done' : ''}`}
+          disabled={phase === 'loading' || !!loadedSeed}
+          onClick={startDaily}
+          title="The same five screens for every hunter, every day"
+        >
+          <span className="daily-kicker">◆ DAILY MISSION #{dailyNumber(todayKey)} ◆</span>
+          <span className="daily-desc">
+            {GAMES.find((g) => g.id === dailyGameId(todayKey))?.title} · {dailyDifficulty(todayKey).label}
+          </span>
+          <span className="daily-state">{dailyScore !== undefined ? `COMPLETE — ${dailyScore.toLocaleString()} · REPLAY ▶` : 'ONE MISSION. EVERY HUNTER. EVERY DAY. ▶'}</span>
+        </button>
+
         <div style={{ width: '100%', maxWidth: 760 }}>
           <p className="loadout-label">◇ CHOOSE YOUR MISSION ◇</p>
 
@@ -452,18 +467,6 @@ export default function App() {
             INITIALIZING OBSERVATORY<span className="cursor">_</span>
           </p>
         )}
-        <button
-          className={`daily-btn${dailyScore !== undefined ? ' done' : ''}`}
-          disabled={phase === 'loading' || !!loadedSeed}
-          onClick={startDaily}
-          title="The same five screens for every hunter, every day"
-        >
-          <span className="daily-kicker">◆ DAILY MISSION #{dailyNumber(todayKey)} ◆</span>
-          <span className="daily-desc">
-            {GAMES.find((g) => g.id === dailyGameId(todayKey))?.title} · {dailyDifficulty(todayKey).label}
-          </span>
-          <span className="daily-state">{dailyScore !== undefined ? `COMPLETE — ${dailyScore.toLocaleString()} · REPLAY ▶` : 'ONE MISSION. EVERY HUNTER. EVERY DAY. ▶'}</span>
-        </button>
         <div className="menu-actions">
           {(import.meta.env.DEV || unlocks.create) && (
             <button className="btn secondary seed-entry-btn menu-btn-create" disabled={phase === 'loading' || !!loadedSeed} onClick={startCreate} title="Hand-pick five screens and share the seed">
