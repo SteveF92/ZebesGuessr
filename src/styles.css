@@ -447,13 +447,6 @@ a:hover {
   max-width: 480px;
 }
 
-.loadout-label {
-  font-family: var(--font-display);
-  font-size: 14px;
-  letter-spacing: 0.28em;
-  color: var(--dim);
-  margin-bottom: 9px;
-}
 .diff-row {
   display: flex;
   gap: 10px;
@@ -585,8 +578,8 @@ a:hover {
   align-items: center;
   gap: 5px;
   width: 100%;
-  max-width: 560px;
-  margin: 10px 0 26px;
+  max-width: 760px; /* matched to .random-panel so the two options read as parallel cards */
+  margin: 10px 0 0;
   padding: 13px 18px 12px;
   font-family: var(--font-body);
   cursor: pointer;
@@ -635,8 +628,67 @@ a:hover {
   text-shadow: 0 0 12px rgba(255, 210, 77, 0.35);
   margin: -6px 0 10px;
 }
+/* The OR between the two mission cards: dim rules out to both sides. */
+.mission-or {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  max-width: 360px;
+  margin: 10px 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.3em;
+  color: var(--dim);
+}
+.mission-or::before,
+.mission-or::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+/* The other mission card: pick a game + difficulty, START. Cyan against the
+   daily's gold, same card language. Doubles as the locked SEEDED MISSION
+   frame when a seed is loaded (its pickers disable, START runs the seed). */
+.random-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 760px;
+  padding: 14px 18px 18px;
+  border: 1px solid rgba(160, 248, 248, 0.28);
+  border-radius: 10px;
+  background: linear-gradient(rgba(160, 248, 248, 0.045), rgba(160, 248, 248, 0.015)), var(--panel);
+}
+.random-title {
+  font-family: var(--font-display);
+  font-size: 13px;
+  letter-spacing: 0.16em;
+  color: var(--cyan);
+  text-shadow: 0 0 12px rgba(160, 248, 248, 0.3);
+  margin: 0 0 12px;
+}
+.loadout-sublabel {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.24em;
+  color: var(--dim);
+  margin: 0 0 8px;
+}
+.random-panel .game-list {
+  margin-bottom: 14px;
+}
+.random-panel .diff-row {
+  width: 100%;
+}
+.random-panel .btn.start {
+  margin-top: 16px;
+}
 
-/* START + SEED ENTRY sit side by side, matched in height. */
+/* CREATE SEED + SEED ENTRY sit side by side under the mission cards (START
+   lives inside .random-panel now). */
 .menu-actions {
   display: flex;
   align-items: stretch;
@@ -654,13 +706,8 @@ a:hover {
   justify-content: center;
   line-height: 1.1;
 }
-.menu-actions .btn.start {
-  margin-top: 0; /* drop the stacked-layout top margin so both buttons align */
-  order: 2;
-}
-/* Create Seed sits left of START; Seed Entry sits right of START when both
-   are unlocked, but when it's the only secondary button it moves to
-   START's left instead (.seed-solo, set in App.tsx). */
+/* Create Seed left, Seed Entry right (.seed-solo is moot now that START no
+   longer sits between them, but harmless). */
 .menu-actions .menu-btn-create {
   order: 1;
 }
@@ -2823,9 +2870,8 @@ a:hover {
     display: none;
   }
 
-  /* Menu actions stack into one column on phones, always in this order
-     regardless of which secondary buttons are unlocked: Seed Entry, then
-     Create Seed, then Start Mission anchored at the bottom. */
+  /* Menu actions stack into one column on phones: Seed Entry, then Create
+     Seed (START lives inside .random-panel). */
   .menu-actions {
     flex-direction: column;
   }
@@ -2836,8 +2882,8 @@ a:hover {
   .menu-actions .menu-btn-create {
     order: 2;
   }
-  .menu-actions .btn.start {
-    order: 3;
+  .random-panel {
+    padding: 12px 10px 14px;
   }
 }
 

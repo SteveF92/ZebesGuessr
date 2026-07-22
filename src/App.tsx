@@ -417,8 +417,11 @@ export default function App() {
         </p>
         {error && <p className="error">{error}</p>}
 
-        {/* The daily sits above the loadout pickers: it's its own self-contained
-            mission (game + difficulty preset), not part of choosing one. */}
+        {/* The menu reads as two parallel missions: today's shared DAILY (gold,
+            game + difficulty preset baked in) OR a RANDOM one you configure —
+            the panel owns the pickers and START so the whole loadout flow
+            reads as one option. A URL/entered seed repurposes the panel as the
+            locked SEEDED mission. */}
         <button
           className={`daily-btn${dailyScore !== undefined ? ' done' : ''}`}
           disabled={phase === 'loading' || !!loadedSeed}
@@ -432,9 +435,14 @@ export default function App() {
           <span className="daily-state">{dailyScore !== undefined ? `COMPLETE — ${dailyScore.toLocaleString()} · REPLAY ▶` : 'ONE MISSION. EVERY HUNTER. EVERY DAY. ▶'}</span>
         </button>
 
-        <div style={{ width: '100%', maxWidth: 760 }}>
-          <p className="loadout-label">◇ CHOOSE YOUR MISSION ◇</p>
+        <div className="mission-or" aria-hidden="true">
+          <span>OR</span>
+        </div>
 
+        <div className="random-panel">
+          <p className="random-title">{loadedSeed ? '◇ SEEDED MISSION ◇' : '◇ RANDOM MISSION ◇'}</p>
+
+          <p className="loadout-sublabel">GAME</p>
           <div className="game-list">
             {GAMES.map((g) => (
               <button key={g.id} className={`game-btn ${g.id === selectedGameId ? 'active' : ''}`} disabled={!g.available || phase === 'loading' || !!loadedSeed} onClick={() => pickGame(g.id)}>
@@ -444,8 +452,7 @@ export default function App() {
             ))}
           </div>
 
-          <p className="loadout-label">◇ CHOOSE YOUR DIFFICULTY ◇</p>
-
+          <p className="loadout-sublabel">DIFFICULTY</p>
           <div className="diff-row">
             {DIFFICULTIES.map((d) => (
               <button
@@ -460,6 +467,10 @@ export default function App() {
               </button>
             ))}
           </div>
+
+          <button className="btn primary start" disabled={phase === 'loading'} onClick={() => startGame(selectedGameId)}>
+            START MISSION ▶
+          </button>
         </div>
 
         {phase === 'loading' && (
@@ -467,24 +478,23 @@ export default function App() {
             INITIALIZING OBSERVATORY<span className="cursor">_</span>
           </p>
         )}
-        <div className="menu-actions">
-          {(import.meta.env.DEV || unlocks.create) && (
-            <button className="btn secondary seed-entry-btn menu-btn-create" disabled={phase === 'loading' || !!loadedSeed} onClick={startCreate} title="Hand-pick five screens and share the seed">
-              ◈ CREATE SEED
-            </button>
-          )}
-          <button className="btn primary start" disabled={phase === 'loading'} onClick={() => startGame(selectedGameId)}>
-            START MISSION ▶
-          </button>
-          {(import.meta.env.DEV || unlocks.enterSeed) && (
-            <button
-              className={`btn secondary seed-entry-btn menu-btn-seed${import.meta.env.DEV || unlocks.create ? '' : ' seed-solo'}${loadedSeed ? ' locked' : ''}`}
-              onClick={() => setShowSeedEntry(true)}
-            >
-              {loadedSeed ? '◈ SEED LOCKED' : '◈ SEED ENTRY'}
-            </button>
-          )}
-        </div>
+        {(import.meta.env.DEV || unlocks.create || unlocks.enterSeed) && (
+          <div className="menu-actions">
+            {(import.meta.env.DEV || unlocks.create) && (
+              <button className="btn secondary seed-entry-btn menu-btn-create" disabled={phase === 'loading' || !!loadedSeed} onClick={startCreate} title="Hand-pick five screens and share the seed">
+                ◈ CREATE SEED
+              </button>
+            )}
+            {(import.meta.env.DEV || unlocks.enterSeed) && (
+              <button
+                className={`btn secondary seed-entry-btn menu-btn-seed${import.meta.env.DEV || unlocks.create ? '' : ' seed-solo'}${loadedSeed ? ' locked' : ''}`}
+                onClick={() => setShowSeedEntry(true)}
+              >
+                {loadedSeed ? '◈ SEED LOCKED' : '◈ SEED ENTRY'}
+              </button>
+            )}
+          </div>
+        )}
         {hasLog && (
           <button className="btn secondary menu-log-btn" onClick={() => setShowLog(true)} title="Your run history and stats">
             ◈ MISSION LOG
