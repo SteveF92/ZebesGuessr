@@ -25,11 +25,13 @@ export function roundEmoji(r: RoundResult): string {
   return scoreEmoji(r.distance, r.score, r.rating);
 }
 
-/** The five-line share blurb: header, score+rank, emoji row, difficulty, URL. */
-export function buildShareText(data: GameData, results: RoundResult[], total: number, difficulty: Difficulty, url = GAME_URL): string {
+/** The five-line share blurb: header, score+rank, emoji row, difficulty, URL.
+ *  A Daily Mission run brands the header with its number instead —
+ *  "ZebesGuessr Daily #42 · <title>", Wordle-style. */
+export function buildShareText(data: GameData, results: RoundResult[], total: number, difficulty: Difficulty, url = GAME_URL, dailyNum?: number | null): string {
   const maxTotal = results.reduce((s, r) => s + maxForRating(r.rating), 0);
   return [
-    `ZebesGuessr · ${data.title}`,
+    dailyNum ? `ZebesGuessr Daily #${dailyNum} · ${data.title}` : `ZebesGuessr · ${data.title}`,
     `${scoreRank(total)} · ${total.toLocaleString()} / ${maxTotal.toLocaleString()}`,
     results.map(roundEmoji).join(''),
     `Difficulty: ${difficulty.label}`,

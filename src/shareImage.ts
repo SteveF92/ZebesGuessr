@@ -12,6 +12,8 @@ export interface ShareImageOpts {
   difficulty: Difficulty;
   /** The run's replayable seed code, drawn under the header. */
   seedCode?: string;
+  /** Daily Mission number — brands the difficulty line when set. */
+  dailyNum?: number | null;
   /** Draw the row of mystery-screen thumbnails. Default true. */
   includeThumbnails?: boolean;
 }
@@ -47,7 +49,7 @@ const FOOTER_H = 26;
 
 /** Draw the scorecard and resolve to a PNG Blob (or null if rendering failed). */
 export async function buildShareImage(opts: ShareImageOpts): Promise<Blob | null> {
-  const { data, results, total, maxTotal, difficulty, seedCode, includeThumbnails = true } = opts;
+  const { data, results, total, maxTotal, difficulty, seedCode, dailyNum, includeThumbnails = true } = opts;
   try {
     const thumbSize = Math.floor((W - 2 * PAD - THUMB_GAP * (results.length - 1)) / results.length);
     const H = PAD + HEADER_H + results.length * ROW_H + (includeThumbnails ? STRIP_GAP + thumbSize : 0) + FOOTER_H + PAD;
@@ -121,9 +123,11 @@ export async function buildShareImage(opts: ShareImageOpts): Promise<Blob | null
     ctx.restore();
     y += 28;
 
-    ctx.fillStyle = COL.dim;
+    // On a daily run this line carries the branding (the mono face has the
+    // full glyph set — the pixel faces above lack "#").
+    ctx.fillStyle = dailyNum ? COL.gold : COL.dim;
     ctx.font = `500 13px ${MONO}`;
-    ctx.fillText(`Difficulty: ${difficulty.label}`, W / 2, y + 12);
+    ctx.fillText(dailyNum ? `◆ Daily Mission #${dailyNum} · ${difficulty.label} ◆` : `Difficulty: ${difficulty.label}`, W / 2, y + 12);
     y += 22;
 
     if (seedCode) {

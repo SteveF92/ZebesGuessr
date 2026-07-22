@@ -25,7 +25,8 @@ const UNLOCK_LABELS: Record<keyof Unlocks, string> = {
 const UNLOCK_ORDER: (keyof Unlocks)[] = ['enterSeed', 'scan', 'xray', 'create'];
 
 import { MissionLogModal } from './components/MissionLogModal';
-import { appendRun, readLog, toLogRounds } from './missionLog';
+import { dailyDifficulty, dailyGameId, dailyKey, dailyNumber, dailyTargets } from './daily';
+import { appendRun, readDailyRecord, readLog, recordDaily, toLogRounds } from './missionLog';
 import { ShareModal } from './components/ShareModal';
 import { type Seed, decodeSeed, encodeSeed } from './seed';
 import type { Cell, GameData, RoundResult, RoundTarget } from './types';
@@ -122,6 +123,9 @@ export default function App() {
   // Latches true the moment a visor is switched on during a run, so the run
   // can't set a personal best. Reset at the start of each run.
   const [visorsUsed, setVisorsUsed] = useState(false);
+  // The Daily Mission dateKey this run was launched from (null = a normal
+  // run). Tags the summary/share/log; only startDaily sets it.
+  const [activeDaily, setActiveDaily] = useState<string | null>(null);
   const [showShare, setShowShare] = useState(false);
   // Features whose gate this run just crossed — drives the Prime-style acquired
   // banner on the summary. Populated once when we bump the PB; cleared per run.
@@ -134,6 +138,11 @@ export default function App() {
   // Whether the menu shows the MISSION LOG button — re-read whenever we're
   // back on the menu, since a just-finished run appends to the log.
   const hasLog = useMemo(() => readLog().length > 0, [phase]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Today's Daily Mission, resolved fresh whenever the menu shows (so a tab
+  // left open overnight rolls over on its next visit to the menu). The score
+  // is the locked-in first completion, undefined until the day is played.
+  const todayKey = useMemo(dailyKey, [phase]); // eslint-disable-line react-hooks/exhaustive-deps
+  const dailyScore = useMemo(() => readDailyRecord()[todayKey], [phase, todayKey]); // eslint-disable-line react-hooks/exhaustive-deps
   // The unlock ladder gates on your best run across every game.
   const best = useMemo(() => Math.max(0, ...Object.values(bests)), [bests]);
   // What the player has earned: the four unlockables, off the sticky PB plus the
@@ -206,6 +215,41 @@ export default function App() {
       setSelected(null);
       setVisorsUsed(false);
       setJustUnlocked([]);
+      setActiveDaily(null);
+      setPhase('guessing');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+      setPhase('menu');
+    }
+  }
+
+  /** Launch today's Daily Mission: the date hash picks the game and screens,
+   *  the weekday picks the band (see daily.ts). Runs like any other mission —
+   *  it mints a normal seed code — but is tagged so the summary/share/log call
+   *  it the daily, and its first visor-free completion locks in `zg-daily`. */
+  async function startDaily() {
+    const key = dailyKey();
+    setPhase('loading');
+    setError(null);
+    try {
+      const gameId = dailyGameId(key);
+      const d = await loadGameData(gameId);
+      setData(d);
+      const targets = dailyTargets(d, key);
+      const diff = dailyDifficulty(key);
+      const gameIndex = GAMES.findIndex((g) => g.id === gameId);
+      const diffIndex = DIFFICULTIES.findIndex((dd) => dd.id === diff.id);
+      setActiveSeedCode(encodeSeed({ gameIndex, diffIndex, indices: indicesFromTargets(cellPool(d), targets) }));
+      // Mirror the run into the menu selectors, same as a seed run would.
+      setSelectedGameId(gameId);
+      setDifficultyId(diff.id);
+      setTargets(targets);
+      setRound(0);
+      setResults([]);
+      setSelected(null);
+      setVisorsUsed(false);
+      setJustUnlocked([]);
+      setActiveDaily(key);
       setPhase('guessing');
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -313,9 +357,13 @@ export default function App() {
       total,
       maxTotal: results.reduce((s, r) => s + maxForRating(r.rating), 0),
       practice: visorsUsed || undefined,
+      daily: activeDaily ?? undefined,
       seed: activeSeedCode ?? undefined,
       rounds: toLogRounds(results)
     });
+    // First visor-free completion locks in the day's score (recordDaily
+    // never overwrites, so replays don't touch it).
+    if (activeDaily && !visorsUsed) recordDaily(activeDaily, total);
   }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
@@ -404,6 +452,18 @@ export default function App() {
             INITIALIZING OBSERVATORY<span className="cursor">_</span>
           </p>
         )}
+        <button
+          className={`daily-btn${dailyScore !== undefined ? ' done' : ''}`}
+          disabled={phase === 'loading' || !!loadedSeed}
+          onClick={startDaily}
+          title="The same five screens for every hunter, every day"
+        >
+          <span className="daily-kicker">◆ DAILY MISSION #{dailyNumber(todayKey)} ◆</span>
+          <span className="daily-desc">
+            {GAMES.find((g) => g.id === dailyGameId(todayKey))?.title} · {dailyDifficulty(todayKey).label}
+          </span>
+          <span className="daily-state">{dailyScore !== undefined ? `COMPLETE — ${dailyScore.toLocaleString()} · REPLAY ▶` : 'ONE MISSION. EVERY HUNTER. EVERY DAY. ▶'}</span>
+        </button>
         <div className="menu-actions">
           {(import.meta.env.DEV || unlocks.create) && (
             <button className="btn secondary seed-entry-btn menu-btn-create" disabled={phase === 'loading' || !!loadedSeed} onClick={startCreate} title="Hand-pick five screens and share the seed">
@@ -449,6 +509,7 @@ export default function App() {
         <div className="debrief-grid">
           <div className="debrief-hero">
             <h1 className="debrief-title">MISSION FINAL</h1>
+            {activeDaily && <p className="daily-tag">◆ DAILY MISSION #{dailyNumber(activeDaily)} ◆</p>}
             <p className="total">
               {shownTotal.toLocaleString()} <span className="max">/ {maxTotal.toLocaleString()}</span>
             </p>
@@ -534,7 +595,17 @@ export default function App() {
         </div>
         <Credits onAbout={() => setShowAbout(true)} />
         {showAbout && <AboutModal onClose={() => setShowAbout(false)} />}
-        {showShare && <ShareModal data={data} results={results} total={total} difficulty={difficulty} seedCode={activeSeedCode} onClose={() => setShowShare(false)} />}
+        {showShare && (
+          <ShareModal
+            data={data}
+            results={results}
+            total={total}
+            difficulty={difficulty}
+            seedCode={activeSeedCode}
+            dailyNum={activeDaily ? dailyNumber(activeDaily) : null}
+            onClose={() => setShowShare(false)}
+          />
+        )}
       </div>
     );
   }

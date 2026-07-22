@@ -13,6 +13,8 @@ export interface ShareModalProps {
   total: number;
   difficulty: Difficulty;
   seedCode: string | null;
+  /** Daily Mission number when the run was the daily (brands text + image). */
+  dailyNum?: number | null;
   onClose: () => void;
 }
 
@@ -21,7 +23,7 @@ function flashLabel(state: Flash, idle: string, done: string): string {
   return state === 'done' ? `✓ ${done}` : state === 'error' ? '✗ TRY AGAIN' : idle;
 }
 
-export function ShareModal({ data, results, total, difficulty, seedCode, onClose }: ShareModalProps) {
+export function ShareModal({ data, results, total, difficulty, seedCode, dailyNum, onClose }: ShareModalProps) {
   const [blob, setBlob] = useState<Blob | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [imgFailed, setImgFailed] = useState(false);
@@ -30,7 +32,7 @@ export function ShareModal({ data, results, total, difficulty, seedCode, onClose
   const [copyTextState, setCopyTextState] = useState<Flash>('idle');
 
   const url = seedCode ? `${GAME_URL}?seed=${seedCode}` : GAME_URL;
-  const text = buildShareText(data, results, total, difficulty, url);
+  const text = buildShareText(data, results, total, difficulty, url, dailyNum);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -46,7 +48,7 @@ export function ShareModal({ data, results, total, difficulty, seedCode, onClose
     let alive = true;
     let objectUrl: string | null = null;
     const maxTotal = results.reduce((s, r) => s + maxForRating(r.rating), 0);
-    buildShareImage({ data, results, total, maxTotal, difficulty, seedCode: seedCode ?? undefined }).then((b) => {
+    buildShareImage({ data, results, total, maxTotal, difficulty, seedCode: seedCode ?? undefined, dailyNum }).then((b) => {
       if (!alive) return;
       if (!b) {
         setImgFailed(true);
