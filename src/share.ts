@@ -9,14 +9,20 @@ export const GAME_URL = 'https://www.zebesguessr.com/';
  * One emoji summarising how a round went, GeoGuessr/Wordle-style. Checked
  * distance-first because an exact hit is also `pct === 1` and a wrong-area
  * guess is `pct === 0` — the score bands only make sense in between.
+ * Also consumed by the Mission Log for its logged rounds (whose wrong-area
+ * distance is stored as null — pass Infinity).
  */
-export function roundEmoji(r: RoundResult): string {
-  if (r.distance === 0) return '🎯';
-  if (!isFinite(r.distance)) return '⬛';
-  const pct = r.score / maxForRating(r.rating);
+export function scoreEmoji(distance: number, score: number, rating: number): string {
+  if (distance === 0) return '🎯';
+  if (!isFinite(distance)) return '⬛';
+  const pct = score / maxForRating(rating);
   if (pct >= 0.8) return '🟩';
   if (pct >= 0.4) return '🟨';
   return '🟥';
+}
+
+export function roundEmoji(r: RoundResult): string {
+  return scoreEmoji(r.distance, r.score, r.rating);
 }
 
 /** The five-line share blurb: header, score+rank, emoji row, difficulty, URL. */

@@ -24,6 +24,8 @@ const UNLOCK_LABELS: Record<keyof Unlocks, string> = {
 };
 const UNLOCK_ORDER: (keyof Unlocks)[] = ['enterSeed', 'scan', 'xray', 'create'];
 
+import { MissionLogModal } from './components/MissionLogModal';
+import { appendRun, readLog, toLogRounds } from './missionLog';
 import { ShareModal } from './components/ShareModal';
 import { type Seed, decodeSeed, encodeSeed } from './seed';
 import type { Cell, GameData, RoundResult, RoundTarget } from './types';
@@ -111,6 +113,7 @@ export default function App() {
   const [showTiles, setShowTiles] = useState(false);
   const [hoverTile, setHoverTile] = useState<{ areaId: string; cell: Cell; name?: string } | null>(null);
   const [showAbout, setShowAbout] = useState(false);
+  const [showLog, setShowLog] = useState(false);
   const [showSeedEntry, setShowSeedEntry] = useState(false);
   // Two cheat codes, each a permanent unlock. The legacy `zg-cheat` flag only
   // ever unlocked the scan, so fold it into JUSTIN BAILEY (both visors).
@@ -128,6 +131,9 @@ export default function App() {
 
   const difficulty = getDifficulty(difficultyId);
   const total = results.reduce((s, r) => s + r.score, 0);
+  // Whether the menu shows the MISSION LOG button — re-read whenever we're
+  // back on the menu, since a just-finished run appends to the log.
+  const hasLog = useMemo(() => readLog().length > 0, [phase]); // eslint-disable-line react-hooks/exhaustive-deps
   // The unlock ladder gates on your best run across every game.
   const best = useMemo(() => Math.max(0, ...Object.values(bests)), [bests]);
   // What the player has earned: the four unlockables, off the sticky PB plus the
@@ -296,6 +302,22 @@ export default function App() {
     if (debug || showTiles) setVisorsUsed(true);
   }, [debug, showTiles]);
 
+  // Every completed run lands in the Mission Log, practice or not (the flag
+  // keeps tainted runs out of the stats, same rule as the PB guard below).
+  useEffect(() => {
+    if (phase !== 'summary' || !data || results.length === 0) return;
+    appendRun({
+      ts: Date.now(),
+      gameId: data.game,
+      diffId: difficultyId,
+      total,
+      maxTotal: results.reduce((s, r) => s + maxForRating(r.rating), 0),
+      practice: visorsUsed || undefined,
+      seed: activeSeedCode ?? undefined,
+      rounds: toLogRounds(results)
+    });
+  }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps
+
   useEffect(() => {
     if (phase === 'summary' && !visorsUsed && data && total > (bests[data.game] ?? 0)) {
       // Diff the unlock set at the old cross-game max against the new one so the
@@ -400,8 +422,14 @@ export default function App() {
             </button>
           )}
         </div>
+        {hasLog && (
+          <button className="btn secondary menu-log-btn" onClick={() => setShowLog(true)} title="Your run history and stats">
+            ◈ MISSION LOG
+          </button>
+        )}
         <Credits onAbout={() => setShowAbout(true)} />
         {showAbout && <AboutModal onClose={() => setShowAbout(false)} />}
+        {showLog && <MissionLogModal bests={bests} onClose={() => setShowLog(false)} />}
         {showSeedEntry && <SeedEntryModal onClose={() => setShowSeedEntry(false)} onSubmitSeed={applySeed} onUnlockCheat={unlockCheat} />}
       </div>
     );
