@@ -435,11 +435,9 @@
         "offsetY": 0,
         "localSource": true,
         "includeCells": [
+          [22, 0],
           [23, 0],
-          [23, 1]
-        ],
-        "keepTiles": [
-          [23, 0],
+          [22, 1],
           [23, 1]
         ],
         "excludeCells": [[28, 22]],

@@ -18,13 +18,6 @@
       "y": 321
     }
   ],
-  "chozodia": [
-    {
-      "sprite": "scenes/mecha-ridley.png",
-      "x": 5280,
-      "y": 112
-    }
-  ],
   "tourian": [
     {
       "sprite": "bosses/mother-brain.png",

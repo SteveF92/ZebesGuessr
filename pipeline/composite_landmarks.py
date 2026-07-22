@@ -92,8 +92,6 @@ def process_game(game_id: str, game: dict) -> None:
     overrides_path = ROOT / "pipeline" / f"tileOverrides.{game_id}.json"
     landmarks = json.loads(landmarks_path.read_text()) if landmarks_path.exists() else {}
     overrides = json.loads(overrides_path.read_text()) if overrides_path.exists() else {}
-    if not landmarks and not overrides:
-        return
     cw = game.get("cellWidth", game.get("cellSize"))
     ch = game.get("cellHeight", game.get("cellSize"))
     sprites_dir = ROOT / "pipeline" / "sprites" / game_id
@@ -102,9 +100,18 @@ def process_game(game_id: str, game: dict) -> None:
     for aid in list(landmarks) + list(overrides):
         if aid not in areas:
             raise SystemExit(f"{game_id}: manifest names unknown area {aid!r}")
+    # An area with a pristine copy was stamped on some earlier run; it still
+    # needs a pass even if every entry has since been deleted, so the restore
+    # from pristine erases the last ghost (manifest-listed areas only would
+    # leave the stale stamped raw in place forever).
+    def stamped_before(aid: str) -> bool:
+        return next((raw_dir / "pristine").glob(f"{aid}.*"), None) is not None
+    todo = [a["id"] for a in game["areas"]
+            if a["id"] in landmarks or a["id"] in overrides or stamped_before(a["id"])]
+    if not todo:
+        return
     print(f"== {game['title']}")
-    for area_id in [a["id"] for a in game["areas"]
-                    if a["id"] in landmarks or a["id"] in overrides]:
+    for area_id in todo:
         raw = next(raw_dir.glob(f"{area_id}.*"), None)
         if raw is None:
             print(f"  SKIPPING {area_id}: no raw image - run download_maps.py first")
