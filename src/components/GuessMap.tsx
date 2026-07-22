@@ -446,6 +446,12 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
     // smoothing would blur, so it flips off for authentic sharp pixels.
     ctx.imageSmoothingQuality = 'high';
     const cellDevW = view ? snapView(view).cw : S * SCALE * xScale; // device px per cell
+    // Two passes: tiles can carry alpha (transparentVoid areas key their void
+    // out) and can draw offset from their slot (xrayOffsets), so first lay a
+    // flat map-background rect over every loaded cell's own slot, then paint
+    // the screens. One pass would leave the recreation bleeding through the
+    // strip a shifted tile vacates (and through the keyed void).
+    const loaded: { c: (typeof area.cells)[number]; img: HTMLImageElement; ox: number; oy: number }[] = [];
     for (const c of area.cells) {
       if (c.x < vis.x0 || c.x > vis.x1 || c.y < vis.y0 || c.y > vis.y1) continue;
       const key = `${c.x},${c.y}`;
@@ -455,15 +461,15 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
       const hasXray = area.xrayTiles?.includes(key);
       const img = tileCache.current.get(hasXray ? xrayTileUrl(data, area.id, c) : tileUrl(data, { areaId: area.id, cell: c }));
       if (!img || !img.complete || img.naturalWidth === 0) continue;
-      ctx.imageSmoothingEnabled = cellDevW < img.naturalWidth;
       const off = hasXray ? undefined : area.xrayOffsets?.[key];
       const ox = off ? (off[0] / (data.cellWidth ?? data.cellSize)) * S : 0;
       const oy = off ? (off[1] / (data.cellHeight ?? data.cellSize)) * S : 0;
-      // Tiles can carry alpha (transparentVoid areas key their void out), so
-      // lay a flat map-background rect under each screen first — without it
-      // the recreation (rooms, lattice) bleeds through the keyed void.
       ctx.fillStyle = COL.bg;
-      ctx.fillRect(c.x * S + ox, c.y * S + oy, S, S);
+      ctx.fillRect(c.x * S, c.y * S, S, S);
+      loaded.push({ c, img, ox, oy });
+    }
+    for (const { c, img, ox, oy } of loaded) {
+      ctx.imageSmoothingEnabled = cellDevW < img.naturalWidth;
       ctx.drawImage(img, c.x * S + ox, c.y * S + oy, S, S);
     }
     ctx.restore();
