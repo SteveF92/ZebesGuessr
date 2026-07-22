@@ -2,8 +2,8 @@
   "kraid": [
     {
       "sprite": "bosses/kraid.png",
-      "x": 1523,
-      "y": 2151
+      "x": 1554,
+      "y": 2152
     }
   ],
   "ridley": [
@@ -16,20 +16,6 @@
       "sprite": "bosses/imago.png",
       "x": 2453,
       "y": 321
-    }
-  ],
-  "tourian": [
-    {
-      "sprite": "bosses/mother-brain.png",
-      "x": 920,
-      "y": 1675
-    }
-  ],
-  "crateria": [
-    {
-      "sprite": "bosses/deorem.png",
-      "x": 4068,
-      "y": 705
     }
   ]
 }

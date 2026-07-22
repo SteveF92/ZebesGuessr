@@ -1,1 +1,406 @@
-{}
+{
+  "brinstar": [
+    {
+      "x": 13,
+      "y": 10,
+      "image": "tile-sources/metroid-zero-mission/brinstar/norfair-access-corridor.png",
+      "sx": 32,
+      "sy": 32,
+      "note": "'Brinstar12.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 23,
+      "y": 6,
+      "image": "tile-sources/metroid-zero-mission/brinstar/alternate-charge-beast-arena.png",
+      "sx": 32,
+      "sy": 32,
+      "note": "'Brinstar19.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 24,
+      "y": 6,
+      "image": "tile-sources/metroid-zero-mission/brinstar/alternate-charge-beast-arena.png",
+      "sx": 272,
+      "sy": 32,
+      "note": "'Brinstar19.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 26,
+      "y": 6,
+      "image": "tile-sources/metroid-zero-mission/brinstar/alternate-charge-beast-arena.png",
+      "sx": 752,
+      "sy": 32,
+      "note": "'Brinstar19.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 25,
+      "y": 6,
+      "image": "tile-sources/metroid-zero-mission/brinstar/alternate-charge-beast-arena.png",
+      "sx": 512,
+      "sy": 32,
+      "note": "'Brinstar19.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 28,
+      "y": 6,
+      "image": "tile-sources/metroid-zero-mission/brinstar/alternate-charge-beast-arena.png",
+      "sx": 1232,
+      "sy": 32,
+      "note": "'Brinstar19.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 29,
+      "y": 6,
+      "image": "tile-sources/metroid-zero-mission/brinstar/alternate-charge-beast-arena.png",
+      "sx": 1472,
+      "sy": 32,
+      "note": "'Brinstar19.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 27,
+      "y": 6,
+      "image": "tile-sources/metroid-zero-mission/brinstar/alternate-charge-beast-arena.png",
+      "sx": 992,
+      "sy": 32,
+      "note": "'Brinstar19.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 1,
+      "y": 13,
+      "image": "tile-sources/metroid-zero-mission/brinstar/starting-room.png",
+      "sx": 272,
+      "sy": 352,
+      "note": "'Brinstar0.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 2,
+      "y": 13,
+      "image": "tile-sources/metroid-zero-mission/brinstar/starting-room.png",
+      "sx": 512,
+      "sy": 352,
+      "note": "'Brinstar0.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 2,
+      "y": 12,
+      "image": "tile-sources/metroid-zero-mission/brinstar/starting-room.png",
+      "sx": 512,
+      "sy": 192,
+      "note": "'Brinstar0.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 2,
+      "y": 11,
+      "image": "tile-sources/metroid-zero-mission/brinstar/starting-room.png",
+      "sx": 512,
+      "sy": 32,
+      "note": "'Brinstar0.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 2,
+      "y": 14,
+      "image": "tile-sources/metroid-zero-mission/brinstar/starting-room.png",
+      "sx": 512,
+      "sy": 512,
+      "note": "'Brinstar0.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 3,
+      "y": 13,
+      "image": "tile-sources/metroid-zero-mission/brinstar/starting-room.png",
+      "sx": 752,
+      "sy": 352,
+      "note": "'Brinstar0.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 4,
+      "y": 13,
+      "image": "tile-sources/metroid-zero-mission/brinstar/starting-room.png",
+      "sx": 992,
+      "sy": 352,
+      "note": "'Brinstar0.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 5,
+      "y": 12,
+      "image": "tile-sources/metroid-zero-mission/brinstar/fake-block-fork.png",
+      "sx": 32,
+      "sy": 32,
+      "note": "'Brinstar1.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 5,
+      "y": 13,
+      "image": "tile-sources/metroid-zero-mission/brinstar/fake-block-fork.png",
+      "sx": 32,
+      "sy": 192,
+      "note": "'Brinstar1.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 5,
+      "y": 16,
+      "image": "tile-sources/metroid-zero-mission/brinstar/fake-block-fork.png",
+      "sx": 32,
+      "sy": 672,
+      "note": "'Brinstar1.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 6,
+      "y": 16,
+      "image": "tile-sources/metroid-zero-mission/brinstar/elevator-to-kraid.png",
+      "sx": 32,
+      "sy": 32,
+      "note": "'Brinstar8.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 7,
+      "y": 12,
+      "image": "tile-sources/metroid-zero-mission/brinstar/guide-statue-long-beam.png",
+      "sx": 272,
+      "sy": 32,
+      "note": "'Brinstar2.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 6,
+      "y": 12,
+      "image": "tile-sources/metroid-zero-mission/brinstar/guide-statue-long-beam.png",
+      "sx": 32,
+      "sy": 32,
+      "note": "'Brinstar2.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 11,
+      "y": 10,
+      "image": "tile-sources/metroid-zero-mission/brinstar/speedbooster-passage.png",
+      "sx": 32,
+      "sy": 32,
+      "note": "'Brinstar40.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 10,
+      "y": 3,
+      "image": "tile-sources/metroid-zero-mission/brinstar/long-beam-chamber-access.png",
+      "sx": 512,
+      "sy": 32,
+      "note": "'Brinstar4.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 9,
+      "y": 3,
+      "image": "tile-sources/metroid-zero-mission/brinstar/long-beam-chamber-access.png",
+      "sx": 272,
+      "sy": 32,
+      "note": "'Brinstar4.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 8,
+      "y": 3,
+      "image": "tile-sources/metroid-zero-mission/brinstar/long-beam-chamber-access.png",
+      "sx": 32,
+      "sy": 32,
+      "note": "'Brinstar4.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 3,
+      "y": 1,
+      "image": "tile-sources/metroid-zero-mission/brinstar/tourian-gate.png",
+      "sx": 272,
+      "sy": 32,
+      "note": "'Brinstar10.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 2,
+      "y": 1,
+      "image": "tile-sources/metroid-zero-mission/brinstar/tourian-gate.png",
+      "sx": 32,
+      "sy": 32,
+      "note": "'Brinstar10.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 13,
+      "y": 2,
+      "image": "tile-sources/metroid-zero-mission/brinstar/four-pipes-corridor.png",
+      "sx": 32,
+      "sy": 32,
+      "note": "'Brinstar28.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 18,
+      "y": 0,
+      "image": "tile-sources/metroid-zero-mission/brinstar/varia-chamber-access.png",
+      "sx": 752,
+      "sy": 32,
+      "note": "'Brinstar23.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 17,
+      "y": 0,
+      "image": "tile-sources/metroid-zero-mission/brinstar/varia-chamber-access.png",
+      "sx": 512,
+      "sy": 32,
+      "note": "'Brinstar23.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 16,
+      "y": 0,
+      "image": "tile-sources/metroid-zero-mission/brinstar/varia-chamber-access.png",
+      "sx": 272,
+      "sy": 32,
+      "note": "'Brinstar23.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 15,
+      "y": 0,
+      "image": "tile-sources/metroid-zero-mission/brinstar/varia-chamber-access.png",
+      "sx": 32,
+      "sy": 32,
+      "note": "'Brinstar23.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 15,
+      "y": 1,
+      "image": "tile-sources/metroid-zero-mission/brinstar/varia-chamber-access.png",
+      "sx": 32,
+      "sy": 192,
+      "note": "'Brinstar23.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 16,
+      "y": 1,
+      "image": "tile-sources/metroid-zero-mission/brinstar/varia-chamber-access.png",
+      "sx": 272,
+      "sy": 192,
+      "note": "'Brinstar23.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 17,
+      "y": 1,
+      "image": "tile-sources/metroid-zero-mission/brinstar/varia-chamber-access.png",
+      "sx": 512,
+      "sy": 192,
+      "note": "'Brinstar23.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 18,
+      "y": 1,
+      "image": "tile-sources/metroid-zero-mission/brinstar/varia-chamber-access.png",
+      "sx": 752,
+      "sy": 192,
+      "note": "'Brinstar23.png' from the randovania checkout, committed unmodified"
+    }
+  ],
+  "norfair": [
+    {
+      "x": 11,
+      "y": 3,
+      "image": "tile-sources/metroid-zero-mission/norfair/elevator-to-brinstar.png",
+      "sx": 32,
+      "sy": 192,
+      "note": "'Norfair0.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 11,
+      "y": 4,
+      "image": "tile-sources/metroid-zero-mission/norfair/elevator-to-brinstar.png",
+      "sx": 32,
+      "sy": 352,
+      "note": "'Norfair0.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 9,
+      "y": 4,
+      "image": "tile-sources/metroid-zero-mission/norfair/western-lava-corridor.png",
+      "sx": 1472,
+      "sy": 32,
+      "note": "'Norfair1.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 7,
+      "y": 4,
+      "image": "tile-sources/metroid-zero-mission/norfair/western-lava-corridor.png",
+      "sx": 992,
+      "sy": 32,
+      "note": "'Norfair1.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 6,
+      "y": 4,
+      "image": "tile-sources/metroid-zero-mission/norfair/western-lava-corridor.png",
+      "sx": 752,
+      "sy": 32,
+      "note": "'Norfair1.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 5,
+      "y": 4,
+      "image": "tile-sources/metroid-zero-mission/norfair/western-lava-corridor.png",
+      "sx": 512,
+      "sy": 32,
+      "note": "'Norfair1.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 4,
+      "y": 4,
+      "image": "tile-sources/metroid-zero-mission/norfair/western-lava-corridor.png",
+      "sx": 272,
+      "sy": 32,
+      "note": "'Norfair1.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 3,
+      "y": 4,
+      "image": "tile-sources/metroid-zero-mission/norfair/western-lava-corridor.png",
+      "sx": 32,
+      "sy": 32,
+      "note": "'Norfair1.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 5,
+      "y": 6,
+      "image": "tile-sources/metroid-zero-mission/norfair/screw-attack-chamber-access.png",
+      "sx": 32,
+      "sy": 32,
+      "note": "'Norfair17.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 6,
+      "y": 6,
+      "image": "tile-sources/metroid-zero-mission/norfair/screw-attack-chamber-access.png",
+      "sx": 272,
+      "sy": 32,
+      "note": "'Norfair17.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 14,
+      "y": 11,
+      "image": "tile-sources/metroid-zero-mission/norfair/path-of-vines.png",
+      "sx": 32,
+      "sy": 32,
+      "note": "'Norfair33.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 15,
+      "y": 11,
+      "image": "tile-sources/metroid-zero-mission/norfair/path-of-vines.png",
+      "sx": 272,
+      "sy": 32,
+      "note": "'Norfair33.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 16,
+      "y": 11,
+      "image": "tile-sources/metroid-zero-mission/norfair/path-of-vines.png",
+      "sx": 512,
+      "sy": 32,
+      "note": "'Norfair33.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 17,
+      "y": 11,
+      "image": "tile-sources/metroid-zero-mission/norfair/path-of-vines.png",
+      "sx": 752,
+      "sy": 32,
+      "note": "'Norfair33.png' from the randovania checkout, committed unmodified"
+    }
+  ]
+}
