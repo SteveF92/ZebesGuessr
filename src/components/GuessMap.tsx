@@ -459,6 +459,11 @@ export default function GuessMap({ data, selected, onSelect, onHoverCell, onArea
       const off = hasXray ? undefined : area.xrayOffsets?.[key];
       const ox = off ? (off[0] / (data.cellWidth ?? data.cellSize)) * S : 0;
       const oy = off ? (off[1] / (data.cellHeight ?? data.cellSize)) * S : 0;
+      // Tiles can carry alpha (transparentVoid areas key their void out), so
+      // lay a flat map-background rect under each screen first — without it
+      // the recreation (rooms, lattice) bleeds through the keyed void.
+      ctx.fillStyle = COL.bg;
+      ctx.fillRect(c.x * S + ox, c.y * S + oy, S, S);
       ctx.drawImage(img, c.x * S + ox, c.y * S + oy, S, S);
     }
     ctx.restore();
