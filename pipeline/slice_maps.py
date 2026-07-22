@@ -41,6 +41,39 @@ def cell_playable(gray: Image.Image, x0: int, y0: int, cw: int, ch: int, bg: str
     return content / (cw * ch) >= FILL_THRESHOLD
 
 
+def void_to_alpha(tile: Image.Image, bg: str) -> Image.Image:
+    """Turn border-connected void (the sheet's background color) transparent.
+
+    For areas flagged `transparentVoid`, the X-Ray overlay shouldn't paint the
+    sheet's empty ocean over the map recreation. Flood-fill from the tile
+    edges rather than color-keying globally, so a pure-white/black pixel
+    *inside* room art (a highlight, a flash frame) survives; only void that
+    touches the border is keyed out.
+    """
+    import numpy as np
+
+    arr = np.array(tile.convert("RGB"))
+    key = 255 if bg == "white" else 0
+    mask = (arr == key).all(axis=2)
+    reach = np.zeros_like(mask)
+    reach[0, :] = mask[0, :]
+    reach[-1, :] = mask[-1, :]
+    reach[:, 0] = mask[:, 0]
+    reach[:, -1] = mask[:, -1]
+    while True:  # grow one pixel per pass until the fill stops moving
+        grow = reach.copy()
+        grow[1:, :] |= reach[:-1, :]
+        grow[:-1, :] |= reach[1:, :]
+        grow[:, 1:] |= reach[:, :-1]
+        grow[:, :-1] |= reach[:, 1:]
+        grow &= mask
+        if (grow == reach).all():
+            break
+        reach = grow
+    alpha = np.where(reach, 0, 255).astype(np.uint8)
+    return Image.fromarray(np.dstack([arr, alpha]), "RGBA")
+
+
 def process_game(game_id: str, game: dict) -> None:
     cw = game.get("cellWidth", game.get("cellSize"))
     ch = game.get("cellHeight", game.get("cellSize"))
@@ -123,10 +156,11 @@ def process_game(game_id: str, game: dict) -> None:
                     if (x, y) in kept and tile_path.exists():
                         continue  # preserve the hand-edited tile
                     dxp, dyp = crop_offsets.get((x, y), (0, 0))
-                    img.crop((x0 + dxp, y0 + dyp,
-                              x0 + dxp + cw, y0 + dyp + ch)).save(
-                        tile_path, optimize=True
-                    )
+                    tile = img.crop((x0 + dxp, y0 + dyp,
+                                     x0 + dxp + cw, y0 + dyp + ch))
+                    if area.get("transparentVoid", game.get("transparentVoid", False)):
+                        tile = void_to_alpha(tile, bg)
+                    tile.save(tile_path, optimize=True)
 
         # Prune tiles for cells that are no longer playable (e.g. a cell newly
         # dropped via excludeCells), so a rerun leaves no orphaned PNGs behind

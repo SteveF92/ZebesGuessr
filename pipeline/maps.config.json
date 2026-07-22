@@ -442,7 +442,8 @@
           [23, 0],
           [23, 1]
         ],
-        "excludeCells": [[28, 22]]
+        "excludeCells": [[28, 22]],
+        "transparentVoid": true
       }
     ]
   }
