@@ -34,11 +34,13 @@ const phase = () => rand(0, Math.PI * 2);
 
 let nextId = 1;
 
-function spawn(): Critter {
+/** `forceMetroid` pins the menu's opening act: the first flyby is always a
+ *  Metroid, never the ship. */
+function spawn(forceMetroid: boolean): Critter {
   const vw = window.innerWidth;
   const vh = window.innerHeight;
   const ltr = Math.random() < 0.5;
-  if (Math.random() < 0.3) {
+  if (!forceMetroid && Math.random() < 0.3) {
     // ship: fast straight strafe with a slight diagonal
     const margin = 200;
     const y0 = vh * rand(0.08, 0.55);
@@ -111,7 +113,7 @@ export function TitleCritters({ active }: { active: boolean }) {
     const schedule = (first: boolean) => {
       timer = window.setTimeout(
         () => {
-          setCritters((cs) => [...cs, spawn()]);
+          setCritters((cs) => [...cs, spawn(first)]);
           schedule(false);
         },
         first ? rand(2000, 5000) : rand(7000, 17000)
