@@ -3049,11 +3049,11 @@ a:hover {
 .create-mode .signal-label {
   display: none;
 }
-/* Shrink the selected screenshot from 340 to 240. */
-.create-mode .tile-frame,
-.create-mode .tile-frame img {
+/* Shrink the selected screenshot from 340 to 240. Height comes from
+   aspect-ratio (set inline by TileViewer), so GBA's 3:2 screens aren't
+   forced square — don't pin a fixed height here. */
+.create-mode .tile-frame {
   width: 240px;
-  height: 240px;
 }
 .create-mode .tile-viewer {
   align-items: center;
