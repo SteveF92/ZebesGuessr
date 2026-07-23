@@ -25,7 +25,7 @@ const UNLOCK_LABELS: Record<keyof Unlocks, string> = {
 const UNLOCK_ORDER: (keyof Unlocks)[] = ['enterSeed', 'scan', 'xray', 'create'];
 
 import { MissionLogModal } from './components/MissionLogModal';
-import { dailyDifficulty, dailyGameId, dailyKey, dailyNumber, dailyTargets } from './daily';
+import { dailyDifficulty, dailyGameId, dailyKey, dailyNumber, dailySeed, dailyTargets } from './daily';
 import { appendRun, readDailyRecord, readLog, recordDaily, toLogRounds } from './missionLog';
 import { ShareModal } from './components/ShareModal';
 import { type Seed, decodeSeed, encodeSeed } from './seed';
@@ -232,11 +232,21 @@ export default function App() {
     setPhase('loading');
     setError(null);
     try {
+      // A hand-crafted seed (daily.ts DAILY_SEEDS) overrides the procedural
+      // daily: its game and exact five tiles win. dailyGameId already reports
+      // the seed's game, so the menu and the run agree.
+      const seed = dailySeed(key);
       const gameId = dailyGameId(key);
       const d = await loadGameData(gameId);
       setData(d);
-      const targets = dailyTargets(d, key);
-      const diff = dailyDifficulty(key);
+      // A hand-crafted seed replays its exact tiles; otherwise the date hash
+      // picks the day's screens. A stale seed (indices past regenerated map
+      // data) drops tiles — fall back to the procedural daily for that day
+      // rather than play a short/empty run.
+      const seedTargets = seed ? targetsFromIndices(d, seed.indices) : null;
+      const usableSeed = seed && seedTargets && seedTargets.length === seed.indices.length ? seed : null;
+      const targets = usableSeed ? seedTargets! : dailyTargets(d, key);
+      const diff = usableSeed ? DIFFICULTIES[usableSeed.diffIndex] : dailyDifficulty(key);
       const gameIndex = GAMES.findIndex((g) => g.id === gameId);
       const diffIndex = DIFFICULTIES.findIndex((dd) => dd.id === diff.id);
       setActiveSeedCode(encodeSeed({ gameIndex, diffIndex, indices: indicesFromTargets(cellPool(d), targets) }));
@@ -431,9 +441,7 @@ export default function App() {
           <span className="daily-kicker">
             ◆ DAILY MISSION #{dailyNumber(todayKey)} - {todayKey} ◆
           </span>
-          <span className="daily-desc">
-            {GAMES.find((g) => g.id === dailyGameId(todayKey))?.title}
-          </span>
+          <span className="daily-desc">{GAMES.find((g) => g.id === dailyGameId(todayKey))?.title}</span>
           <span className="daily-state">{dailyScore !== undefined ? `COMPLETE — ${dailyScore.toLocaleString()} · REPLAY ▶` : 'START MISSION ▶'}</span>
         </button>
 
