@@ -432,7 +432,7 @@ export default function App() {
             ◆ DAILY MISSION #{dailyNumber(todayKey)} - {todayKey} ◆
           </span>
           <span className="daily-desc">
-            {GAMES.find((g) => g.id === dailyGameId(todayKey))?.title} · {dailyDifficulty(todayKey).label}
+            {GAMES.find((g) => g.id === dailyGameId(todayKey))?.title}
           </span>
           <span className="daily-state">{dailyScore !== undefined ? `COMPLETE — ${dailyScore.toLocaleString()} · REPLAY ▶` : 'START MISSION ▶'}</span>
         </button>
