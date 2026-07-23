@@ -30,7 +30,10 @@ export const DAILY_EPOCH = '2026-07-22';
  * are given no cue which kind of day it is.
  */
 export const DAILY_SEEDS: Record<string, string> = {
-  '2026-07-22': 'AAFgbA9xMIns'
+  '2026-07-22': 'AAFgbA9xMIns',
+  '2026-07-23': 'IAgBxhN40wFi',
+  '2026-07-24': 'QDdgjxKorYYO',
+  '2026-07-25': 'ABmAfgoQ2ElA'
 };
 
 /**
