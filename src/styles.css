@@ -9,6 +9,9 @@
   --bg: #05070d;
   --bg2: #0a0e18;
   --panel: #0c1120;
+  /* --panel at ~90%: the two big menu mission cards use this so backdrop
+     critters (TitleCritters) ghost faintly through them */
+  --panel-glass: rgba(12, 17, 32, 0.9);
   --panel-hi: #131a2e;
   --line: #1c2a4a;
   --text: #cfe0ff;
@@ -587,7 +590,7 @@ a:hover {
   color: var(--text);
   border: 1px solid rgba(255, 210, 77, 0.4);
   border-radius: 10px;
-  background: linear-gradient(rgba(255, 210, 77, 0.07), rgba(255, 210, 77, 0.02)), var(--panel);
+  background: linear-gradient(rgba(255, 210, 77, 0.07), rgba(255, 210, 77, 0.02)), var(--panel-glass);
   transition:
     border-color 0.15s,
     box-shadow 0.15s;
@@ -663,7 +666,7 @@ a:hover {
   padding: 14px 18px 18px;
   border: 1px solid rgba(160, 248, 248, 0.28);
   border-radius: 10px;
-  background: linear-gradient(rgba(160, 248, 248, 0.045), rgba(160, 248, 248, 0.015)), var(--panel);
+  background: linear-gradient(rgba(160, 248, 248, 0.045), rgba(160, 248, 248, 0.015)), var(--panel-glass);
 }
 .random-title {
   font-family: var(--font-display);

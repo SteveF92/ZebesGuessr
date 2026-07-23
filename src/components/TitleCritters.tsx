@@ -114,7 +114,7 @@ export function TitleCritters({ active }: { active: boolean }) {
           setCritters((cs) => [...cs, spawn()]);
           schedule(false);
         },
-        first ? rand(2500, 6000) : rand(9000, 22000)
+        first ? rand(2000, 5000) : rand(7000, 17000)
       );
     };
     schedule(true);
