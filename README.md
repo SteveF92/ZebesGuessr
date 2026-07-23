@@ -8,8 +8,7 @@ Best scores live in your browser's localStorage.
 
 ## Play
 
-Currently supports **Super Metroid**. Metroid Fusion and Metroid: Zero Mission
-are planned.
+Supports **Super Metroid**, **Metroid Fusion**, and **Metroid: Zero Mission**.
 
 ## How it works
 
@@ -32,10 +31,15 @@ npm run dev
 The repo ships with pre-sliced tiles in `public/tiles/`. To regenerate them:
 
 ```
+pip install pillow numpy
 python pipeline/download_maps.py   # fetches source maps into Images/raw/ (gitignored)
-pip install pillow
-python pipeline/slice_maps.py      # slices tiles, builds public/data/*.json
+python pipeline/slice_maps.py      # slices tiles, builds base public/data/*.json
+python pipeline/extract_ingame_maps.py  # SNES pause-map draw data (Super Metroid)
+python pipeline/extract_gba_maps.py     # GBA pause-map draw data (Fusion / Zero Mission)
 ```
+
+There are more steps for landmark sprites, tile overrides, and kept tiles — see
+`CLAUDE.md` for the full chain.
 
 `pipeline/debug/` gets grid-overlay images for checking cell alignment; tune
 per-area `offsetX`/`offsetY` in `pipeline/maps.config.json` if the grid is off.
