@@ -101,8 +101,10 @@ file** (dev server only) and commit the JSON.
 - **Metroid, Samus Aran, and all game imagery** © Nintendo / developed by
   Nintendo R&D1 and Intelligent Systems. This project is not affiliated with,
   endorsed by, or connected to Nintendo in any way.
-- Room nicknames come from the Super Metroid speedrunning community
+- Room nicknames for Super Metroid come from the Super Metroid speedrunning community
   ([wiki.supermetroid.run](https://wiki.supermetroid.run), [deertier.com](https://deertier.com)).
+- Room nicknames for Fusion and Zero mission come from their respective communities, and I used data from
+  [Randovania](https://randovania.org) to populate everything.
 - Built by Steve Fallon, creator of [Fantasy Critic](https://www.fantasycritic.games).
 
 If you are a rights holder and want anything removed, open an issue and I'll remove it.
