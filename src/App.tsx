@@ -130,6 +130,10 @@ export default function App() {
   // Features whose gate this run just crossed — drives the Prime-style acquired
   // banner on the summary. Populated once when we bump the PB; cleared per run.
   const [justUnlocked, setJustUnlocked] = useState<(keyof Unlocks)[]>([]);
+  // Set once when a run actually beats the prior best (not tied) — `bests` is
+  // already bumped to `total` by the time the summary re-renders, so re-deriving
+  // "is this a new best" from `bests` at render time would also fire on a tie.
+  const [isNewBest, setIsNewBest] = useState(false);
   // Which beat of the reveal we're on (phones only — desktop shows both at once).
   const [revealStage, setRevealStage] = useState<'map' | 'result'>('result');
 
@@ -215,6 +219,7 @@ export default function App() {
       setSelected(null);
       setVisorsUsed(false);
       setJustUnlocked([]);
+      setIsNewBest(false);
       setActiveDaily(null);
       setPhase('guessing');
     } catch (e) {
@@ -259,6 +264,7 @@ export default function App() {
       setSelected(null);
       setVisorsUsed(false);
       setJustUnlocked([]);
+      setIsNewBest(false);
       setActiveDaily(key);
       setPhase('guessing');
     } catch (e) {
@@ -386,6 +392,7 @@ export default function App() {
       const after = computeUnlocks(nextMax, { jb: cheatJB, narpas: cheatNarpas });
       setJustUnlocked(UNLOCK_ORDER.filter((k) => after[k] && !before[k]));
       setBests(nextBests);
+      setIsNewBest(true);
       localStorage.setItem(`zg-best-${data.game}`, String(total));
     }
   }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -543,7 +550,7 @@ export default function App() {
             {visorsUsed ? (
               <div className="practice-note">◈ PRACTICE RUN — visors used, score not recorded</div>
             ) : (
-              total >= (bests[data.game] ?? 0) && total > 0 && <div className="newbest">★ NEW PERSONAL BEST ★</div>
+              isNewBest && <div className="newbest">★ NEW PERSONAL BEST ★</div>
             )}
             {justUnlocked.length > 0 && (
               <div className="unlock-banners">
