@@ -174,6 +174,11 @@ export interface GameData {
   /** px per cell in the downscaled guess-map image */
   guessMapCellPx: number;
   areas: AreaData[];
+  /** content hash of the game's baked tile PNGs, appended to every tile URL as
+   *  `?v=`. Tiles are served immutable for a year under stable names, so this
+   *  is what makes a re-baked tile actually reach browsers and CDN edges.
+   *  Baked by the extractors (maplib.tile_version); absent = unversioned. */
+  tileVersion?: string;
   /** optional speedrun/community room names: "areaId:x,y" -> name */
   roomNames?: Record<string, string>;
   /** per-tile difficulty ratings 1–5: "areaId:x,y" -> rating (missing = 3) */

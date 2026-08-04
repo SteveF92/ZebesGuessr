@@ -31,7 +31,7 @@ from PIL import Image
 from maplib import (E, N, ROOT, S, W, align, apply_cell_overrides,
                     apply_cell_removals, components, close_perimeter,
                     detect_phase, fallback_cells, find_ingame_image,
-                    load_map_overrides, mask, merge_cells)
+                    load_map_overrides, mask, merge_cells, tile_version)
 
 CELL = 8  # in-game map cell size in source pixels
 
@@ -394,6 +394,11 @@ def main() -> None:
         for area, cells, mapobj, _ in patched_areas:
             area["cells"] = cells
             area["map"] = mapobj
+        was = data.get("tileVersion")
+        data["tileVersion"] = tile_version(game_id)
+        if data["tileVersion"] != was:
+            print(f"  tileVersion {was} -> {data['tileVersion']} "
+                  f"(tile bytes changed; cached URLs bust)")
         # Indented so Prettier keeps objects expanded (one field per line) —
         # matches the committed formatting and gives clean per-coordinate diffs.
         # Still run `npm run format` afterward to normalise the rest.

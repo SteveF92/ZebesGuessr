@@ -114,6 +114,34 @@ Resources:
           };
         }
 
+  # Managed-CachingOptimized drops query strings from the cache key entirely, so
+  # every ?v= of a tile collapses onto one cached object and a re-baked tile
+  # keeps serving stale bytes from the edge. This clone keeps that policy's
+  # behaviour (honour the workflow's per-path Cache-Control, gzip+brotli) but
+  # puts `v` in the cache key, making the versioned tile URLs distinct objects.
+  # Only `v` is whitelisted: ?seed= must NOT split the cache, since index.html
+  # is identical for every seed and the seed is read client-side.
+  CachePolicy:
+    Type: AWS::CloudFront::CachePolicy
+    Properties:
+      CachePolicyConfig:
+        Name: !Sub '${AWS::StackName}-tile-versioned'
+        Comment: CachingOptimized plus the tile cache-buster in the cache key
+        DefaultTTL: 86400
+        MinTTL: 1
+        MaxTTL: 31536000
+        ParametersInCacheKeyAndForwardedToOrigin:
+          EnableAcceptEncodingGzip: true
+          EnableAcceptEncodingBrotli: true
+          CookiesConfig:
+            CookieBehavior: none
+          HeadersConfig:
+            HeaderBehavior: none
+          QueryStringsConfig:
+            QueryStringBehavior: whitelist
+            QueryStrings:
+              - v
+
   Distribution:
     Type: AWS::CloudFront::Distribution
     Properties:
@@ -138,9 +166,9 @@ Resources:
           Compress: true
           AllowedMethods: [GET, HEAD, OPTIONS]
           CachedMethods: [GET, HEAD]
-          # Managed-CachingOptimized: respects the Cache-Control headers the
-          # deploy workflow sets per-path.
-          CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6
+          # Respects the Cache-Control headers the deploy workflow sets
+          # per-path, and keys tiles on their ?v= cache-buster (see above).
+          CachePolicyId: !Ref CachePolicy
           FunctionAssociations:
             - EventType: viewer-request
               FunctionARN: !GetAtt RedirectToWwwFunction.FunctionMetadata.FunctionARN

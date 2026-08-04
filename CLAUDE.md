@@ -151,6 +151,8 @@ Static site on S3 + CloudFront in AWS account 433030147996, served at **www.zebe
 
 Cache headers are set per-path at upload time, and CloudFront honors them: hashed assets and baked tiles are `immutable` (one year), `data/*.json` gets 60 seconds, and `index.html` is `no-cache`. If you add a path that changes in place under a stable name, give it a short TTL or a deploy won't reach users.
 
+Tiles are exactly that hazard — `tiles/<game>/<area>/cell_<x>_<y>.png` never renames, but a tile override, a re-stamped landmark or a hand-repaint changes its bytes. **`tileVersion` is what makes their `immutable` honest**: a content hash of the game's tile PNGs, computed by `maplib.tile_version` (the extractors set it, since they run last in the bake chain), baked into `<game>.json`, and appended by `tileUrl`/`xrayTileUrl` as `?v=`. Derived from the bytes rather than hand-bumped, because a forgotten bump is precisely the bug it prevents — so it's automatic for anything baked through the pipeline, but a tile edited into `public/tiles/` without a re-extract won't bump it. Three pieces have to stay in step, and dropping any one silently re-breaks it: the query in the URL, `v` whitelisted in the CloudFront cache policy (`infra/site.yml` — the managed `CachingOptimized` policy drops query strings from the cache key entirely, which would collapse every `?v=` onto one cached object), and `/tiles/*` in the deploy's invalidation.
+
 ## Hand-curated map overlays (glyphs, connectors, room names)
 
 Three files hold data the pipeline can't reliably extract, all edited via the in-app editor (**icons** toggle in the round header) and applied by `loadGameData` as overrides on top of extraction:

@@ -42,7 +42,7 @@ from PIL import Image
 from maplib import (E, N, ROOT, S, W, align, apply_cell_overrides,
                     apply_cell_removals, close_perimeter, components,
                     detect_phase, fallback_cells, find_ingame_image,
-                    load_map_overrides, mask, merge_cells)
+                    load_map_overrides, mask, merge_cells, tile_version)
 
 CELL = 8  # in-game map cell size in source pixels
 
@@ -520,6 +520,11 @@ def main() -> None:
         for area, cells, mapobj in patched_areas:
             area["cells"] = cells
             area["map"] = mapobj
+        was = data.get("tileVersion")
+        data["tileVersion"] = tile_version(game_id)
+        if data["tileVersion"] != was:
+            print(f"  tileVersion {was} -> {data['tileVersion']} "
+                  f"(tile bytes changed; cached URLs bust)")
         data_file.write_text(json.dumps(data, indent=2))
         print(f"patched {data_file.relative_to(ROOT)}")
 

@@ -11,6 +11,7 @@ stair direction), "fill" (GBA fill-variant index), and "doors" (GBA door pips,
 ["Nr", "Eb", ...]); merge_cells maps those onto the compact JSON fields
 k/w/d/f/dr.
 """
+import hashlib
 import json
 from collections import deque
 from pathlib import Path
@@ -217,3 +218,29 @@ def fallback_cells(area):
 def find_ingame_image(game_id: str, area_id: str) -> Path | None:
     """In-game images keep their source extension (.webp, .png, ...)."""
     return next((ROOT / "Images" / "raw" / game_id / "ingame").glob(f"{area_id}.*"), None)
+
+
+def tile_version(game_id: str) -> str:
+    """Content hash of every baked tile PNG for a game, baked into <game>.json
+    as `tileVersion` and appended to tile URLs as `?v=`.
+
+    Tiles are served `immutable` for a year under stable names
+    (tiles/<game>/<area>/cell_<x>_<y>.png), so a tile whose *content* changes —
+    a new tile override, a re-stamped landmark, a hand-repaint — would keep
+    serving the old bytes from browser and edge caches indefinitely. Versioning
+    the URL is what makes that `immutable` promise honest: change the bytes,
+    change the URL.
+
+    Deriving it from the bytes rather than hand-bumping it is the point — a
+    forgotten bump is exactly the bug this prevents. Reproducible for the same
+    tiles, so re-running the pipeline doesn't churn the JSON.
+
+    Called from the extractors because they run last in the bake chain
+    (composite -> slice -> mirror -> extract), so every tile write has landed.
+    """
+    tiles = ROOT / "public" / "tiles" / game_id
+    h = hashlib.sha256()
+    for p in sorted(tiles.rglob("*.png")):
+        h.update(p.relative_to(tiles).as_posix().encode())
+        h.update(p.read_bytes())
+    return h.hexdigest()[:12]

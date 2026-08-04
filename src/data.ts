@@ -215,15 +215,22 @@ export async function loadGameData(gameId: string): Promise<GameData> {
   return data;
 }
 
+/** Cache-buster for tile URLs. Tiles ship `immutable` for a year under stable
+ *  names, so a re-baked tile only reaches browsers and CDN edges if its URL
+ *  changes; `tileVersion` is a content hash of the game's tiles, so it does. */
+function tileQuery(data: GameData): string {
+  return data.tileVersion ? `?v=${data.tileVersion}` : '';
+}
+
 export function tileUrl(data: GameData, t: RoundTarget): string {
-  return `${import.meta.env.BASE_URL}tiles/${data.game}/${t.areaId}/cell_${t.cell.x}_${t.cell.y}.png`;
+  return `${import.meta.env.BASE_URL}tiles/${data.game}/${t.areaId}/cell_${t.cell.x}_${t.cell.y}.png${tileQuery(data)}`;
 }
 
 /** Hand-completed X-Ray art for a cell listed in the area's `xrayTiles`;
  *  drawn grid-aligned in the overlay instead of the (possibly crop-shifted)
  *  guess tile. */
 export function xrayTileUrl(data: GameData, areaId: string, cell: Cell): string {
-  return `${import.meta.env.BASE_URL}tiles/${data.game}/${areaId}/xray_${cell.x}_${cell.y}.png`;
+  return `${import.meta.env.BASE_URL}tiles/${data.game}/${areaId}/xray_${cell.x}_${cell.y}.png${tileQuery(data)}`;
 }
 
 export function roomName(data: GameData, t: RoundTarget): string | undefined {

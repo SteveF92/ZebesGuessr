@@ -35,9 +35,12 @@ jobs:
           role-to-assume: ${{ env.ROLE_ARN }}
           aws-region: us-east-1
 
-      # Hashed assets and baked tiles never change content under a given name,
-      # so they cache forever. Uploaded before index.html so the new page can
-      # never reference an asset that isn't there yet.
+      # Hashed assets cache forever — their name changes when their content
+      # does. Baked tiles don't rename, so they're versioned by the `?v=`
+      # query the app appends from the game JSON's `tileVersion` (a content
+      # hash of the tiles); that makes `immutable` honest for them too.
+      # Uploaded before index.html so the new page can never reference an
+      # asset that isn't there yet.
       - name: Upload immutable assets
         run: |
           aws s3 sync dist/ "s3://$BUCKET" --delete \
@@ -57,8 +60,11 @@ jobs:
 
       # no-cache on index.html means browsers revalidate, but CloudFront's edges
       # still hold a copy — invalidate so a deploy is visible immediately.
+      # /tiles/* is belt-and-braces: tile URLs are already versioned by
+      # `?v=<tileVersion>`, but tiles change in place under a stable key, so
+      # this keeps the edges honest if a tile is ever repainted without a bake.
       - name: Invalidate CloudFront
         run: |
           aws cloudfront create-invalidation \
             --distribution-id "$DISTRIBUTION_ID" \
-            --paths "/" "/index.html" "/data/*"
+            --paths "/" "/index.html" "/data/*" "/tiles/*"
