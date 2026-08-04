@@ -159,6 +159,38 @@
       "sx": 272,
       "sy": 352,
       "note": "'Main Deck51.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 3,
+      "y": 23,
+      "image": "tile-sources/metroid-fusion/main-deck/restricted-airlock.png",
+      "sx": 32,
+      "sy": 352,
+      "note": "'Main Deck17.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 3,
+      "y": 22,
+      "image": "tile-sources/metroid-fusion/main-deck/restricted-airlock.png",
+      "sx": 32,
+      "sy": 192,
+      "note": "'Main Deck17.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 3,
+      "y": 24,
+      "image": "tile-sources/metroid-fusion/main-deck/restricted-airlock.png",
+      "sx": 32,
+      "sy": 512,
+      "note": "'Main Deck17.png' from the randovania checkout, committed unmodified"
+    },
+    {
+      "x": 3,
+      "y": 21,
+      "image": "tile-sources/metroid-fusion/main-deck/restricted-airlock.png",
+      "sx": 32,
+      "sy": 32,
+      "note": "'Main Deck17.png' from the randovania checkout, committed unmodified"
     }
   ],
   "sector-1": [
