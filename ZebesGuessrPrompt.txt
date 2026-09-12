@@ -1,0 +1,40 @@
+I would like build a fun website that is kinda like GeoGuessr, but it's specific to finding locations from 2D Metroid games. We can call it "ZebesGuessr". Here's some starting points:
+
+
+You should put the code in I:\CodeProjects\ZebesGuessr
+
+We can get maps from these links:
+
+https://www.vgmaps.com/Atlas/SuperNES/index.htm#SuperMetroid
+https://www.vgmaps.com/Atlas/GBA/index.htm#MetroidFusion
+https://www.snesmaps.com/maps/SuperMetroid/SuperMetroidMapSelect.html
+https://www.vgmaps.com/Atlas/GBA/index.htm#MetroidZeroMission
+
+We'll want to credit all the map makers and of course Nintendo themselves.
+This is strictly non commercial, for fun usage
+I plan on publishing the code on Github
+Let's do this with no user logins at all, just a toy site. We can track user scores via simple cookies but that's it.
+
+And now to the game itself. We should refine this before we get started, but the core idea is:
+
+Let the user choose what game they want to play (Super Metroid, Metroid Fusion, Metroid Zero Mission)
+Show them a random screen - corresponds to one map tile.
+They click the right tile on our version of the in game map.
+They get scored based on how close they are.
+
+Gameplay questions to answer:
+
+Further mode selection? Should we scope to an area, or choose from the whole game? If not scoped to an area, we'll have to let the user select a specific map and THEN a tile.
+What if they are wrong? Do we give hints, and give more points for getting it in less guesses?
+Or do we start by zooming in further to start, and zooming out and then eventually showing the whole room?
+The goal is a fun thing for Metroid fans, not something highly competitive.
+These rooms DON'T have canon names, but speed runners definitely have named many of the rooms. It would be nice for us to incorporate those.
+
+Tech questions to answer:
+
+We need to split up and store single room images while knowing how they link up to a map tile.
+We need to find/make a version of the in game map that is interactable.
+We need to decide our overall tech stack and hosting paradigm.
+
+What do you think of all this? How can we get started?
+
